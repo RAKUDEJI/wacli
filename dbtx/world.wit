@@ -11,10 +11,6 @@ world dbtx {
   import wasi:filesystem/types@0.3.0-rc-2026-01-06;
   import wasi:filesystem/preopens@0.3.0-rc-2026-01-06;
 
-  // sockets
-  import wasi:sockets/types@0.3.0-rc-2026-01-06;
-  import wasi:sockets/ip-name-lookup@0.3.0-rc-2026-01-06;
-
   // random
   import wasi:random/random@0.3.0-rc-2026-01-06;
   import wasi:random/insecure@0.3.0-rc-2026-01-06;

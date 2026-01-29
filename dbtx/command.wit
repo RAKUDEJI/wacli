@@ -1,0 +1,10 @@
+package dbtx:cli@0.1.0;
+
+/// command world はコマンドコンポーネントが実装する内部 world
+/// 直接実行されることはなく、必ず dbtx に合成される
+@since(version = 0.1.0)
+world command {
+  // エントリーポイントのみ export
+  // imports は合成時に dbtx から渡される
+  export wasi:cli/run@0.3.0-rc-2026-01-06;
+}
