@@ -1,0 +1,16 @@
+# MoonBit build artifacts
+_build/
+target
+
+# WASM binaries
+*.wasm
+
+# wkg lock files
+wkg.lock
+
+# Generated directories that can be recreated
+interface/
+world/
+
+# Old standalone app (not part of fw-cli)
+examples/hello/app/
