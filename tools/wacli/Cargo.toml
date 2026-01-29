@@ -1,0 +1,44 @@
+[package]
+name = "wacli"
+version = "0.1.0"
+edition = "2021"
+description = "WebAssembly Component composition CLI for fw-cli framework"
+license = "Apache-2.0"
+
+[[bin]]
+name = "wacli"
+path = "src/main.rs"
+
+[dependencies]
+# WAC crates for composition
+wac-parser = { version = "0.9.0-dev", default-features = false }
+wac-resolver = { version = "0.9.0-dev", default-features = false, features = ["wit"] }
+wac-graph = "0.9.0-dev"
+wac-types = "0.9.0-dev"
+
+# CLI and error handling
+clap = { version = "4.5", features = ["derive"] }
+anyhow = "1.0"
+thiserror = "1.0"
+miette = { version = "7.2", features = ["fancy"] }
+
+# Async runtime
+tokio = { version = "1.45", features = ["macros", "rt-multi-thread"] }
+
+# Manifest parsing
+toml = "0.8"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# WASM parsing (for import checking)
+wasmparser = "0.244"
+
+# Utilities
+indexmap = "2.2"
+log = "0.4"
+env_logger = "0.11"
+
+[profile.release]
+lto = true
+strip = true
+opt-level = "z"

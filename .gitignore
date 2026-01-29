@@ -1,6 +1,9 @@
 # MoonBit build artifacts
 _build/
-target
+target/
+
+# Rust
+Cargo.lock
 
 # WASM binaries
 *.wasm
