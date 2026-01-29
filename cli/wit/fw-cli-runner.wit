@@ -1,0 +1,7 @@
+package fw:cli-runner@1.0.0;
+
+/// targets 用の"最小world"
+/// wasi:cli/command を targets にしないのは、clocks/sockets 等の import が混ざりやすいから
+world app {
+  export wasi:cli/run@0.3.0-rc-2026-01-06;
+}

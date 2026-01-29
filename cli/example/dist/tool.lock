@@ -1,0 +1,29 @@
+version = 1
+
+[tool]
+package = "example:tool"
+version = "0.1.0"
+
+[[package]]
+name = "fw:cli-host"
+version = "1.0.0"
+source = "oci:..."
+digest = "sha256:..."
+
+[[package]]
+name = "fw:cli-core"
+version = "1.0.0"
+source = "oci:..."
+digest = "sha256:..."
+
+[[package]]
+name = "acme:fmt"
+version = "0.4.1"
+source = "oci:..."
+digest = "sha256:..."
+
+[[package]]
+name = "acme:lint"
+version = "0.2.0"
+source = "oci:..."
+digest = "sha256:..."

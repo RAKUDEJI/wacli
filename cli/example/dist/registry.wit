@@ -1,0 +1,12 @@
+package example:tool-registry@0.1.0;
+
+use fw:cli/types@1.0.0;
+use fw:cli/command@1.0.0;
+use fw:cli/registry@1.0.0;
+
+world registry {
+  import fmt: command;
+  import lint: command;
+
+  export registry;
+}
