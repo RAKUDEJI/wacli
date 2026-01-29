@@ -1,0 +1,1 @@
+Registry interface - manages commands

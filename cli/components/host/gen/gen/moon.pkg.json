@@ -1,0 +1,12 @@
+
+{
+      "link": {
+            "wasm": {
+                  "exports": ["mbt_ffi_cabi_realloc:cabi_realloc", "wasmExportArgs:fw:cli/host@1.0.0#args", "wasmExportArgsPostReturn:cabi_post_fw:cli/host@1.0.0#args", "wasmExportEnv:fw:cli/host@1.0.0#env", "wasmExportEnvPostReturn:cabi_post_fw:cli/host@1.0.0#env", "wasmExportExit:fw:cli/host@1.0.0#exit", "wasmExportInsecureRandomBytes:fw:cli/host@1.0.0#insecure-random-bytes", "wasmExportInsecureRandomBytesPostReturn:cabi_post_fw:cli/host@1.0.0#insecure-random-bytes", "wasmExportIsTtyStderr:fw:cli/host@1.0.0#is-tty-stderr", "wasmExportIsTtyStdout:fw:cli/host@1.0.0#is-tty-stdout", "wasmExportRandomBytes:fw:cli/host@1.0.0#random-bytes", "wasmExportRandomBytesPostReturn:cabi_post_fw:cli/host@1.0.0#random-bytes", "wasmExportStderrFlush:fw:cli/host@1.0.0#stderr-flush", "wasmExportStderrWrite:fw:cli/host@1.0.0#stderr-write", "wasmExportStdinRead:fw:cli/host@1.0.0#stdin-read", "wasmExportStdinReadPostReturn:cabi_post_fw:cli/host@1.0.0#stdin-read", "wasmExportStdoutFlush:fw:cli/host@1.0.0#stdout-flush", "wasmExportStdoutWrite:fw:cli/host@1.0.0#stdout-write", "wasmExportTerminalSize:fw:cli/host@1.0.0#terminal-size"],
+                  "export-memory-name": "memory",
+                  "heap-start-address": 16
+            }
+      }
+      ,"import": [{ "path" : "fw/cli/gen/interface/fw/cli/host", "alias" : "host" }]
+      , "warn-list": "-44"
+}

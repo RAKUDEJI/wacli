@@ -1,0 +1,1 @@
+Registry world - imports commands, exports registry

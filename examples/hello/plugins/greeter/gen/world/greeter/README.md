@@ -1,0 +1,1 @@
+Greeter plugin world - uses fw:cli interfaces

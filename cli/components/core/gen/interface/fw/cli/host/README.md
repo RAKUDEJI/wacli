@@ -1,0 +1,1 @@
+Host interface - provides CLI primitives

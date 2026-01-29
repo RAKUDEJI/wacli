@@ -1,0 +1,12 @@
+
+{
+      "link": {
+            "wasm": {
+                  "exports": ["mbt_ffi_cabi_realloc:cabi_realloc", "wasmExportMeta:fw:cli/command@1.0.0#meta", "wasmExportMetaPostReturn:cabi_post_fw:cli/command@1.0.0#meta", "wasmExportRun:fw:cli/command@1.0.0#run", "wasmExportRunPostReturn:cabi_post_fw:cli/command@1.0.0#run"],
+                  "export-memory-name": "memory",
+                  "heap-start-address": 16
+            }
+      }
+      ,"import": [{ "path" : "example/greeter/gen/interface/fw/cli/command", "alias" : "command" }, { "path" : "example/greeter/interface/fw/cli/types", "alias" : "types" }]
+      , "warn-list": "-44"
+}

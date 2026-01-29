@@ -1,0 +1,89 @@
+package fw:cli@1.0.0;
+
+/// Shared types for the CLI framework
+interface types {
+  type exit-code = u32;
+
+  record command-meta {
+    name: string,
+    summary: string,
+    usage: string,
+    aliases: list<string>,
+    version: string,
+    hidden: bool,
+  }
+
+  variant command-error {
+    unknown-command(string),
+    invalid-args(string),
+    failed(string),
+  }
+
+  type command-result = result<exit-code, command-error>;
+}
+
+/// Host interface - provides CLI primitives to plugins
+interface host {
+  /// Exit code type
+  type exit-code = u32;
+
+  /// Get command line arguments
+  args: func() -> list<string>;
+
+  /// Get environment variables
+  env: func() -> list<tuple<string, string>>;
+
+  /// Write to stdout
+  stdout-write: func(bytes: list<u8>);
+
+  /// Write to stderr
+  stderr-write: func(bytes: list<u8>);
+
+  /// Flush stdout
+  stdout-flush: func();
+
+  /// Flush stderr
+  stderr-flush: func();
+
+  /// Read from stdin
+  stdin-read: func(max-bytes: u32) -> list<u8>;
+
+  /// Check if stdout is a TTY
+  is-tty-stdout: func() -> bool;
+
+  /// Check if stderr is a TTY
+  is-tty-stderr: func() -> bool;
+
+  /// Get terminal size (cols, rows)
+  terminal-size: func() -> option<tuple<u32, u32>>;
+
+  /// Get secure random bytes
+  random-bytes: func(n: u32) -> list<u8>;
+
+  /// Get insecure random bytes
+  insecure-random-bytes: func(n: u32) -> list<u8>;
+
+  /// Exit the process
+  exit: func(code: exit-code);
+}
+
+/// Host provider component
+/// Imports WASI, exports fw:cli/host
+world host-provider {
+  // WASI imports
+  import wasi:cli/environment@0.2.0;
+  import wasi:cli/stdin@0.2.0;
+  import wasi:cli/stdout@0.2.0;
+  import wasi:cli/stderr@0.2.0;
+  import wasi:cli/terminal-stdin@0.2.0;
+  import wasi:cli/terminal-stdout@0.2.0;
+  import wasi:cli/terminal-stderr@0.2.0;
+  import wasi:cli/exit@0.2.0;
+  import wasi:random/random@0.2.0;
+  import wasi:random/insecure@0.2.0;
+  import wasi:io/streams@0.2.0;
+
+  // Export fw:cli/host and types
+  export types;
+  export host;
+}

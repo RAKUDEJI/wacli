@@ -1,0 +1,62 @@
+package fw:cli@1.0.0;
+
+/// Types shared across the CLI framework
+interface types {
+  /// Exit code type
+  type exit-code = u32;
+
+  /// Command metadata for discovery
+  record command-meta {
+    name: string,
+    summary: string,
+    usage: string,
+    aliases: list<string>,
+    version: string,
+    hidden: bool,
+  }
+
+  /// Error variants for command execution
+  variant command-error {
+    unknown-command(string),
+    invalid-args(string),
+    failed(string),
+  }
+
+  /// Result of command execution
+  type command-result = result<exit-code, command-error>;
+}
+
+/// Host interface - provides CLI primitives
+interface host {
+  use types.{exit-code};
+
+  args: func() -> list<string>;
+  env: func() -> list<tuple<string, string>>;
+  stdout-write: func(bytes: list<u8>);
+  stderr-write: func(bytes: list<u8>);
+  stdout-flush: func();
+  stderr-flush: func();
+  stdin-read: func(max-bytes: u32) -> list<u8>;
+  is-tty-stdout: func() -> bool;
+  is-tty-stderr: func() -> bool;
+  terminal-size: func() -> option<tuple<u32, u32>>;
+  random-bytes: func(n: u32) -> list<u8>;
+  insecure-random-bytes: func(n: u32) -> list<u8>;
+  exit: func(code: exit-code);
+}
+
+/// Registry interface - manages commands
+interface registry {
+  use types.{command-meta, command-result};
+
+  list-commands: func() -> list<command-meta>;
+  run: func(name: string, argv: list<string>) -> command-result;
+}
+
+/// Core component - routes commands
+world core {
+  import host;
+  import registry;
+
+  export wasi:cli/run@0.2.0;
+}

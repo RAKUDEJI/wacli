@@ -1,0 +1,8 @@
+{
+  "import": [
+    { "path": "example/greeter/interface/fw/cli/types", "alias": "types" },
+    { "path": "example/greeter/interface/fw/cli/host", "alias": "host" },
+    { "path": "moonbitlang/core/encoding/utf8", "alias": "encoding/utf8" }
+  ],
+  "warn-list": "-44"
+}
