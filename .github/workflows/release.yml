@@ -9,8 +9,9 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
-    name: Build ${{ matrix.target }}
+  # Job 1: Build wacli CLI (multi-platform)
+  build-wacli:
+    name: Build wacli (${{ matrix.target }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -44,14 +45,12 @@ jobs:
         run: |
           cd target/${{ matrix.target }}/release
           tar czf ../../../wacli-${{ matrix.target }}.tar.gz wacli
-          cd ../../..
 
       - name: Package (Windows)
         if: matrix.os == 'windows-latest'
         run: |
           cd target/${{ matrix.target }}/release
           Compress-Archive -Path wacli.exe -DestinationPath ../../../wacli-${{ matrix.target }}.zip
-          cd ../../..
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -59,9 +58,70 @@ jobs:
           name: wacli-${{ matrix.target }}
           path: wacli-${{ matrix.target }}.${{ matrix.archive }}
 
+  # Job 2: Build host.component.wasm
+  build-host:
+    name: Build host component
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+
+      - name: Install wasm-tools
+        run: cargo install wasm-tools
+
+      - name: Build host component
+        run: |
+          cd cli/components/host/gen
+          moon build --target wasm
+          cd ..
+          wasm-tools component embed wit gen/_build/wasm/release/build/gen/gen.wasm -o host.wasm --encoding utf16
+          wasm-tools component new host.wasm -o host.component.wasm
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: host-component
+          path: cli/components/host/host.component.wasm
+
+  # Job 3: Build core.component.wasm
+  build-core:
+    name: Build core component
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+
+      - name: Install wasm-tools
+        run: cargo install wasm-tools
+
+      - name: Build core component
+        run: |
+          cd cli/components/core/gen
+          moon build --target wasm
+          cd ..
+          wasm-tools component embed wit gen/_build/wasm/release/build/gen/gen.wasm -o core.wasm --encoding utf16
+          wasm-tools component new core.wasm -o core.component.wasm
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: core-component
+          path: cli/components/core/core.component.wasm
+
+  # Create GitHub Release with all artifacts
   release:
     name: Create Release
-    needs: build
+    needs: [build-wacli, build-host, build-core]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -69,7 +129,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download artifacts
+      - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
