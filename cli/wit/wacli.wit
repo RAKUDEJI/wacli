@@ -1,4 +1,4 @@
-package fw:cli@1.0.0;
+package wacli:cli@1.0.0;
 
 use wasi:filesystem/types@0.3.0-rc-2026-01-06 as wasi-filesystem-types;
 use wasi:filesystem/preopens@0.3.0-rc-2026-01-06 as wasi-filesystem-preopens;
@@ -17,27 +17,23 @@ use wasi:cli/terminal-stdout@0.3.0-rc-2026-01-06 as wasi-cli-terminal-stdout;
 use wasi:cli/terminal-stderr@0.3.0-rc-2026-01-06 as wasi-cli-terminal-stderr;
 
 interface types {
-  /// プラグインが返す終了コード（wasi:cli/run は code を返せないので host.exit に委譲する設計）
   type exit-code = u32;
 
   record command-meta {
-    name: string,              // サブコマンド名（例: "fmt"）
-    summary: string,           // 1行説明
-    usage: string,             // 使用法
-    aliases: list<string>,     // 別名
-    version: string,           // プラグイン自身のバージョン文字列
-    hidden: bool,              // help一覧から隠す等
-    @unstable(feature = cli-meta-details)
-    description: string,       // 詳細説明（複数行想定）
-    @unstable(feature = cli-meta-details)
-    examples: list<string>,    // 使用例
+    name: string,
+    summary: string,
+    usage: string,
+    aliases: list<string>,
+    version: string,
+    hidden: bool,
+    description: string,
+    examples: list<string>,
   }
 
   variant command-error {
     unknown-command(string),
     invalid-args(string),
     failed(string),
-    @unstable(feature = cli-io-error)
     io(string),
   }
 
@@ -47,32 +43,24 @@ interface types {
 interface host {
   use types.{exit-code};
 
-  /// argv（program名含む想定。router側で切る）
   args: func() -> list<string>;
-  /// 環境変数（必要十分）
   env: func() -> list<tuple<string, string>>;
 
-  /// 標準出力/エラー（bytesで統一。文字コードは上位で決める）
   stdout-write: func(bytes: list<u8>);
   stderr-write: func(bytes: list<u8>);
   stdout-flush: func();
   stderr-flush: func();
 
-  /// stdin（最低限：最大 max-bytes まで読む。EOFは空で表現）
   stdin-read: func(max-bytes: u32) -> list<u8>;
 
-  /// tty情報（プラグインが色/整形を変えるのに使う）
   is-tty-stdout: func() -> bool;
   is-tty-stderr: func() -> bool;
 
-  /// 端末サイズ（不明なら none）
   terminal-size: func() -> option<tuple<u32, u32>>;
 
-  /// 乱数（便利枠。安全/非安全は呼び分け）
   random-bytes: func(n: u32) -> list<u8>;
   insecure-random-bytes: func(n: u32) -> list<u8>;
 
-  /// 終了（wasi:cli/exit に委譲）
   exit: func(code: exit-code);
 }
 
@@ -90,24 +78,16 @@ interface registry {
   run: func(name: string, argv: list<string>) -> command-result;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// 以下は「フレームワークが配布する .wasm が実装すべき world（型契約）」
-// （生成・検査・合成の全工程で"壊れない約束"として参照される）
-///////////////////////////////////////////////////////////////////////////////
-
 world wasi-capabilities {
-  // filesystem
   import wasi-filesystem-types;
   import wasi-filesystem-preopens;
 
-  // random
   import wasi-random;
   import wasi-random-insecure;
   import wasi-random-insecure-seed;
 }
 
 world wasi-cli-capabilities {
-  // cli
   import wasi-cli-environment;
   import wasi-cli-exit;
   import wasi-cli-stdin;
@@ -130,7 +110,6 @@ world host-provider {
 world plugin {
   import host;
 
-  // filesystem（プラグインが直接使える：許容集合に閉じるため）
   include wasi-capabilities;
 
   export command;
@@ -140,6 +119,5 @@ world core {
   import host;
   import registry;
 
-  /// wasmtime が起動時に呼ぶエントリポイント（run: func() -> result）
   export wasi:cli/run@0.3.0-rc-2026-01-06;
 }

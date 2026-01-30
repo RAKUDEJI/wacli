@@ -1,1 +1,1 @@
-{ "import": [{ "path" : "fw/cli/interface/wasi/io/streams", "alias" : "streams" }], "warn-list": "-44" }
+{ "import": [{ "path" : "wacli/interface/wasi/io/streams", "alias" : "streams" }], "warn-list": "-44" }

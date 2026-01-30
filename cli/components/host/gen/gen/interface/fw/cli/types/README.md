@@ -1,1 +1,0 @@
-Shared types for the CLI framework

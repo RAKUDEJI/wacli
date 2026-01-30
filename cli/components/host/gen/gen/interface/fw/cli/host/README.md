@@ -1,1 +1,0 @@
-Host interface - provides CLI primitives to plugins

@@ -7,6 +7,6 @@
                   "heap-start-address": 16
             }
       }
-      ,"import": [{ "path" : "fw/cli/gen/interface/wasi/cli/run", "alias" : "run" }]
+      ,"import": [{ "path" : "wacli/gen/interface/wasi/cli/run", "alias" : "run" }]
       , "warn-list": "-44"
 }

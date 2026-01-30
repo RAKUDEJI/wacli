@@ -72,7 +72,7 @@ impl Manifest {
     }
 
     pub fn from_str(contents: &str) -> Result<Self> {
-        toml::from_str(contents).context("failed to parse manifest")
+        serde_json::from_str(contents).context("failed to parse manifest")
     }
 
     pub fn output_path(&self) -> PathBuf {

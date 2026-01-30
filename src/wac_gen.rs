@@ -6,9 +6,9 @@ pub fn generate_wac(manifest: &Manifest) -> String {
     // Package declaration
     wac.push_str(&format!("package {};\n\n", manifest.package.name));
 
-    // Instantiate host (imports WASI, exports fw:cli/types and fw:cli/host)
+    // Instantiate host (imports WASI, exports wacli/types and wacli/host)
     wac.push_str("// Host component (WASI bridge)\n");
-    wac.push_str("let host = new fw:cli-host { ... };\n\n");
+    wac.push_str("let host = new wacli-host { ... };\n\n");
 
     // Instantiate each command plugin
     wac.push_str("// Command plugins\n");
@@ -32,7 +32,7 @@ pub fn generate_wac(manifest: &Manifest) -> String {
 
     // Instantiate core
     wac.push_str("// Core (CLI router)\n");
-    wac.push_str("let core = new fw:cli-core {\n");
+    wac.push_str("let core = new wacli-core {\n");
     wac.push_str("  types: host.types,\n");
     wac.push_str("  host: host.host,\n");
     wac.push_str("  registry: registry.registry\n");
@@ -76,7 +76,7 @@ mod tests {
 
         let wac = generate_wac(&manifest);
         assert!(wac.contains("package example:hello-cli;"));
-        assert!(wac.contains("let greet = new example:greeter"));
+        assert!(wac.contains("let greeter = new example:greeter"));
         assert!(wac.contains("export core.run;"));
     }
 }

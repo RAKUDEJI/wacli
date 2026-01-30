@@ -1,4 +1,4 @@
-package fw:cli@1.0.0;
+package wacli:cli@1.0.0;
 
 /// Shared types for the CLI framework
 interface types {
@@ -11,9 +11,7 @@ interface types {
     aliases: list<string>,
     version: string,
     hidden: bool,
-    @unstable(feature = cli-meta-details)
     description: string,
-    @unstable(feature = cli-meta-details)
     examples: list<string>,
   }
 
@@ -21,7 +19,6 @@ interface types {
     unknown-command(string),
     invalid-args(string),
     failed(string),
-    @unstable(feature = cli-io-error)
     io(string),
   }
 
@@ -74,7 +71,7 @@ interface host {
 }
 
 /// Host provider component
-/// Imports WASI, exports fw:cli/host
+/// Imports WASI, exports wacli/host
 world host-provider {
   // WASI imports
   import wasi:cli/environment@0.2.0;
@@ -89,7 +86,7 @@ world host-provider {
   import wasi:random/insecure@0.2.0;
   import wasi:io/streams@0.2.0;
 
-  // Export fw:cli/host and types
+  // Export wacli/host and types
   export types;
   export host;
 }

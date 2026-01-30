@@ -1,1 +1,1 @@
-{ "import": [{ "path" : "fw/cli/interface/wasi/io/error", "alias" : "error" }, { "path" : "fw/cli/interface/wasi/io/poll", "alias" : "poll" }], "warn-list": "-44" }
+{ "import": [{ "path" : "wacli/interface/wasi/io/error", "alias" : "error" }, { "path" : "wacli/interface/wasi/io/poll", "alias" : "poll" }], "warn-list": "-44" }

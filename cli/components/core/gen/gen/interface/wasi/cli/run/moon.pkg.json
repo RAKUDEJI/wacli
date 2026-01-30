@@ -1,8 +1,8 @@
 {
   "import": [
-    { "path": "fw/cli/interface/fw/cli/host", "alias": "host" },
-    { "path": "fw/cli/interface/fw/cli/registry", "alias": "registry" },
-    { "path": "fw/cli/interface/fw/cli/types", "alias": "types" },
+    { "path": "wacli/interface/wacli/host", "alias": "host" },
+    { "path": "wacli/interface/wacli/registry", "alias": "registry" },
+    { "path": "wacli/interface/wacli/types", "alias": "types" },
     { "path": "moonbitlang/core/encoding/utf8", "alias": "encoding/utf8" }
   ],
   "warn-list": "-44"

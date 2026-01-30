@@ -1,1 +1,1 @@
-{ "name": "fw/cli-core", "preferred-target": "wasm" }
+{ "name": "wacli/core", "preferred-target": "wasm" }

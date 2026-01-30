@@ -5,7 +5,7 @@ mod wac_gen;
 use anyhow::{bail, Context, Result};
 use clap::{Parser, Subcommand};
 use indexmap::IndexMap;
-use miette::{GraphicalReportHandler, GraphicalTheme, NamedSource, Report};
+use tracing_subscriber::{fmt, EnvFilter};
 use std::{
     collections::HashMap,
     fs,
@@ -33,7 +33,7 @@ enum Commands {
     /// Initialize a new wacli project
     Init(InitArgs),
 
-    /// Build CLI from wacli.toml manifest
+    /// Build CLI from wacli.json manifest
     Build(BuildArgs),
 
     /// Check component imports against an allowlist
@@ -59,8 +59,8 @@ struct InitArgs {
 
 #[derive(Parser)]
 struct BuildArgs {
-    /// Path to wacli.toml manifest
-    #[arg(short, long, default_value = "wacli.toml")]
+    /// Path to wacli.json manifest
+    #[arg(short, long, default_value = "wacli.json")]
     manifest: PathBuf,
 
     /// Output file path (overrides manifest)
@@ -134,7 +134,7 @@ struct CheckArgs {
 }
 
 fn main() -> Result<()> {
-    env_logger::init();
+    init_tracing();
     let cli = Cli::parse();
 
     tokio::runtime::Builder::new_multi_thread()
@@ -158,10 +158,10 @@ fn init(args: InitArgs) -> Result<()> {
     fs::create_dir_all(&dir)
         .with_context(|| format!("failed to create directory: {}", dir.display()))?;
 
-    let manifest_path = dir.join("wacli.toml");
+    let manifest_path = dir.join("wacli.json");
 
     if manifest_path.exists() {
-        bail!("wacli.toml already exists in {}", dir.display());
+        bail!("wacli.json already exists in {}", dir.display());
     }
 
     // Create default manifest
@@ -173,13 +173,13 @@ fn init(args: InitArgs) -> Result<()> {
         ..Default::default()
     };
 
-    let toml_content = toml::to_string_pretty(&manifest)?;
-    fs::write(&manifest_path, &toml_content)
+    let json_content = serde_json::to_string_pretty(&manifest)?;
+    fs::write(&manifest_path, &json_content)
         .with_context(|| format!("failed to write {}", manifest_path.display()))?;
 
     eprintln!("Created: {}", manifest_path.display());
     eprintln!("\nNext steps:");
-    eprintln!("  1. Edit wacli.toml to configure your CLI");
+    eprintln!("  1. Edit wacli.json to configure your CLI");
     eprintln!("  2. Build your plugin components");
     eprintln!("  3. Run: wacli build");
 
@@ -187,7 +187,7 @@ fn init(args: InitArgs) -> Result<()> {
 }
 
 async fn build(args: BuildArgs) -> Result<()> {
-    log::debug!("executing build command");
+    tracing::debug!("executing build command");
 
     // Read manifest
     let manifest_path = &args.manifest;
@@ -212,11 +212,11 @@ async fn build(args: BuildArgs) -> Result<()> {
 
     // Add framework components
     deps.insert(
-        "fw:cli-host".to_string(),
+        "wacli-host".to_string(),
         base_dir.join(&manifest.framework.host),
     );
     deps.insert(
-        "fw:cli-core".to_string(),
+        "wacli-core".to_string(),
         base_dir.join(&manifest.framework.core),
     );
     deps.insert(
@@ -231,12 +231,11 @@ async fn build(args: BuildArgs) -> Result<()> {
 
     // Parse WAC document
     let wac_path = PathBuf::from("<generated>");
-    let document =
-        Document::parse(&wac_source).map_err(|e| fmt_err(e, &wac_path, &wac_source))?;
+    let document = Document::parse(&wac_source).map_err(|e| fmt_err(e, &wac_path))?;
 
     // Resolve packages
     let resolver = FileSystemPackageResolver::new(".", deps, false);
-    let keys = packages(&document).map_err(|e| fmt_err(e, &wac_path, &wac_source))?;
+    let keys = packages(&document).map_err(|e| fmt_err(e, &wac_path))?;
     let resolved_packages: IndexMap<BorrowedPackageKey<'_>, Vec<u8>> = resolver.resolve(&keys)?;
 
     // Check for unresolved packages
@@ -253,7 +252,7 @@ async fn build(args: BuildArgs) -> Result<()> {
     // Resolve the document
     let resolution = document
         .resolve(resolved_packages)
-        .map_err(|e| fmt_err(e, &wac_path, &wac_source))?;
+        .map_err(|e| fmt_err(e, &wac_path))?;
 
     // Encode the composition
     let bytes = resolution.encode(EncodeOptions {
@@ -280,23 +279,8 @@ async fn build(args: BuildArgs) -> Result<()> {
     Ok(())
 }
 
-fn fmt_err(e: impl Into<Report>, path: &Path, source: &str) -> anyhow::Error {
-    let mut s = String::new();
-    let e = e.into();
-    GraphicalReportHandler::new()
-        .with_cause_chain()
-        .with_theme(if std::io::stderr().is_terminal() {
-            GraphicalTheme::unicode()
-        } else {
-            GraphicalTheme::unicode_nocolor()
-        })
-        .render_report(
-            &mut s,
-            e.with_source_code(NamedSource::new(path.to_string_lossy(), source.to_string()))
-                .as_ref(),
-        )
-        .expect("failed to render diagnostic");
-    anyhow::Error::msg(s)
+fn fmt_err(e: impl std::fmt::Display, path: &Path) -> anyhow::Error {
+    anyhow::Error::msg(format!("{}: {}", path.display(), e))
 }
 
 fn parse_dep(s: &str) -> Result<(String, PathBuf)> {
@@ -307,14 +291,14 @@ fn parse_dep(s: &str) -> Result<(String, PathBuf)> {
 }
 
 async fn compose(args: ComposeArgs) -> Result<()> {
-    log::debug!("executing compose command");
+    tracing::debug!("executing compose command");
 
     // Read the WAC source file
     let contents = fs::read_to_string(&args.path)
         .with_context(|| format!("failed to read file `{}`", args.path.display()))?;
 
     // Parse the document
-    let document = Document::parse(&contents).map_err(|e| fmt_err(e, &args.path, &contents))?;
+    let document = Document::parse(&contents).map_err(|e| fmt_err(e, &args.path))?;
 
     // Parse dependency overrides
     let overrides: HashMap<String, PathBuf> = args
@@ -325,7 +309,7 @@ async fn compose(args: ComposeArgs) -> Result<()> {
 
     // Resolve packages
     let resolver = FileSystemPackageResolver::new(&args.deps_dir, overrides, false);
-    let keys = packages(&document).map_err(|e| fmt_err(e, &args.path, &contents))?;
+    let keys = packages(&document).map_err(|e| fmt_err(e, &args.path))?;
     let resolved_packages: IndexMap<BorrowedPackageKey<'_>, Vec<u8>> = resolver.resolve(&keys)?;
 
     // Check for unresolved packages
@@ -345,7 +329,7 @@ async fn compose(args: ComposeArgs) -> Result<()> {
     // Resolve the document
     let resolution = document
         .resolve(resolved_packages)
-        .map_err(|e| fmt_err(e, &args.path, &contents))?;
+        .map_err(|e| fmt_err(e, &args.path))?;
 
     // Check output
     if args.output.is_none() && std::io::stdout().is_terminal() {
@@ -377,7 +361,7 @@ async fn compose(args: ComposeArgs) -> Result<()> {
 }
 
 fn plug(args: PlugArgs) -> Result<()> {
-    log::debug!("executing plug command");
+    tracing::debug!("executing plug command");
 
     let mut graph = CompositionGraph::new();
 
@@ -427,7 +411,7 @@ fn plug(args: PlugArgs) -> Result<()> {
 }
 
 fn check_command(args: CheckArgs) -> Result<()> {
-    log::debug!("executing check command");
+    tracing::debug!("executing check command");
 
     let report = check::check_imports(&args.wasm, &args.allowlist)?;
 
@@ -477,4 +461,13 @@ fn check_command(args: CheckArgs) -> Result<()> {
     }
 
     Ok(())
+}
+
+fn init_tracing() {
+    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
+    fmt()
+        .with_env_filter(filter)
+        .with_target(false)
+        .compact()
+        .init();
 }

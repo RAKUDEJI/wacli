@@ -21,9 +21,9 @@ wacli/
 ├── Cargo.toml                  # wacli CLIツール (Rust)
 ├── src/
 ├── cli/                        # フレームワークコンポーネント
-│   ├── wit/fw-cli.wit          # マスターWIT定義
+│   ├── wit/wacli.wit           # マスターWIT定義
 │   └── components/
-│       ├── host/               # WASI → fw:cli/host ブリッジ
+│       ├── host/               # WASI → wacli/host ブリッジ
 │       └── core/               # コマンドルーター
 ├── CLAUDE.md
 └── README.md
@@ -47,7 +47,7 @@ cargo build --release
 wacli init [DIR] --name "example:my-cli"
 
 # マニフェストからビルド
-wacli build -m wacli.toml [-o output.wasm]
+wacli build -m wacli.json [-o output.wasm]
 
 # WAC直接合成
 wacli compose app.wac -o app.wasm -d "pkg:name=path.wasm"
@@ -59,39 +59,44 @@ wacli plug socket.wasm --plug a.wasm --plug b.wasm -o out.wasm
 wacli check component.wasm --allowlist allowed.txt [--json]
 ```
 
-### wacli.toml 形式
+### wacli.json 形式
 
-```toml
-[package]
-name = "example:my-cli"
-version = "0.1.0"
-
-[framework]
-host = "path/to/host.component.wasm"
-core = "path/to/core.component.wasm"
-registry = "registry/registry.component.wasm"
-
-[[command]]
-name = "greet"
-package = "example:greeter"
-plugin = "plugins/greeter/greeter.component.wasm"
-
-[output]
-path = "dist/my-cli.component.wasm"
+```json
+{
+  "package": {
+    "name": "example:my-cli",
+    "version": "0.1.0"
+  },
+  "framework": {
+    "host": "path/to/host.component.wasm",
+    "core": "path/to/core.component.wasm",
+    "registry": "registry/registry.component.wasm"
+  },
+  "command": [
+    {
+      "name": "greet",
+      "package": "example:greeter",
+      "plugin": "plugins/greeter/greeter.component.wasm"
+    }
+  ],
+  "output": {
+    "path": "dist/my-cli.component.wasm"
+  }
+}
 ```
 
 ## WIT インターフェース
 
-### fw:cli/types
+### wacli/types
 共有型定義: `exit-code`, `command-meta`, `command-error`, `command-result`
 
-### fw:cli/host
+### wacli/host
 プラグイン向けホストAPI: `args`, `stdout-write`, `stderr-write`, `exit` など
 
-### fw:cli/command
+### wacli/command
 プラグインがエクスポート: `meta() -> command-meta`, `run(argv) -> command-result`
 
-### fw:cli/registry
+### wacli/registry
 コマンド管理: `list-commands() -> list<command-meta>`, `run(name, argv) -> command-result`
 
 ## コンポーネントのビルド
