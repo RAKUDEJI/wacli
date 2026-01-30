@@ -1,6 +1,6 @@
 [package]
 name = "wacli"
-version = "0.0.4"
+version = "0.0.5"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
@@ -12,6 +12,26 @@ categories = ["command-line-utilities", "wasm"]
 [[bin]]
 name = "wacli"
 path = "src/main.rs"
+
+[package.metadata.binstall]
+pkg-url = "{ repo }/releases/download/v{ version }/wacli-{ target }{ binary-ext }"
+bin-dir = "wacli-{ target }{ binary-ext }"
+pkg-fmt = "bin"
+
+[package.metadata.binstall.overrides.x86_64-unknown-linux-gnu]
+pkg-url = "{ repo }/releases/download/v{ version }/wacli-linux-x86_64"
+
+[package.metadata.binstall.overrides.aarch64-unknown-linux-gnu]
+pkg-url = "{ repo }/releases/download/v{ version }/wacli-linux-aarch64"
+
+[package.metadata.binstall.overrides.x86_64-apple-darwin]
+pkg-url = "{ repo }/releases/download/v{ version }/wacli-macos-x86_64"
+
+[package.metadata.binstall.overrides.aarch64-apple-darwin]
+pkg-url = "{ repo }/releases/download/v{ version }/wacli-macos-aarch64"
+
+[package.metadata.binstall.overrides.x86_64-pc-windows-msvc]
+pkg-url = "{ repo }/releases/download/v{ version }/wacli-windows-x86_64.exe"
 
 [dependencies]
 wac-parser.workspace = true
