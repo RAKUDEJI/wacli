@@ -2,8 +2,9 @@
 _build/
 target/
 
-# WASM binaries
+# WASM binaries (except framework components)
 *.wasm
+!components/*.component.wasm
 
 # wkg lock files
 wkg.lock
