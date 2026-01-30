@@ -18,10 +18,15 @@ WebAssembly Component Model ベースの CLI フレームワーク。
 
 ```
 wacli/
-├── Cargo.toml                  # wacli CLIツール (Rust)
-├── src/
+├── Cargo.toml                  # Workspace root
+├── crates/
+│   └── cli/                    # wacli CLIツール (Rust)
+│       ├── Cargo.toml
+│       └── src/
 ├── cli/                        # フレームワークコンポーネント
-│   ├── wit/wacli.wit           # マスターWIT定義
+│   ├── wit/
+│   │   ├── wacli.wit           # マスターWIT定義
+│   │   └── wacli-runner.wit    # 最終成果物のWIT定義
 │   └── components/
 │       ├── host/               # WASI → wacli/host ブリッジ
 │       └── core/               # コマンドルーター
@@ -36,7 +41,7 @@ Rust製の単一バイナリCLI。外部ツール（wac, wasm-tools, jq）不要
 ### インストール
 
 ```bash
-cargo build --release
+cargo build --release -p wacli
 # -> target/release/wacli
 ```
 
