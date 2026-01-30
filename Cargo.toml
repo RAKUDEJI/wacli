@@ -20,7 +20,6 @@ wac-types = "0.9.0-dev"
 # CLI and error handling
 clap = { version = "4.5", features = ["derive"] }
 anyhow = "1.0"
-thiserror = "1.0"
 miette = { version = "7.2", features = ["fancy"] }
 
 # Async runtime
