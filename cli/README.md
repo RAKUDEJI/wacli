@@ -13,7 +13,7 @@ cli/
     host/                # WASI 境界コンポーネント
     core/                # ルータコンポーネント
   allowlist/
-    wasi-imports-*.txt   # 許容 WASI import 一覧
+    wasi-imports-*.txt   # 許容 WASI import 一覧（wacli.json に転記して使う）
 ```
 
 ## wacli CLIツール
@@ -36,7 +36,7 @@ wacli compose app.wac -o app.wasm -d "pkg:name=path.wasm"
 wacli plug socket.wasm --plug a.wasm --plug b.wasm -o out.wasm
 
 # import検査
-wacli check component.wasm --allowlist allowed.txt [--json]
+wacli check component.wasm -m wacli.json [--json]
 ```
 
 ## 許容 WASI Import
@@ -74,7 +74,11 @@ wacli check component.wasm --allowlist allowed.txt [--json]
   ],
   "output": {
     "path": "dist/my-cli.component.wasm"
-  }
+  },
+  "allowlist": [
+    "wasi:filesystem/types",
+    "wasi:cli/stdin"
+  ]
 }
 ```
 
@@ -88,7 +92,7 @@ wacli build -m wacli.json
 
 ```sh
 wacli check dist/my-cli.component.wasm \
-  --allowlist cli/allowlist/wasi-imports-0.3.0-rc-2026-01-06.txt
+  -m wacli.json
 ```
 
 ### 4. wasmtime で実行

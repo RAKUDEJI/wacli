@@ -120,9 +120,9 @@ struct CheckArgs {
     #[arg(value_name = "FILE")]
     wasm: PathBuf,
 
-    /// Path to allowlist file (one import per line)
-    #[arg(long, value_name = "FILE")]
-    allowlist: PathBuf,
+    /// Path to wacli.json manifest (allowlist source)
+    #[arg(short, long, default_value = "wacli.json", value_name = "FILE")]
+    manifest: PathBuf,
 
     /// Output JSON report path
     #[arg(short, long, value_name = "FILE")]
@@ -413,7 +413,8 @@ fn plug(args: PlugArgs) -> Result<()> {
 fn check_command(args: CheckArgs) -> Result<()> {
     tracing::debug!("executing check command");
 
-    let report = check::check_imports(&args.wasm, &args.allowlist)?;
+    let manifest = Manifest::from_file(&args.manifest)?;
+    let report = check::check_imports(&args.wasm, &manifest.allowlist, &args.manifest)?;
 
     // Output JSON report if requested
     if let Some(output_path) = &args.output {

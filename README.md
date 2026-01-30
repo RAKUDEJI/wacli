@@ -7,7 +7,7 @@ A CLI tool for composing WebAssembly Components using the [WAC](https://github.c
 - **Single binary** - No external dependencies (wac CLI, wasm-tools, jq not required)
 - **Manifest-driven builds** - Define your CLI composition in `wacli.json`
 - **Direct WAC composition** - Use `.wac` files directly
-- **Import validation** - Check component imports against an allowlist
+- **Import validation** - Check component imports against an allowlist in `wacli.json`
 
 ## Installation
 
@@ -45,7 +45,7 @@ wacli compose app.wac -o app.wasm \
 ### Check imports
 
 ```bash
-wacli check component.wasm --allowlist allowed-imports.txt
+wacli check component.wasm -m wacli.json
 ```
 
 ## Manifest Format (wacli.json)
@@ -70,7 +70,11 @@ wacli check component.wasm --allowlist allowed-imports.txt
   ],
   "output": {
     "path": "dist/my-cli.component.wasm"
-  }
+  },
+  "allowlist": [
+    "wasi:filesystem/types",
+    "wasi:cli/stdin"
+  ]
 }
 ```
 

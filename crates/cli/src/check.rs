@@ -7,7 +7,8 @@ use wasmparser::{Payload, Parser};
 #[derive(Debug, Serialize)]
 pub struct CheckReport {
     pub artifact: String,
-    pub allowlist: String,
+    pub allowlist_source: String,
+    pub allowlist: Vec<String>,
     pub imports: Vec<String>,
     pub extra_imports: Vec<String>,
     pub missing_imports: Vec<String>,
@@ -60,29 +61,16 @@ pub fn extract_imports(wasm_bytes: &[u8]) -> Result<Vec<String>> {
     Ok(unique)
 }
 
-pub fn load_allowlist(path: &Path) -> Result<HashSet<String>> {
-    let contents = std::fs::read_to_string(path)
-        .with_context(|| format!("failed to read allowlist: {}", path.display()))?;
-
-    let allowed: HashSet<String> = contents
-        .lines()
-        .map(|line| line.trim())
-        .filter(|line| !line.is_empty() && !line.starts_with('#'))
-        .map(|s| s.to_string())
-        .collect();
-
-    Ok(allowed)
-}
-
 pub fn check_imports(
     wasm_path: &Path,
-    allowlist_path: &Path,
+    allowlist: &[String],
+    allowlist_source: &Path,
 ) -> Result<CheckReport> {
     let wasm_bytes = std::fs::read(wasm_path)
         .with_context(|| format!("failed to read WASM: {}", wasm_path.display()))?;
 
     let imports = extract_imports(&wasm_bytes)?;
-    let allowed = load_allowlist(allowlist_path)?;
+    let allowed: HashSet<String> = allowlist.iter().cloned().collect();
 
     // Find extra imports (not in allowlist)
     let extra_imports: Vec<String> = imports
@@ -99,9 +87,13 @@ pub fn check_imports(
         .cloned()
         .collect();
 
+    let mut allowlist_sorted = allowlist.to_vec();
+    allowlist_sorted.sort();
+
     Ok(CheckReport {
         artifact: wasm_path.display().to_string(),
-        allowlist: allowlist_path.display().to_string(),
+        allowlist_source: allowlist_source.display().to_string(),
+        allowlist: allowlist_sorted,
         imports,
         extra_imports,
         missing_imports,

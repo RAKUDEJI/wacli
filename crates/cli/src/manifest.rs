@@ -10,6 +10,8 @@ pub struct Manifest {
     pub command: Vec<Command>,
     #[serde(default)]
     pub output: Option<Output>,
+    #[serde(default)]
+    pub allowlist: Vec<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -104,6 +106,7 @@ impl Default for Manifest {
             output: Some(Output {
                 path: PathBuf::from("dist/my-cli.component.wasm"),
             }),
+            allowlist: vec![],
         }
     }
 }

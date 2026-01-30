@@ -56,7 +56,7 @@ wacli compose app.wac -o app.wasm -d "pkg:name=path.wasm"
 wacli plug socket.wasm --plug a.wasm --plug b.wasm -o out.wasm
 
 # import検査
-wacli check component.wasm --allowlist allowed.txt [--json]
+wacli check component.wasm -m wacli.json [--json]
 ```
 
 ### wacli.json 形式
@@ -81,7 +81,11 @@ wacli check component.wasm --allowlist allowed.txt [--json]
   ],
   "output": {
     "path": "dist/my-cli.component.wasm"
-  }
+  },
+  "allowlist": [
+    "wasi:filesystem/types",
+    "wasi:cli/stdin"
+  ]
 }
 ```
 
