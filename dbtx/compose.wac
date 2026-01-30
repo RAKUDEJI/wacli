@@ -1,5 +1,0 @@
-package dbtx:composition targets dbtx:cli/dbtx@0.1.0;
-
-let cmd = new dbtx:command { ... };
-
-export cmd.run;
