@@ -26,7 +26,7 @@ miette = { version = "7.2", features = ["fancy"] }
 tokio = { version = "1.45", features = ["macros", "rt-multi-thread"] }
 
 # Manifest parsing
-toml = "0.8"
+toml = "0.9"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
