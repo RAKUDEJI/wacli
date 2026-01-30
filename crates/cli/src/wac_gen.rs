@@ -72,6 +72,7 @@ mod tests {
             output: Some(Output {
                 path: PathBuf::from("output.wasm"),
             }),
+            allowlist: vec![],
         };
 
         let wac = generate_wac(&manifest);
