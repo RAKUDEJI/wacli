@@ -5,6 +5,9 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 description = "WebAssembly Component composition CLI"
+repository = "https://github.com/RAKUDEJI/wacli"
+keywords = ["wasm", "webassembly", "component", "cli", "wac"]
+categories = ["command-line-utilities", "wasm"]
 
 [[bin]]
 name = "wacli"
