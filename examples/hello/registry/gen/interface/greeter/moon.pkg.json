@@ -1,1 +1,0 @@
-{ "import": [{ "path" : "example/hello-registry/interface/fw/cli/types", "alias" : "types" }], "warn-list": "-44" }

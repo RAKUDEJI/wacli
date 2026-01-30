@@ -1,7 +1,0 @@
-{
-  "import": [
-    { "path": "example/hello-registry/interface/fw/cli/types", "alias": "types" },
-    { "path": "example/hello-registry/interface/greeter", "alias": "greeter" }
-  ],
-  "warn-list": "-44"
-}

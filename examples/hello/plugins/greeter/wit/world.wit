@@ -1,8 +1,0 @@
-package example:greeter@0.1.0;
-
-/// Greeter plugin world - uses fw:cli interfaces
-world greeter {
-  import fw:cli/host@1.0.0;
-
-  export fw:cli/command@1.0.0;
-}

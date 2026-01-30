@@ -2,9 +2,6 @@
 _build/
 target/
 
-# Rust
-Cargo.lock
-
 # WASM binaries
 *.wasm
 
@@ -15,5 +12,8 @@ wkg.lock
 interface/
 world/
 
-# Old standalone app (not part of fw-cli)
-examples/hello/app/
+# Reference/draft documents (not for distribution)
+docs/
+examples/
+*.draft.md
+wac.md

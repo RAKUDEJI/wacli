@@ -1,14 +1,14 @@
-# fw-cli プロジェクト
+# wacli プロジェクト
 
-WebAssembly Component Model ベースの CLI フレームワーク。MoonBit で実装。
+WebAssembly Component Model ベースの CLI フレームワーク。
 
 ## アーキテクチャ
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    最終 CLI (hello-cli.component.wasm)       │
+│                    最終 CLI (my-cli.component.wasm)          │
 │  ┌─────────┐   ┌─────────┐   ┌──────────┐   ┌─────────┐    │
-│  │  host   │──▶│ greeter │──▶│ registry │──▶│  core   │    │
+│  │  host   │──▶│ plugin  │──▶│ registry │──▶│  core   │    │
 │  └─────────┘   └─────────┘   └──────────┘   └─────────┘    │
 │   WASI変換      プラグイン     コマンド管理    ルーター       │
 └─────────────────────────────────────────────────────────────┘
@@ -17,32 +17,16 @@ WebAssembly Component Model ベースの CLI フレームワーク。MoonBit で
 ## ディレクトリ構成
 
 ```
-tools/
-└── wacli/                      # WAC合成CLIツール (Rust)
-    ├── Cargo.toml
-    └── src/
-
-cli/
-├── wit/fw-cli.wit              # マスターWIT定義（参照用）
-├── components/
-│   ├── host/                   # WASI → fw:cli/host ブリッジ
-│   │   ├── wit/world.wit       # host-provider world定義
-│   │   └── gen/                # wit-bindgen生成 + 実装
-│   └── core/                   # コマンドルーター
-│       ├── wit/world.wit       # core world定義
-│       └── gen/                # wit-bindgen生成 + 実装
-
-examples/hello/
-├── wacli.toml                  # マニフェスト（wacli build用）
-├── plugins/greeter/            # greetプラグイン
-│   ├── wit/world.wit
-│   └── gen/
-├── registry/                   # greeterを登録するレジストリ
-│   ├── wit/world.wit
-│   └── gen/
-├── compose.wac                 # WAC合成ファイル（直接合成用）
-└── dist/
-    └── hello-cli.component.wasm  # 最終成果物
+wacli/
+├── Cargo.toml                  # wacli CLIツール (Rust)
+├── src/
+├── cli/                        # フレームワークコンポーネント
+│   ├── wit/fw-cli.wit          # マスターWIT定義
+│   └── components/
+│       ├── host/               # WASI → fw:cli/host ブリッジ
+│       └── core/               # コマンドルーター
+├── CLAUDE.md
+└── README.md
 ```
 
 ## wacli ツール
@@ -52,7 +36,7 @@ Rust製の単一バイナリCLI。外部ツール（wac, wasm-tools, jq）不要
 ### インストール
 
 ```bash
-cd tools/wacli && cargo build --release
+cargo build --release
 # -> target/release/wacli
 ```
 
@@ -79,12 +63,12 @@ wacli check component.wasm --allowlist allowed.txt [--json]
 
 ```toml
 [package]
-name = "example:hello-cli"
+name = "example:my-cli"
 version = "0.1.0"
 
 [framework]
-host = "../../cli/components/host/host.component.wasm"
-core = "../../cli/components/core/core.component.wasm"
+host = "path/to/host.component.wasm"
+core = "path/to/core.component.wasm"
 registry = "registry/registry.component.wasm"
 
 [[command]]
@@ -93,47 +77,7 @@ package = "example:greeter"
 plugin = "plugins/greeter/greeter.component.wasm"
 
 [output]
-path = "dist/hello-cli.component.wasm"
-```
-
-## ビルド手順
-
-### 1. コンポーネントのビルド
-
-各コンポーネントで以下を実行:
-
-```bash
-# MoonBitビルド
-cd <component>/gen && moon build --target wasm
-
-# WIT埋め込み + コンポーネント化
-cd <component>
-wasm-tools component embed wit gen/_build/wasm/release/build/gen/gen.wasm -o <name>.wasm --encoding utf16
-wasm-tools component new <name>.wasm -o <name>.component.wasm
-```
-
-### 2. WAC合成（wacli使用）
-
-```bash
-cd examples/hello
-
-# マニフェストからビルド（推奨）
-wacli build -m wacli.toml
-
-# または直接WAC合成
-wacli compose compose.wac \
-  -d "fw:cli-host=../../cli/components/host/host.component.wasm" \
-  -d "fw:cli-core=../../cli/components/core/core.component.wasm" \
-  -d "example:greeter=plugins/greeter/greeter.component.wasm" \
-  -d "example:hello-registry=registry/registry.component.wasm" \
-  -o hello-cli.component.wasm
-```
-
-### 3. 実行
-
-```bash
-wasmtime run dist/hello-cli.component.wasm greet Claude
-# => Hello, Claude!
+path = "dist/my-cli.component.wasm"
 ```
 
 ## WIT インターフェース
@@ -150,31 +94,26 @@ wasmtime run dist/hello-cli.component.wasm greet Claude
 ### fw:cli/registry
 コマンド管理: `list-commands() -> list<command-meta>`, `run(name, argv) -> command-result`
 
+## コンポーネントのビルド
+
+各コンポーネントで以下を実行:
+
+```bash
+# MoonBitビルド
+cd <component>/gen && moon build --target wasm
+
+# WIT埋め込み + コンポーネント化
+cd <component>
+wasm-tools component embed wit gen/_build/wasm/release/build/gen/gen.wasm -o <name>.wasm --encoding utf16
+wasm-tools component new <name>.wasm -o <name>.component.wasm
+```
+
 ## 注意事項
 
 ### wit-bindgen 実行時
 `wit-bindgen moonbit wit --out-dir gen` を実行すると stub.mbt が上書きされる。
 実装済みの stub.mbt は事前にバックアップするか、git で管理すること。
 
-### 手動編集が必要なファイル
-- `gen/gen/interface/.../stub.mbt` - インターフェース実装
-- `gen/gen/interface/.../moon.pkg.json` - import追加が必要な場合
-
 ### MoonBit文字列エンコーディング
 MoonBitの文字列はUTF-16。WASM出力には `--encoding utf16` が必要。
 stdout出力には `@encoding/utf8.encode()` で変換すること。
-
-## コマンド一覧
-
-```bash
-# wacli（推奨）
-wacli build -m wacli.toml          # マニフェストからビルド
-wacli compose app.wac -o out.wasm  # WAC直接合成
-wacli check comp.wasm --allowlist allow.txt  # import検査
-
-# WIT確認
-wasm-tools component wit <file>.component.wasm
-
-# コンポーネント検証
-wasm-tools validate <file>.component.wasm
-```
