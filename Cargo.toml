@@ -1,8 +1,9 @@
 [package]
 name = "wacli"
 version = "0.1.0"
-edition = "2021"
-description = "WebAssembly Component composition CLI for fw-cli framework"
+edition = "2024"
+rust-version = "1.92"
+description = "WebAssembly Component composition CLI"
 license = "Apache-2.0"
 
 [[bin]]
