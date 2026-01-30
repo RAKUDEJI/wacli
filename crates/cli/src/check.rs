@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use serde::Serialize;
 use std::collections::HashSet;
 use std::path::Path;
-use wasmparser::{Payload, Parser};
+use wasmparser::{Parser, Payload};
 
 #[derive(Debug, Serialize)]
 pub struct CheckReport {
@@ -55,7 +55,11 @@ pub fn extract_imports(wasm_bytes: &[u8]) -> Result<Vec<String>> {
         .collect();
 
     // Deduplicate and sort
-    let mut unique: Vec<_> = wit_imports.into_iter().collect::<HashSet<_>>().into_iter().collect();
+    let mut unique: Vec<_> = wit_imports
+        .into_iter()
+        .collect::<HashSet<_>>()
+        .into_iter()
+        .collect();
     unique.sort();
 
     Ok(unique)

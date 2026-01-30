@@ -2,19 +2,19 @@ mod check;
 mod manifest;
 mod wac_gen;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use clap::{Parser, Subcommand};
 use indexmap::IndexMap;
-use tracing_subscriber::{fmt, EnvFilter};
 use std::{
     collections::HashMap,
     fs,
     io::{IsTerminal, Write},
     path::{Path, PathBuf},
 };
+use tracing_subscriber::{EnvFilter, fmt};
 use wac_graph::{CompositionGraph, EncodeOptions};
 use wac_parser::Document;
-use wac_resolver::{packages, FileSystemPackageResolver};
+use wac_resolver::{FileSystemPackageResolver, packages};
 use wac_types::{BorrowedPackageKey, Package};
 
 use crate::manifest::Manifest;
@@ -262,7 +262,9 @@ async fn build(args: BuildArgs) -> Result<()> {
     })?;
 
     // Determine output path
-    let output_path = args.output.unwrap_or_else(|| base_dir.join(manifest.output_path()));
+    let output_path = args
+        .output
+        .unwrap_or_else(|| base_dir.join(manifest.output_path()));
 
     // Create output directory if needed
     if let Some(parent) = output_path.parent() {
@@ -442,7 +444,10 @@ fn check_command(args: CheckArgs) -> Result<()> {
 
         if !report.extra_imports.is_empty() {
             eprintln!();
-            eprintln!("WARNING: Found {} import(s) NOT in allowlist:", report.extra_imports.len());
+            eprintln!(
+                "WARNING: Found {} import(s) NOT in allowlist:",
+                report.extra_imports.len()
+            );
             for imp in &report.extra_imports {
                 eprintln!("  - {}", imp);
             }
@@ -451,7 +456,10 @@ fn check_command(args: CheckArgs) -> Result<()> {
         } else {
             eprintln!("OK: All imports are within the allowlist");
             if !report.missing_imports.is_empty() {
-                eprintln!("Note: {} allowed import(s) not used", report.missing_imports.len());
+                eprintln!(
+                    "Note: {} allowed import(s) not used",
+                    report.missing_imports.len()
+                );
             }
         }
     }
