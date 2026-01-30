@@ -1,5 +1,21 @@
 package fw:cli@1.0.0;
 
+use wasi:filesystem/types@0.3.0-rc-2026-01-06 as wasi-filesystem-types;
+use wasi:filesystem/preopens@0.3.0-rc-2026-01-06 as wasi-filesystem-preopens;
+use wasi:random/random@0.3.0-rc-2026-01-06 as wasi-random;
+use wasi:random/insecure@0.3.0-rc-2026-01-06 as wasi-random-insecure;
+use wasi:random/insecure-seed@0.3.0-rc-2026-01-06 as wasi-random-insecure-seed;
+use wasi:cli/environment@0.3.0-rc-2026-01-06 as wasi-cli-environment;
+use wasi:cli/exit@0.3.0-rc-2026-01-06 as wasi-cli-exit;
+use wasi:cli/stdin@0.3.0-rc-2026-01-06 as wasi-cli-stdin;
+use wasi:cli/stdout@0.3.0-rc-2026-01-06 as wasi-cli-stdout;
+use wasi:cli/stderr@0.3.0-rc-2026-01-06 as wasi-cli-stderr;
+use wasi:cli/terminal-input@0.3.0-rc-2026-01-06 as wasi-cli-terminal-input;
+use wasi:cli/terminal-output@0.3.0-rc-2026-01-06 as wasi-cli-terminal-output;
+use wasi:cli/terminal-stdin@0.3.0-rc-2026-01-06 as wasi-cli-terminal-stdin;
+use wasi:cli/terminal-stdout@0.3.0-rc-2026-01-06 as wasi-cli-terminal-stdout;
+use wasi:cli/terminal-stderr@0.3.0-rc-2026-01-06 as wasi-cli-terminal-stderr;
+
 interface types {
   /// プラグインが返す終了コード（wasi:cli/run は code を返せないので host.exit に委譲する設計）
   type exit-code = u32;
@@ -11,12 +27,18 @@ interface types {
     aliases: list<string>,     // 別名
     version: string,           // プラグイン自身のバージョン文字列
     hidden: bool,              // help一覧から隠す等
+    @unstable(feature = cli-meta-details)
+    description: string,       // 詳細説明（複数行想定）
+    @unstable(feature = cli-meta-details)
+    examples: list<string>,    // 使用例
   }
 
   variant command-error {
     unknown-command(string),
     invalid-args(string),
     failed(string),
+    @unstable(feature = cli-io-error)
+    io(string),
   }
 
   type command-result = result<exit-code, command-error>;
@@ -73,27 +95,34 @@ interface registry {
 // （生成・検査・合成の全工程で"壊れない約束"として参照される）
 ///////////////////////////////////////////////////////////////////////////////
 
-world host-provider {
+world wasi-capabilities {
   // filesystem
-  import wasi:filesystem/types@0.3.0-rc-2026-01-06;
-  import wasi:filesystem/preopens@0.3.0-rc-2026-01-06;
+  import wasi-filesystem-types;
+  import wasi-filesystem-preopens;
 
   // random
-  import wasi:random/random@0.3.0-rc-2026-01-06;
-  import wasi:random/insecure@0.3.0-rc-2026-01-06;
-  import wasi:random/insecure-seed@0.3.0-rc-2026-01-06;
+  import wasi-random;
+  import wasi-random-insecure;
+  import wasi-random-insecure-seed;
+}
 
+world wasi-cli-capabilities {
   // cli
-  import wasi:cli/environment@0.3.0-rc-2026-01-06;
-  import wasi:cli/exit@0.3.0-rc-2026-01-06;
-  import wasi:cli/stdin@0.3.0-rc-2026-01-06;
-  import wasi:cli/stdout@0.3.0-rc-2026-01-06;
-  import wasi:cli/stderr@0.3.0-rc-2026-01-06;
-  import wasi:cli/terminal-input@0.3.0-rc-2026-01-06;
-  import wasi:cli/terminal-output@0.3.0-rc-2026-01-06;
-  import wasi:cli/terminal-stdin@0.3.0-rc-2026-01-06;
-  import wasi:cli/terminal-stdout@0.3.0-rc-2026-01-06;
-  import wasi:cli/terminal-stderr@0.3.0-rc-2026-01-06;
+  import wasi-cli-environment;
+  import wasi-cli-exit;
+  import wasi-cli-stdin;
+  import wasi-cli-stdout;
+  import wasi-cli-stderr;
+  import wasi-cli-terminal-input;
+  import wasi-cli-terminal-output;
+  import wasi-cli-terminal-stdin;
+  import wasi-cli-terminal-stdout;
+  import wasi-cli-terminal-stderr;
+}
+
+world host-provider {
+  include wasi-capabilities;
+  include wasi-cli-capabilities;
 
   export host;
 }
@@ -102,13 +131,7 @@ world plugin {
   import host;
 
   // filesystem（プラグインが直接使える：許容集合に閉じるため）
-  import wasi:filesystem/types@0.3.0-rc-2026-01-06;
-  import wasi:filesystem/preopens@0.3.0-rc-2026-01-06;
-
-  // random
-  import wasi:random/random@0.3.0-rc-2026-01-06;
-  import wasi:random/insecure@0.3.0-rc-2026-01-06;
-  import wasi:random/insecure-seed@0.3.0-rc-2026-01-06;
+  include wasi-capabilities;
 
   export command;
 }

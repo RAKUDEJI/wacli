@@ -11,12 +11,18 @@ interface types {
     aliases: list<string>,     // 別名
     version: string,           // プラグイン自身のバージョン文字列
     hidden: bool,              // help一覧から隠す等
+    @unstable(feature = cli-meta-details)
+    description: string,       // 詳細説明（複数行想定）
+    @unstable(feature = cli-meta-details)
+    examples: list<string>,    // 使用例
   }
 
   variant command-error {
     unknown-command(string),
     invalid-args(string),
     failed(string),
+    @unstable(feature = cli-io-error)
+    io(string),
   }
 
   type command-result = result<exit-code, command-error>;
@@ -67,4 +73,3 @@ interface registry {
   list-commands: func() -> list<command-meta>;
   run: func(name: string, argv: list<string>) -> command-result;
 }
-

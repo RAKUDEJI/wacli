@@ -1,28 +1,24 @@
 // Hello CLI composition
 // Composes: host + greeter + registry + core -> final CLI
 
-package example:hello-cli;
+package example:hello-cli targets fw:cli-runner/app;
 
 // Instantiate host (imports WASI, exports fw:cli/types and fw:cli/host)
 let host = new fw:cli-host { ... };
 
 // Instantiate greeter plugin (imports host's exports)
-let greeter = new example:greeter {
-  types: host.types,
-  host: host.host
-};
+let greeter = new example:greeter { ...host };
 
 // Instantiate registry (imports greeter's command export)
 let registry = new example:hello-registry {
-  types: host.types,
-  greeter: greeter.command
+  greeter: greeter.command,
+  ...host
 };
 
 // Instantiate core (imports host and registry)
 let core = new fw:cli-core {
-  types: host.types,
-  host: host.host,
-  registry: registry.registry
+  registry: registry.registry,
+  ...host
 };
 
 // Export the CLI run interface

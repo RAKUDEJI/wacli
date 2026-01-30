@@ -11,12 +11,18 @@ interface types {
     aliases: list<string>,
     version: string,
     hidden: bool,
+    @unstable(feature = cli-meta-details)
+    description: string,
+    @unstable(feature = cli-meta-details)
+    examples: list<string>,
   }
 
   variant command-error {
     unknown-command(string),
     invalid-args(string),
     failed(string),
+    @unstable(feature = cli-io-error)
+    io(string),
   }
 
   type command-result = result<exit-code, command-error>;

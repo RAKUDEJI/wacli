@@ -13,6 +13,10 @@ interface types {
     aliases: list<string>,
     version: string,
     hidden: bool,
+    @unstable(feature = cli-meta-details)
+    description: string,
+    @unstable(feature = cli-meta-details)
+    examples: list<string>,
   }
 
   /// Error variants for command execution
@@ -20,6 +24,8 @@ interface types {
     unknown-command(string),
     invalid-args(string),
     failed(string),
+    @unstable(feature = cli-io-error)
+    io(string),
   }
 
   /// Result of command execution
