@@ -1,1 +1,0 @@
-{ "import": [{ "path" : "wacli/interface/wasi/io/error", "alias" : "error" }, { "path" : "wacli/interface/wasi/io/poll", "alias" : "poll" }], "warn-list": "-44" }

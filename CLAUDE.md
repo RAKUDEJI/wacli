@@ -23,15 +23,13 @@ wacli/
 │   └── cli/                    # wacli CLIツール (Rust)
 │       ├── Cargo.toml
 │       └── src/
-├── cli/                        # フレームワークコンポーネント
-│   ├── wit/
-│   │   ├── wacli.wit           # マスターWIT定義
-│   │   └── wacli-runner.wit    # 最終成果物のWIT定義
-│   └── components/
-│       ├── host/               # WASI → wacli/host ブリッジ
-│       └── core/               # コマンドルーター
-├── CLAUDE.md
-└── README.md
+├── wit/                        # WIT定義
+│   ├── wacli.wit               # マスターWIT定義
+│   └── wacli-runner.wit        # 最終成果物のWIT定義
+├── components/                 # フレームワークコンポーネント
+│   ├── host/                   # WASI → wacli/host ブリッジ
+│   └── core/                   # コマンドルーター
+└── CLAUDE.md
 ```
 
 ## wacli ツール
