@@ -1,5 +1,5 @@
-mod check;
-mod manifest;
+mod component_scan;
+mod registry_gen;
 mod wac_gen;
 
 use anyhow::{Context, Result, bail};
@@ -17,7 +17,8 @@ use wac_parser::Document;
 use wac_resolver::{FileSystemPackageResolver, packages};
 use wac_types::{BorrowedPackageKey, Package};
 
-use crate::manifest::Manifest;
+use crate::component_scan::{scan_commands, verify_defaults};
+use crate::registry_gen::{generate_registry, get_prebuilt_registry, should_use_prebuilt_registry};
 use crate::wac_gen::generate_wac;
 
 #[derive(Parser)]
@@ -33,11 +34,8 @@ enum Commands {
     /// Initialize a new wacli project
     Init(InitArgs),
 
-    /// Build CLI from wacli.json manifest
+    /// Build CLI from defaults/ and commands/ directories
     Build(BuildArgs),
-
-    /// Check component imports against an allowlist
-    Check(CheckArgs),
 
     /// Compose WebAssembly components using a WAC source file
     Compose(ComposeArgs),
@@ -47,25 +45,18 @@ enum Commands {
 }
 
 #[derive(Parser)]
-struct InitArgs {
-    /// Project directory (default: current directory)
-    #[arg(value_name = "DIR")]
-    dir: Option<PathBuf>,
-
-    /// Package name
-    #[arg(short, long, default_value = "example:my-cli")]
-    name: String,
-}
-
-#[derive(Parser)]
 struct BuildArgs {
-    /// Path to wacli.json manifest
-    #[arg(short, long, default_value = "wacli.json")]
-    manifest: PathBuf,
+    /// Package name (e.g., "example:my-cli")
+    #[arg(long, default_value = "example:my-cli")]
+    name: String,
 
-    /// Output file path (overrides manifest)
-    #[arg(short, long, value_name = "FILE")]
-    output: Option<PathBuf>,
+    /// Package version
+    #[arg(long, default_value = "0.1.0")]
+    version: String,
+
+    /// Output file path
+    #[arg(short, long, default_value = "my-cli.component.wasm")]
+    output: PathBuf,
 
     /// Skip validation of the composed component
     #[arg(long)]
@@ -74,6 +65,13 @@ struct BuildArgs {
     /// Print generated WAC without composing
     #[arg(long)]
     print_wac: bool,
+}
+
+#[derive(Parser)]
+struct InitArgs {
+    /// Project directory (default: current directory)
+    #[arg(value_name = "DIR")]
+    dir: Option<PathBuf>,
 }
 
 #[derive(Parser)]
@@ -114,25 +112,6 @@ struct PlugArgs {
     output: Option<PathBuf>,
 }
 
-#[derive(Parser)]
-struct CheckArgs {
-    /// The WASM component to check
-    #[arg(value_name = "FILE")]
-    wasm: PathBuf,
-
-    /// Path to wacli.json manifest (allowlist source)
-    #[arg(short, long, default_value = "wacli.json", value_name = "FILE")]
-    manifest: PathBuf,
-
-    /// Output JSON report path
-    #[arg(short, long, value_name = "FILE")]
-    output: Option<PathBuf>,
-
-    /// Only output JSON (no human-readable output)
-    #[arg(long)]
-    json: bool,
-}
-
 fn main() -> Result<()> {
     init_tracing();
     let cli = Cli::parse();
@@ -144,7 +123,6 @@ fn main() -> Result<()> {
             match cli.command {
                 Commands::Init(args) => init(args),
                 Commands::Build(args) => build(args).await,
-                Commands::Check(args) => check_command(args),
                 Commands::Compose(args) => compose(args).await,
                 Commands::Plug(args) => plug(args),
             }
@@ -154,33 +132,24 @@ fn main() -> Result<()> {
 fn init(args: InitArgs) -> Result<()> {
     let dir = args.dir.unwrap_or_else(|| PathBuf::from("."));
 
-    // Create directory if it doesn't exist
     fs::create_dir_all(&dir)
         .with_context(|| format!("failed to create directory: {}", dir.display()))?;
 
-    let manifest_path = dir.join("wacli.json");
+    let defaults_dir = dir.join("defaults");
+    let commands_dir = dir.join("commands");
 
-    if manifest_path.exists() {
-        bail!("wacli.json already exists in {}", dir.display());
-    }
+    fs::create_dir_all(&defaults_dir)
+        .with_context(|| format!("failed to create directory: {}", defaults_dir.display()))?;
+    fs::create_dir_all(&commands_dir)
+        .with_context(|| format!("failed to create directory: {}", commands_dir.display()))?;
 
-    // Create default manifest
-    let manifest = Manifest {
-        package: manifest::Package {
-            name: args.name,
-            version: Some("0.1.0".to_string()),
-        },
-        ..Default::default()
-    };
-
-    let json_content = serde_json::to_string_pretty(&manifest)?;
-    fs::write(&manifest_path, &json_content)
-        .with_context(|| format!("failed to write {}", manifest_path.display()))?;
-
-    eprintln!("Created: {}", manifest_path.display());
-    eprintln!("\nNext steps:");
-    eprintln!("  1. Edit wacli.json to configure your CLI");
-    eprintln!("  2. Build your plugin components");
+    eprintln!("Created:");
+    eprintln!("  {}", defaults_dir.display());
+    eprintln!("  {}", commands_dir.display());
+    eprintln!();
+    eprintln!("Next steps:");
+    eprintln!("  1. Place host.component.wasm and core.component.wasm in defaults/");
+    eprintln!("  2. Place your command components in commands/");
     eprintln!("  3. Run: wacli build");
 
     Ok(())
@@ -189,44 +158,58 @@ fn init(args: InitArgs) -> Result<()> {
 async fn build(args: BuildArgs) -> Result<()> {
     tracing::debug!("executing build command");
 
-    // Read manifest
-    let manifest_path = &args.manifest;
-    let manifest = Manifest::from_file(manifest_path)?;
+    let defaults_dir = PathBuf::from("defaults");
+    let commands_dir = PathBuf::from("commands");
 
-    // Get the directory containing the manifest for resolving relative paths
-    let base_dir = manifest_path
-        .parent()
-        .unwrap_or(Path::new("."))
-        .to_path_buf();
+    // Verify required defaults exist
+    let (host_path, core_path) = verify_defaults(&defaults_dir)?;
+
+    // Scan and validate commands
+    let commands = scan_commands(&commands_dir)?;
+
+    tracing::info!("found {} command(s)", commands.len());
+    for cmd in &commands {
+        tracing::debug!("  - {}: {}", cmd.name, cmd.path.display());
+    }
+
+    // Get registry (pre-built or generate)
+    // Use the minimal registry.wit that doesn't have WASI dependencies
+    let registry_path = if should_use_prebuilt_registry(&defaults_dir) {
+        get_prebuilt_registry(&defaults_dir).unwrap()
+    } else {
+        // Generate registry component
+        tracing::info!("generating registry component...");
+        let registry_bytes = generate_registry(&commands)
+            .context("failed to generate registry component")?;
+
+        // Write to defaults directory
+        let generated_path = defaults_dir.join("registry.component.wasm");
+        fs::write(&generated_path, &registry_bytes)
+            .context("failed to write generated registry")?;
+        tracing::info!("generated: {}", generated_path.display());
+
+        generated_path
+    };
 
     // Generate WAC
-    let wac_source = generate_wac(&manifest);
+    let wac_source = generate_wac(&args.name, &commands);
 
     if args.print_wac {
         println!("{}", wac_source);
         return Ok(());
     }
 
-    // Build dependency map from manifest
+    // Build dependency map
     let mut deps: HashMap<String, PathBuf> = HashMap::new();
 
     // Add framework components
-    deps.insert(
-        "wacli-host".to_string(),
-        base_dir.join(&manifest.framework.host),
-    );
-    deps.insert(
-        "wacli-core".to_string(),
-        base_dir.join(&manifest.framework.core),
-    );
-    deps.insert(
-        "example:hello-registry".to_string(),
-        base_dir.join(&manifest.framework.registry),
-    );
+    deps.insert("wacli:host".to_string(), host_path);
+    deps.insert("wacli:core".to_string(), core_path);
+    deps.insert("wacli:registry".to_string(), registry_path);
 
     // Add command plugins
-    for cmd in &manifest.command {
-        deps.insert(cmd.package_name(), base_dir.join(&cmd.plugin));
+    for cmd in &commands {
+        deps.insert(cmd.package_name(), cmd.path.clone());
     }
 
     // Parse WAC document
@@ -261,22 +244,19 @@ async fn build(args: BuildArgs) -> Result<()> {
         ..Default::default()
     })?;
 
-    // Determine output path
-    let output_path = args
-        .output
-        .unwrap_or_else(|| base_dir.join(manifest.output_path()));
-
     // Create output directory if needed
-    if let Some(parent) = output_path.parent() {
+    if let Some(parent) = args.output.parent()
+        && !parent.as_os_str().is_empty()
+    {
         fs::create_dir_all(parent)
             .with_context(|| format!("failed to create directory: {}", parent.display()))?;
     }
 
     // Write output
-    fs::write(&output_path, &bytes)
-        .with_context(|| format!("failed to write output file: {}", output_path.display()))?;
+    fs::write(&args.output, &bytes)
+        .with_context(|| format!("failed to write output file: {}", args.output.display()))?;
 
-    eprintln!("Built: {}", output_path.display());
+    eprintln!("Built: {}", args.output.display());
 
     Ok(())
 }
@@ -407,66 +387,6 @@ fn plug(args: PlugArgs) -> Result<()> {
                 .write_all(&bytes)
                 .context("failed to write to stdout")?;
         }
-    }
-
-    Ok(())
-}
-
-fn check_command(args: CheckArgs) -> Result<()> {
-    tracing::debug!("executing check command");
-
-    let manifest = Manifest::from_file(&args.manifest)?;
-    let report = check::check_imports(&args.wasm, &manifest.allowlist, &args.manifest)?;
-
-    // Output JSON report if requested
-    if let Some(output_path) = &args.output {
-        if let Some(parent) = output_path.parent() {
-            fs::create_dir_all(parent)
-                .with_context(|| format!("failed to create directory: {}", parent.display()))?;
-        }
-        let json = serde_json::to_string_pretty(&report)?;
-        fs::write(output_path, &json)
-            .with_context(|| format!("failed to write report: {}", output_path.display()))?;
-        if !args.json {
-            eprintln!("Report: {}", output_path.display());
-        }
-    }
-
-    if args.json {
-        // JSON-only output
-        println!("{}", serde_json::to_string_pretty(&report)?);
-    } else {
-        // Human-readable output
-        eprintln!();
-        eprintln!("=== Import Check Results ===");
-        eprintln!("Artifact: {}", report.artifact);
-        eprintln!("Total imports: {}", report.imports.len());
-
-        if !report.extra_imports.is_empty() {
-            eprintln!();
-            eprintln!(
-                "WARNING: Found {} import(s) NOT in allowlist:",
-                report.extra_imports.len()
-            );
-            for imp in &report.extra_imports {
-                eprintln!("  - {}", imp);
-            }
-            eprintln!();
-            bail!("Component has imports outside the allowed set");
-        } else {
-            eprintln!("OK: All imports are within the allowlist");
-            if !report.missing_imports.is_empty() {
-                eprintln!(
-                    "Note: {} allowed import(s) not used",
-                    report.missing_imports.len()
-                );
-            }
-        }
-    }
-
-    // Check for extra imports (fail if any)
-    if !report.extra_imports.is_empty() && args.json {
-        std::process::exit(1);
     }
 
     Ok(())

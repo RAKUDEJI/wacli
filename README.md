@@ -29,13 +29,14 @@ cargo build --release
 ### Initialize a new project
 
 ```bash
-wacli init my-cli --name "example:my-cli"
+wacli init my-cli
 ```
 
-### Build from manifest
+### Build from defaults/ and commands/
 
 ```bash
-wacli build -m wacli.json
+cd my-cli
+wacli build --name "example:my-cli"
 ```
 
 ### Compose components directly
@@ -50,40 +51,17 @@ wacli compose app.wac -o app.wasm -d "pkg:name=path.wasm"
 wacli plug socket.wasm --plug a.wasm --plug b.wasm -o out.wasm
 ```
 
-### Check component imports
+## Project Structure
 
-```bash
-wacli check component.wasm -m wacli.json
 ```
-
-## Manifest Format (wacli.json)
-
-```json
-{
-  "package": {
-    "name": "example:my-cli",
-    "version": "0.1.0"
-  },
-  "framework": {
-    "host": "components/host.component.wasm",
-    "core": "components/core.component.wasm",
-    "registry": "registry/registry.component.wasm"
-  },
-  "command": [
-    {
-      "name": "greet",
-      "package": "example:greeter",
-      "plugin": "plugins/greeter/greeter.component.wasm"
-    }
-  ],
-  "output": {
-    "path": "dist/my-cli.component.wasm"
-  },
-  "allowlist": [
-    "wasi:filesystem/types",
-    "wasi:cli/stdin"
-  ]
-}
+my-cli/
+  defaults/
+    host.component.wasm
+    core.component.wasm
+    registry.component.wasm   (optional; generated if missing)
+  commands/
+    greet.component.wasm
+    hello-world.component.wasm
 ```
 
 ## Architecture

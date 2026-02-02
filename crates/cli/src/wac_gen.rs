@@ -1,38 +1,53 @@
-use crate::manifest::Manifest;
+//! Generate WAC source for component composition.
 
-pub fn generate_wac(manifest: &Manifest) -> String {
+use crate::component_scan::CommandInfo;
+
+/// Generate WAC source for composing a CLI from discovered commands.
+///
+/// The generated WAC:
+/// 1. Instantiates the host component (WASI bridge)
+/// 2. Instantiates each command plugin with host dependencies
+/// 3. Instantiates the registry with all commands
+/// 4. Instantiates core with host and registry
+/// 5. Exports the CLI entry point (wasi:cli/run)
+pub fn generate_wac(package_name: &str, commands: &[CommandInfo]) -> String {
     let mut wac = String::new();
 
     // Package declaration
-    wac.push_str(&format!("package {};\n\n", manifest.package.name));
+    wac.push_str(&format!("package {};\n\n", package_name));
 
     // Instantiate host (imports WASI, exports wacli/types and wacli/host)
     wac.push_str("// Host component (WASI bridge)\n");
-    wac.push_str("let host = new wacli-host { ... };\n\n");
+    wac.push_str("let host = new wacli:host { ... };\n\n");
 
     // Instantiate each command plugin
-    wac.push_str("// Command plugins\n");
-    for cmd in &manifest.command {
-        let var_name = cmd.var_name();
-        let pkg_name = cmd.package_name();
-        wac.push_str(&format!(
-            "let {var_name} = new {pkg_name} {{\n  types: host.types,\n  host: host.host\n}};\n\n",
-        ));
+    if !commands.is_empty() {
+        wac.push_str("// Command plugins\n");
+        for cmd in commands {
+            let var_name = cmd.var_name();
+            let pkg_name = cmd.package_name();
+            wac.push_str(&format!(
+                "let {var_name} = new {pkg_name} {{\n  types: host.types,\n  host: host.host\n}};\n\n",
+            ));
+        }
     }
 
     // Instantiate registry with all command exports
     wac.push_str("// Registry (command dispatch)\n");
-    wac.push_str("let registry = new example:hello-registry {\n");
+    wac.push_str("let registry = new wacli:registry {\n");
     wac.push_str("  types: host.types");
-    for cmd in &manifest.command {
+    for cmd in commands {
         let var_name = cmd.var_name();
-        wac.push_str(&format!(",\n  {}: {}.command", var_name, var_name));
+        wac.push_str(&format!(
+            ",\n  {}-command: {}.command",
+            cmd.name, var_name
+        ));
     }
     wac.push_str("\n};\n\n");
 
     // Instantiate core
     wac.push_str("// Core (CLI router)\n");
-    wac.push_str("let core = new wacli-core {\n");
+    wac.push_str("let core = new wacli:core {\n");
     wac.push_str("  types: host.types,\n");
     wac.push_str("  host: host.host,\n");
     wac.push_str("  registry: registry.registry\n");
@@ -48,36 +63,47 @@ pub fn generate_wac(manifest: &Manifest) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::manifest::{Command, Framework, Output, Package};
     use std::path::PathBuf;
 
     #[test]
-    fn test_generate_wac() {
-        let manifest = Manifest {
-            package: Package {
-                name: "example:hello-cli".to_string(),
-                version: Some("0.1.0".to_string()),
-            },
-            framework: Framework {
-                host: PathBuf::from("host.component.wasm"),
-                core: PathBuf::from("core.component.wasm"),
-                registry: PathBuf::from("registry.component.wasm"),
-            },
-            command: vec![Command {
-                name: "greet".to_string(),
-                package: Some("example:greeter".to_string()),
-                plugin: PathBuf::from("greeter.component.wasm"),
-                aliases: vec![],
-            }],
-            output: Some(Output {
-                path: PathBuf::from("output.wasm"),
-            }),
-            allowlist: vec![],
-        };
-
-        let wac = generate_wac(&manifest);
-        assert!(wac.contains("package example:hello-cli;"));
-        assert!(wac.contains("let greeter = new example:greeter"));
+    fn test_generate_wac_empty_commands() {
+        let wac = generate_wac("example:my-cli", &[]);
+        assert!(wac.contains("package example:my-cli;"));
+        assert!(wac.contains("let host = new wacli:host"));
+        assert!(wac.contains("let registry = new wacli:registry"));
+        assert!(wac.contains("let core = new wacli:core"));
         assert!(wac.contains("export core.run;"));
+    }
+
+    #[test]
+    fn test_generate_wac_with_commands() {
+        let commands = vec![
+            CommandInfo {
+                name: "greet".to_string(),
+                path: PathBuf::from("commands/greet.component.wasm"),
+            },
+            CommandInfo {
+                name: "hello-world".to_string(),
+                path: PathBuf::from("commands/hello-world.component.wasm"),
+            },
+        ];
+
+        let wac = generate_wac("example:hello-cli", &commands);
+
+        assert!(wac.contains("package example:hello-cli;"));
+        assert!(wac.contains("let greet = new wacli:cmd-greet"));
+        assert!(wac.contains("let hello_world = new wacli:cmd-hello-world"));
+        assert!(wac.contains("greet-command: greet.command"));
+        assert!(wac.contains("hello-world-command: hello_world.command"));
+        assert!(wac.contains("export core.run;"));
+    }
+
+    #[test]
+    fn test_var_name_conversion() {
+        let cmd = CommandInfo {
+            name: "my-command".to_string(),
+            path: PathBuf::from("test.wasm"),
+        };
+        assert_eq!(cmd.var_name(), "my_command");
     }
 }

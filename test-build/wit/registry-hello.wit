@@ -1,0 +1,44 @@
+package wacli:cli@1.0.0;
+
+interface types {
+  type exit-code = u32;
+
+  record command-meta {
+    name: string,
+    summary: string,
+    usage: string,
+    aliases: list<string>,
+    version: string,
+    hidden: bool,
+    description: string,
+    examples: list<string>,
+  }
+
+  variant command-error {
+    unknown-command(string),
+    invalid-args(string),
+    failed(string),
+    io(string),
+  }
+
+  type command-result = result<exit-code, command-error>;
+}
+
+interface command {
+  use types.{command-meta, command-result};
+
+  meta: func() -> command-meta;
+  run: func(argv: list<string>) -> command-result;
+}
+
+interface registry {
+  use types.{command-meta, command-result};
+
+  list-commands: func() -> list<command-meta>;
+  run: func(name: string, argv: list<string>) -> command-result;
+}
+
+world registry-provider {
+  import command as hello-command;
+  export registry;
+}

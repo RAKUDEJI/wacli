@@ -1,0 +1,129 @@
+package wacli:cli@1.0.0;
+
+use wasi:filesystem/types@0.3.0-rc-2026-01-06 as wasi-filesystem-types;
+use wasi:filesystem/preopens@0.3.0-rc-2026-01-06 as wasi-filesystem-preopens;
+use wasi:random/random@0.3.0-rc-2026-01-06 as wasi-random;
+use wasi:random/insecure@0.3.0-rc-2026-01-06 as wasi-random-insecure;
+use wasi:random/insecure-seed@0.3.0-rc-2026-01-06 as wasi-random-insecure-seed;
+use wasi:cli/environment@0.3.0-rc-2026-01-06 as wasi-cli-environment;
+use wasi:cli/exit@0.3.0-rc-2026-01-06 as wasi-cli-exit;
+use wasi:cli/stdin@0.3.0-rc-2026-01-06 as wasi-cli-stdin;
+use wasi:cli/stdout@0.3.0-rc-2026-01-06 as wasi-cli-stdout;
+use wasi:cli/stderr@0.3.0-rc-2026-01-06 as wasi-cli-stderr;
+use wasi:cli/terminal-input@0.3.0-rc-2026-01-06 as wasi-cli-terminal-input;
+use wasi:cli/terminal-output@0.3.0-rc-2026-01-06 as wasi-cli-terminal-output;
+use wasi:cli/terminal-stdin@0.3.0-rc-2026-01-06 as wasi-cli-terminal-stdin;
+use wasi:cli/terminal-stdout@0.3.0-rc-2026-01-06 as wasi-cli-terminal-stdout;
+use wasi:cli/terminal-stderr@0.3.0-rc-2026-01-06 as wasi-cli-terminal-stderr;
+
+interface types {
+  type exit-code = u32;
+
+  record command-meta {
+    name: string,
+    summary: string,
+    usage: string,
+    aliases: list<string>,
+    version: string,
+    hidden: bool,
+    description: string,
+    examples: list<string>,
+  }
+
+  variant command-error {
+    unknown-command(string),
+    invalid-args(string),
+    failed(string),
+    io(string),
+  }
+
+  type command-result = result<exit-code, command-error>;
+}
+
+interface host {
+  use types.{exit-code};
+
+  args: func() -> list<string>;
+  env: func() -> list<tuple<string, string>>;
+
+  stdout-write: func(bytes: list<u8>);
+  stderr-write: func(bytes: list<u8>);
+  stdout-flush: func();
+  stderr-flush: func();
+
+  stdin-read: func(max-bytes: u32) -> list<u8>;
+
+  is-tty-stdout: func() -> bool;
+  is-tty-stderr: func() -> bool;
+
+  terminal-size: func() -> option<tuple<u32, u32>>;
+
+  random-bytes: func(n: u32) -> list<u8>;
+  insecure-random-bytes: func(n: u32) -> list<u8>;
+
+  exit: func(code: exit-code);
+}
+
+interface command {
+  use types.{command-meta, command-result};
+
+  meta: func() -> command-meta;
+  run: func(argv: list<string>) -> command-result;
+}
+
+interface registry {
+  use types.{command-meta, command-result};
+
+  list-commands: func() -> list<command-meta>;
+  run: func(name: string, argv: list<string>) -> command-result;
+}
+
+world wasi-capabilities {
+  import wasi-filesystem-types;
+  import wasi-filesystem-preopens;
+
+  import wasi-random;
+  import wasi-random-insecure;
+  import wasi-random-insecure-seed;
+}
+
+world wasi-cli-capabilities {
+  import wasi-cli-environment;
+  import wasi-cli-exit;
+  import wasi-cli-stdin;
+  import wasi-cli-stdout;
+  import wasi-cli-stderr;
+  import wasi-cli-terminal-input;
+  import wasi-cli-terminal-output;
+  import wasi-cli-terminal-stdin;
+  import wasi-cli-terminal-stdout;
+  import wasi-cli-terminal-stderr;
+}
+
+world host-provider {
+  include wasi-capabilities;
+  include wasi-cli-capabilities;
+
+  export host;
+}
+
+world plugin {
+  import host;
+
+  include wasi-capabilities;
+
+  export command;
+}
+
+world registry-provider {
+  import host;
+
+  export registry;
+}
+
+world core {
+  import host;
+  import registry;
+
+  export wasi:cli/run@0.3.0-rc-2026-01-06;
+}

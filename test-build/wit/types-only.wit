@@ -1,0 +1,9 @@
+package demo:types@1.0.0;
+
+interface types {
+  type exit-code = u32;
+}
+
+world types-only {
+  export types;
+}

@@ -1,0 +1,12 @@
+
+{
+      "link": {
+            "wasm": {
+                  "exports": ["mbt_ffi_cabi_realloc:cabi_realloc", "wasmExportListCommands:wacli:cli/registry@1.0.0#list-commands", "wasmExportListCommandsPostReturn:cabi_post_wacli:cli/registry@1.0.0#list-commands", "wasmExportRun:wacli:cli/registry@1.0.0#run", "wasmExportRunPostReturn:cabi_post_wacli:cli/registry@1.0.0#run"],
+                  "export-memory-name": "memory",
+                  "heap-start-address": 16
+            }
+      }
+      ,"import": [{ "path" : "registry/gen/interface/wacli/cli/registry", "alias" : "registry" }, { "path" : "registry/gen/interface/wacli/cli/types", "alias" : "types" }]
+      , "warn-list": "-44"
+}
