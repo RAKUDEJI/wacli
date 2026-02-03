@@ -5,6 +5,7 @@ mod wac_gen;
 use anyhow::{Context, Result, bail};
 use clap::{Parser, Subcommand};
 use indexmap::IndexMap;
+use self_update::{Status, backends::github::Update};
 use std::{
     collections::HashMap,
     fs,
@@ -44,6 +45,9 @@ enum Commands {
 
     /// Plug exports of components into imports of another component
     Plug(PlugArgs),
+
+    /// Update wacli from GitHub Releases
+    SelfUpdate(SelfUpdateArgs),
 }
 
 #[derive(Parser)]
@@ -122,6 +126,13 @@ struct PlugArgs {
     output: Option<PathBuf>,
 }
 
+#[derive(Parser)]
+struct SelfUpdateArgs {
+    /// Update to a specific version (e.g., 0.0.14). Defaults to latest.
+    #[arg(long)]
+    version: Option<String>,
+}
+
 fn main() -> Result<()> {
     init_tracing();
     let cli = Cli::parse();
@@ -131,6 +142,7 @@ fn main() -> Result<()> {
         Commands::Build(args) => build(args),
         Commands::Compose(args) => compose(args),
         Commands::Plug(args) => plug(args),
+        Commands::SelfUpdate(args) => self_update(args),
     }
 }
 
@@ -504,4 +516,50 @@ fn init_tracing() {
         .with_target(false)
         .compact()
         .init();
+}
+
+fn self_update(args: SelfUpdateArgs) -> Result<()> {
+    let target = match (std::env::consts::OS, std::env::consts::ARCH) {
+        ("linux", "x86_64") => "wacli-linux-x86_64",
+        ("linux", "aarch64") => "wacli-linux-aarch64",
+        ("macos", "x86_64") => "wacli-macos-x86_64",
+        ("macos", "aarch64") => "wacli-macos-aarch64",
+        ("windows", "x86_64") => "wacli-windows-x86_64.exe",
+        _ => bail!(
+            "unsupported platform for self-update: {} {}",
+            std::env::consts::OS,
+            std::env::consts::ARCH
+        ),
+    };
+
+    let mut updater = Update::configure();
+    if let Some(version) = &args.version {
+        let tag = format!("v{version}");
+        updater.target_version_tag(&tag);
+    }
+
+    let updater = updater
+        .repo_owner("RAKUDEJI")
+        .repo_name("wacli")
+        .bin_name("wacli")
+        .target(target)
+        .identifier(".zip")
+        .show_download_progress(true)
+        .no_confirm(true)
+        .current_version(env!("CARGO_PKG_VERSION"))
+        .build()
+        .context("failed to configure updater")?;
+
+    let status = updater.update().context("failed to update")?;
+
+    match status {
+        Status::UpToDate(version) => {
+            eprintln!("wacli is already up to date ({}).", version);
+        }
+        Status::Updated(version) => {
+            eprintln!("wacli updated to {}.", version);
+        }
+    }
+
+    Ok(())
 }

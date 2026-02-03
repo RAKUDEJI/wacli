@@ -1,0 +1,17 @@
+[package]
+name = "wacli-cdk"
+version = "0.0.1"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Command development kit for wacli plugins"
+repository = "https://github.com/RAKUDEJI/wacli"
+keywords = ["wasm", "webassembly", "component", "cli"]
+categories = ["command-line-utilities", "wasm"]
+
+[lib]
+name = "wacli_cdk"
+path = "src/lib.rs"
+
+[dependencies]
+wit-bindgen = { version = "0.40", default-features = false, features = ["macros", "realloc"] }

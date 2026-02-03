@@ -1,6 +1,6 @@
 [package]
 name = "wacli"
-version = "0.0.14"
+version = "0.0.15"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
@@ -51,3 +51,4 @@ indexmap.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
 ureq.workspace = true
+self_update.workspace = true

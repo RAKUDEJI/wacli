@@ -73,6 +73,12 @@ wacli compose app.wac -o app.wasm -d "pkg:name=path.wasm"
 wacli plug socket.wasm --plug a.wasm --plug b.wasm -o out.wasm
 ```
 
+### Self update
+
+```bash
+wacli self-update
+```
+
 ## Project Structure
 
 ```

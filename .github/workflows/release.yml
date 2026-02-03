@@ -100,8 +100,22 @@ jobs:
       - name: Prepare release files
         run: |
           mkdir -p release
+          release_dir="$(pwd)/release"
           cp components/*.component.wasm release/
           find artifacts -type f -exec cp {} release/ \;
+          tmp_dir="$(mktemp -d)"
+          while IFS= read -r file; do
+            base="$(basename "$file")"
+            if [[ "$base" == *.exe ]]; then
+              bin_name="wacli.exe"
+            else
+              bin_name="wacli"
+            fi
+            cp "$file" "$tmp_dir/$bin_name"
+            zip -q -j "${release_dir}/${base}.zip" "$tmp_dir/$bin_name"
+            rm -f "$tmp_dir/$bin_name"
+          done < <(find artifacts -type f)
+          rm -rf "$tmp_dir"
           ls -la release/
 
       - name: Upload to release
