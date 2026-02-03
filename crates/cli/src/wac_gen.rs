@@ -27,7 +27,7 @@ pub fn generate_wac(package_name: &str, commands: &[CommandInfo]) -> String {
             let var_name = cmd.var_name();
             let pkg_name = cmd.package_name();
             wac.push_str(&format!(
-                "let {var_name} = new {pkg_name} {{\n  types: host.types,\n  host: host.host\n}};\n\n",
+                "let {var_name} = new {pkg_name} {{\n  types: host.types,\n  host: host.host,\n  ...\n}};\n\n",
             ));
         }
     }

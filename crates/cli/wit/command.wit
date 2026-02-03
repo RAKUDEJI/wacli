@@ -1,5 +1,11 @@
 package wacli:cli@1.0.0;
 
+use wasi:filesystem/types@0.2.9 as wasi-filesystem-types;
+use wasi:filesystem/preopens@0.2.9 as wasi-filesystem-preopens;
+use wasi:random/random@0.2.9 as wasi-random;
+use wasi:random/insecure@0.2.9 as wasi-random-insecure;
+use wasi:random/insecure-seed@0.2.9 as wasi-random-insecure-seed;
+
 interface types {
   type exit-code = u32;
 
@@ -57,5 +63,16 @@ interface command {
 
 world plugin {
   import host;
+
+  include wasi-capabilities;
   export command;
+}
+
+world wasi-capabilities {
+  import wasi-filesystem-types;
+  import wasi-filesystem-preopens;
+
+  import wasi-random;
+  import wasi-random-insecure;
+  import wasi-random-insecure-seed;
 }

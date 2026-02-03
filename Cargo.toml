@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/*"]
+members = ["crates/*", "components/host", "components/core"]
 
 [workspace.package]
 edition = "2024"
@@ -9,10 +9,10 @@ license = "Apache-2.0"
 
 [workspace.dependencies]
 # WAC crates for composition
-wac-parser = { version = "0.9.0-dev", default-features = false }
-wac-resolver = { version = "0.9.0-dev", default-features = false, features = ["wit"] }
-wac-graph = "0.9.0-dev"
-wac-types = "0.9.0-dev"
+wac-parser = { version = "0.9.0", default-features = false }
+wac-resolver = { version = "0.9.0", default-features = false, features = ["wit"] }
+wac-graph = "0.9.0"
+wac-types = "0.9.0"
 
 # CLI and error handling
 clap = { version = "4.5", features = ["derive"] }
@@ -26,7 +26,7 @@ serde_json = "1.0"
 wasmparser = "0.244"
 wasm-encoder = "0.244"
 wat = "1.244"
-wit-bindgen = { version = "0.52", default-features = false, features = ["realloc"] }
+wit-bindgen = { version = "0.52", default-features = false, features = ["realloc", "async"] }
 wit-component = "0.244"
 wit-parser = "0.244"
 

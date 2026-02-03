@@ -18,6 +18,8 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
 
       - name: Cache cargo
         uses: actions/cache@v4
@@ -30,15 +32,10 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Setup MoonBit
-        uses: hustcer/setup-moonbit@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Install wasm-tools
         run: cargo install wasm-tools --locked
 
-      - name: Build MoonBit components
+      - name: Build components
         run: bash scripts/build_components.sh
 
       - name: Build

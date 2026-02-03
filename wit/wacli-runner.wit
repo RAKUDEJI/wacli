@@ -1,5 +1,5 @@
 package wacli-runner@1.0.0;
 
 world app {
-  export wasi:cli/run@0.3.0-rc-2026-01-06;
+  export wasi:cli/run@0.2.9;
 }

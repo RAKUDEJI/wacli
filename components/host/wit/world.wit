@@ -27,8 +27,7 @@ interface types {
 
 /// Host interface - provides CLI primitives to plugins
 interface host {
-  /// Exit code type
-  type exit-code = u32;
+  use types.{exit-code};
 
   /// Get command line arguments
   args: func() -> list<string>;
@@ -74,17 +73,17 @@ interface host {
 /// Imports WASI, exports wacli/host
 world host-provider {
   // WASI imports
-  import wasi:cli/environment@0.2.0;
-  import wasi:cli/stdin@0.2.0;
-  import wasi:cli/stdout@0.2.0;
-  import wasi:cli/stderr@0.2.0;
-  import wasi:cli/terminal-stdin@0.2.0;
-  import wasi:cli/terminal-stdout@0.2.0;
-  import wasi:cli/terminal-stderr@0.2.0;
-  import wasi:cli/exit@0.2.0;
-  import wasi:random/random@0.2.0;
-  import wasi:random/insecure@0.2.0;
-  import wasi:io/streams@0.2.0;
+  import wasi:cli/environment@0.2.9;
+  import wasi:cli/stdin@0.2.9;
+  import wasi:cli/stdout@0.2.9;
+  import wasi:cli/stderr@0.2.9;
+  import wasi:cli/terminal-stdin@0.2.9;
+  import wasi:cli/terminal-stdout@0.2.9;
+  import wasi:cli/terminal-stderr@0.2.9;
+  import wasi:cli/exit@0.2.9;
+  import wasi:random/random@0.2.9;
+  import wasi:random/insecure@0.2.9;
+  import wasi:io/streams@0.2.9;
 
   // Export wacli/host and types
   export types;

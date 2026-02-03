@@ -69,15 +69,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup MoonBit
-        uses: hustcer/setup-moonbit@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
 
       - name: Install wasm-tools
         run: cargo install wasm-tools --locked
 
-      - name: Build MoonBit components
+      - name: Build components
         run: bash scripts/build_components.sh
 
       - name: Upload components

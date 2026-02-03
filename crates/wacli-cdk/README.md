@@ -16,6 +16,7 @@ Command Development Kit for building [wacli](https://github.com/RAKUDEJI/wacli) 
 - **`Context`** - Access arguments and environment variables
 - **`args` module** - Lightweight argument parsing helpers
 - **`io` module** - stdout/stderr utilities
+- **`wasi` module** - WASI 0.2.9 filesystem and random access
 
 ## Installation
 
@@ -31,7 +32,7 @@ edition = "2024"
 crate-type = ["cdylib"]
 
 [dependencies]
-wacli-cdk = "0.0.17"
+wacli-cdk = "0.0.19"
 ```
 
 ## Quick Start

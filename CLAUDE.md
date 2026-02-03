@@ -20,21 +20,31 @@ WebAssembly Component Model ベースの CLI フレームワーク。
 wacli/
 ├── Cargo.toml                  # Workspace root
 ├── crates/
-│   └── cli/                    # wacli CLIツール (Rust)
+│   ├── cli/                    # wacli CLIツール (Rust)
+│   │   ├── Cargo.toml
+│   │   └── src/
+│   │       ├── main.rs         # CLIエントリポイント
+│   │       ├── component_scan.rs   # コンポーネントスキャン
+│   │       ├── registry_gen_wat.rs # Registry自動生成（WAT）
+│   │       └── wac_gen.rs      # WAC生成
+│   └── wacli-cdk/              # プラグイン開発キット (crates.io公開)
 │       ├── Cargo.toml
 │       └── src/
-│           ├── main.rs         # CLIエントリポイント
-│           ├── component_scan.rs   # コンポーネントスキャン
-│           ├── registry_gen_wat.rs # Registry自動生成（WAT）
-│           ├── registry_template.wat # WATテンプレート
-│           └── wac_gen.rs      # WAC生成
+│           ├── lib.rs          # CDKメインAPI
+│           └── bindings.rs     # WIT生成コード
 ├── wit/                        # WIT定義
-│   ├── wacli.wit               # マスターWIT定義
+│   ├── wacli.wit               # マスターWIT定義 (WASI 0.2.9)
 │   ├── registry.wit            # Registry用WIT（ベース）
 │   └── wacli-runner.wit        # 最終成果物のWIT定義
-├── components/                 # フレームワークコンポーネント
+├── components/                 # フレームワークコンポーネント (Rust)
 │   ├── host/                   # WASI → wacli/host ブリッジ
+│   │   ├── Cargo.toml
+│   │   ├── src/lib.rs
+│   │   └── wit/
 │   └── core/                   # コマンドルーター
+│       ├── Cargo.toml
+│       ├── src/lib.rs
+│       └── wit/
 └── CLAUDE.md
 ```
 
@@ -96,6 +106,9 @@ my-project/
 
 ## WIT インターフェース
 
+### WASI バージョン
+WASI 0.2.9 を使用。プラグインは `wasi-capabilities` を通じてファイルシステムとランダムにアクセス可能。
+
 ### wacli/types
 共有型定義: `exit-code`, `command-meta`, `command-error`, `command-result`
 
@@ -108,26 +121,87 @@ my-project/
 ### wacli/registry
 コマンド管理: `list-commands() -> list<command-meta>`, `run(name, argv) -> command-result`
 
+### World定義
+
+```wit
+world plugin {
+  import host;
+  include wasi-capabilities;  // filesystem, random
+  export command;
+}
+```
+
 ## コンポーネントのビルド
 
-各コンポーネントで以下を実行:
+フレームワークコンポーネント（host, core）はRustで実装:
 
 ```bash
-# MoonBitビルド
-cd <component>/gen && moon build --target wasm
+# ビルドスクリプトを使用
+./scripts/build_components.sh
+
+# または手動で
+cargo build -p wacli-host --target wasm32-unknown-unknown --release
+cargo build -p wacli-core --target wasm32-unknown-unknown --release
 
 # WIT埋め込み + コンポーネント化
-cd <component>
-wasm-tools component embed wit gen/_build/wasm/release/build/gen/gen.wasm -o <name>.wasm --encoding utf16
-wasm-tools component new <name>.wasm -o <name>.component.wasm
+wasm-tools component embed components/host/wit \
+  target/wasm32-unknown-unknown/release/wacli_host.wasm \
+  -o components/host/host.wasm --encoding utf8
+wasm-tools component new components/host/host.wasm \
+  -o components/host.component.wasm
+
+wasm-tools component embed components/core/wit \
+  target/wasm32-unknown-unknown/release/wacli_core.wasm \
+  -o components/core/core.wasm --encoding utf8
+wasm-tools component new components/core/core.wasm \
+  -o components/core.component.wasm
+```
+
+## wacli-cdk
+
+プラグイン開発キット。crates.ioで公開。
+
+### 特徴
+- `Command` trait + `export!` マクロ
+- `wasi` モジュール再エクスポート（ファイルシステム、ランダム）
+- `host` モジュール（stdout, stderr, args, env）
+- `args` モジュール（引数パース）
+- `io` モジュール（print, println, eprint, eprintln）
+
+### プラグイン例
+
+```rust
+use wacli_cdk::{Command, CommandMeta, CommandResult, meta};
+
+struct Show;
+
+impl Command for Show {
+    fn meta() -> CommandMeta {
+        meta("show")
+            .summary("Display file contents")
+            .usage("show <FILE>")
+            .build()
+    }
+
+    fn run(argv: Vec<String>) -> CommandResult {
+        use wacli_cdk::wasi::filesystem::preopens::get_directories;
+        // WASI filesystem APIを使用可能
+        Ok(0)
+    }
+}
+
+wacli_cdk::export!(Show);
 ```
 
 ## 注意事項
 
-### wit-bindgen 実行時
-`wit-bindgen moonbit wit --out-dir gen` を実行すると stub.mbt が上書きされる。
-実装済みの stub.mbt は事前にバックアップするか、git で管理すること。
+### wasm-tools 文字列エンコーディング
+Rustの文字列はUTF-8。WIT埋め込み時は `--encoding utf8` を使用すること。
 
-### MoonBit文字列エンコーディング
-MoonBitの文字列はUTF-16。WASM出力には `--encoding utf16` が必要。
-stdout出力には `@encoding/utf8.encode()` で変換すること。
+### bindings.rs の管理
+`crates/wacli-cdk/src/bindings.rs` は wit-bindgen で生成したコードをコミット。
+WIT変更時は再生成が必要:
+
+```bash
+wit-bindgen rust crates/wacli-cdk/wit --world plugin --out-dir crates/wacli-cdk/src/
+```

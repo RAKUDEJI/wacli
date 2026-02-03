@@ -2,13 +2,19 @@
 
 WebAssembly Component composition CLI tool.
 
-[![CI](https://github.com/RAKUDEJI/wacli/actions/workflows/ci.yml/badge.svg)](https://github.com/RAKUDEJI/wacli/actions/workflows/ci.yml)
+[![CI](https://github.com/aspect-build/wacli/actions/workflows/ci.yml/badge.svg)](https://github.com/aspect-build/wacli/actions/workflows/ci.yml)
 [![crates.io](https://img.shields.io/crates/v/wacli.svg)](https://crates.io/crates/wacli)
 [![License](https://img.shields.io/crates/l/wacli.svg)](LICENSE)
 
 ## Overview
 
 wacli is a CLI tool for composing WebAssembly Components using the [WAC](https://github.com/bytecodealliance/wac) language. It provides a framework for building CLI applications from modular WASM components.
+
+**Key Features:**
+- Build CLI apps from modular WASM components
+- Plugins have access to WASI filesystem and random APIs
+- Auto-generates registry component from command plugins
+- Single binary, no external dependencies (wac, wasm-tools, jq)
 
 ## Installation
 
@@ -19,7 +25,7 @@ cargo install wacli
 Or build from source:
 
 ```bash
-git clone https://github.com/RAKUDEJI/wacli.git
+git clone https://github.com/aspect-build/wacli.git
 cd wacli
 cargo build --release
 ```
@@ -89,7 +95,7 @@ my-cli/
     registry.component.wasm   # Optional: Auto-generated if missing
   commands/
     greet.component.wasm      # Command plugins (*.component.wasm)
-    hello-world.component.wasm
+    show.component.wasm
   wit/
     command.wit               # Plugin interface for components
 ```
@@ -119,6 +125,51 @@ The `wacli build` command:
 - **registry**: Manages command registration
 - **plugins**: Implement commands via `wacli:cli/command`
 
+## Plugin Development
+
+Plugins are built using [wacli-cdk](https://crates.io/crates/wacli-cdk):
+
+```rust
+use wacli_cdk::{Command, CommandMeta, CommandResult, meta};
+
+struct Greet;
+
+impl Command for Greet {
+    fn meta() -> CommandMeta {
+        meta("greet")
+            .summary("Greet someone")
+            .usage("greet [NAME]")
+            .build()
+    }
+
+    fn run(argv: Vec<String>) -> CommandResult {
+        let name = argv.first().map(|s| s.as_str()).unwrap_or("World");
+        wacli_cdk::io::println(format!("Hello, {name}!"));
+        Ok(0)
+    }
+}
+
+wacli_cdk::export!(Greet);
+```
+
+### WASI Capabilities
+
+Plugins have access to WASI 0.2.9 capabilities:
+
+- **Filesystem**: `wacli_cdk::wasi::filesystem::{types, preopens}`
+- **Random**: `wacli_cdk::wasi::random::{random, insecure, insecure_seed}`
+
+```rust
+fn run(argv: Vec<String>) -> CommandResult {
+    use wacli_cdk::wasi::filesystem::preopens::get_directories;
+
+    // Access filesystem via WASI preopens
+    let dirs = get_directories();
+    // ...
+    Ok(0)
+}
+```
+
 ## Framework Components
 
 Pre-built framework components are available as release artifacts:
@@ -126,7 +177,7 @@ Pre-built framework components are available as release artifacts:
 - `host.component.wasm` - WASI to wacli bridge
 - `core.component.wasm` - Command router
 
-Download from [Releases](https://github.com/RAKUDEJI/wacli/releases).
+Download from [Releases](https://github.com/aspect-build/wacli/releases).
 
 ## WIT Interfaces
 
@@ -136,6 +187,16 @@ Download from [Releases](https://github.com/RAKUDEJI/wacli/releases).
 | `wacli:cli/host` | Host API for plugins (`args`, `stdout-write`, `exit`, etc.) |
 | `wacli:cli/command` | Plugin export interface (`meta`, `run`) |
 | `wacli:cli/registry` | Command management (`list-commands`, `run`) |
+
+### Plugin World
+
+```wit
+world plugin {
+  import host;
+  include wasi-capabilities;  // filesystem, random
+  export command;
+}
+```
 
 ## License
 
