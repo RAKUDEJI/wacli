@@ -64,17 +64,10 @@ jobs:
           name: ${{ matrix.name }}
           path: ${{ matrix.name }}
 
-  publish:
-    needs: build
+  components:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
 
       - name: Setup MoonBit
         uses: hustcer/setup-moonbit@v1
@@ -84,30 +77,65 @@ jobs:
       - name: Install wasm-tools
         run: cargo install wasm-tools --locked
 
+      - name: Build MoonBit components
+        run: bash scripts/build_components.sh
+
+      - name: Upload components
+        uses: actions/upload-artifact@v4
+        with:
+          name: components
+          path: components/*.component.wasm
+
+  publish-cdk:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
       - name: Publish wacli-cdk to crates.io
         run: cargo publish -p wacli-cdk
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Publish to crates.io
         run: cargo publish -p wacli
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
+  release:
+    needs: [build, components, publish-cdk, publish]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
 
-      - name: Build MoonBit components
-        run: bash scripts/build_components.sh
-
       - name: Prepare release files
         run: |
           mkdir -p release
           release_dir="$(pwd)/release"
-          cp components/*.component.wasm release/
-          find artifacts -type f -exec cp {} release/ \;
+          find artifacts/components -type f -exec cp {} release/ \;
+          find artifacts -type f ! -path "artifacts/components/*" -exec cp {} release/ \;
           tmp_dir="$(mktemp -d)"
           while IFS= read -r file; do
             base="$(basename "$file")"
@@ -119,7 +147,7 @@ jobs:
             cp "$file" "$tmp_dir/$bin_name"
             zip -q -j "${release_dir}/${base}.zip" "$tmp_dir/$bin_name"
             rm -f "$tmp_dir/$bin_name"
-          done < <(find artifacts -type f)
+          done < <(find artifacts -type f ! -path "artifacts/components/*")
           rm -rf "$tmp_dir"
           ls -la release/
 
