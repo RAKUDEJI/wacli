@@ -74,6 +74,14 @@ struct InitArgs {
     /// Project directory (default: current directory)
     #[arg(value_name = "DIR")]
     dir: Option<PathBuf>,
+
+    /// Download framework components (host/core) into defaults/
+    #[arg(long)]
+    with_components: bool,
+
+    /// Overwrite existing component files when downloading
+    #[arg(long)]
+    overwrite: bool,
 }
 
 #[derive(Parser)]
@@ -145,15 +153,85 @@ fn init(args: InitArgs) -> Result<()> {
     fs::create_dir_all(&commands_dir)
         .with_context(|| format!("failed to create directory: {}", commands_dir.display()))?;
 
+    if args.with_components {
+        download_framework_components(&defaults_dir, args.overwrite)?;
+    }
+
     eprintln!("Created:");
     eprintln!("  {}", defaults_dir.display());
     eprintln!("  {}", commands_dir.display());
     eprintln!();
     eprintln!("Next steps:");
-    eprintln!("  1. Place host.component.wasm and core.component.wasm in defaults/");
-    eprintln!("  2. Place your command components in commands/");
-    eprintln!("  3. Run: wacli build");
+    if args.with_components {
+        eprintln!("  1. Place your command components in commands/");
+        eprintln!("  2. Run: wacli build");
+    } else {
+        eprintln!("  1. Place host.component.wasm and core.component.wasm in defaults/");
+        eprintln!("  2. Place your command components in commands/");
+        eprintln!("  3. Run: wacli build");
+    }
 
+    Ok(())
+}
+
+const HOST_COMPONENT_URL: &str =
+    "https://github.com/RAKUDEJI/wacli/releases/latest/download/host.component.wasm";
+const CORE_COMPONENT_URL: &str =
+    "https://github.com/RAKUDEJI/wacli/releases/latest/download/core.component.wasm";
+
+fn download_framework_components(defaults_dir: &Path, overwrite: bool) -> Result<()> {
+    let host_path = defaults_dir.join("host.component.wasm");
+    let core_path = defaults_dir.join("core.component.wasm");
+
+    download_component(
+        HOST_COMPONENT_URL,
+        &host_path,
+        overwrite,
+        "host.component.wasm",
+    )?;
+    download_component(
+        CORE_COMPONENT_URL,
+        &core_path,
+        overwrite,
+        "core.component.wasm",
+    )?;
+    Ok(())
+}
+
+fn download_component(url: &str, dest: &Path, overwrite: bool, label: &str) -> Result<()> {
+    if dest.exists() && !overwrite {
+        tracing::info!("{} already exists, skipping download", label);
+        return Ok(());
+    }
+
+    let tmp_path = dest.with_extension("download");
+    let response = ureq::get(url)
+        .set("User-Agent", concat!("wacli/", env!("CARGO_PKG_VERSION")))
+        .call()
+        .with_context(|| format!("failed to download {}", url))?;
+
+    if response.status() >= 400 {
+        bail!(
+            "failed to download {} (status {})",
+            label,
+            response.status()
+        );
+    }
+
+    let mut reader = response.into_reader();
+    let mut tmp_file = fs::File::create(&tmp_path)
+        .with_context(|| format!("failed to create {}", tmp_path.display()))?;
+    std::io::copy(&mut reader, &mut tmp_file)
+        .with_context(|| format!("failed to write {}", tmp_path.display()))?;
+
+    if overwrite && dest.exists() {
+        fs::remove_file(dest)
+            .with_context(|| format!("failed to remove {}", dest.display()))?;
+    }
+
+    fs::rename(&tmp_path, dest)
+        .with_context(|| format!("failed to move {} into place", label))?;
+    tracing::info!("downloaded {} -> {}", label, dest.display());
     Ok(())
 }
 

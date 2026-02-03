@@ -32,6 +32,12 @@ cargo build --release
 wacli init my-cli
 ```
 
+Download framework components in one step:
+
+```bash
+wacli init my-cli --with-components
+```
+
 This creates the directory structure:
 ```
 my-cli/

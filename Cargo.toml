@@ -36,6 +36,7 @@ wit-parser = "0.244"
 indexmap = "2.2"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+ureq = "2.12"
 
 [profile.release]
 lto = true
