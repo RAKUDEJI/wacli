@@ -43,6 +43,8 @@ This creates the directory structure:
 my-cli/
   defaults/
   commands/
+  wit/
+    command.wit
 ```
 
 ### Build from defaults/ and commands/
@@ -82,6 +84,8 @@ my-cli/
   commands/
     greet.component.wasm      # Command plugins (*.component.wasm)
     hello-world.component.wasm
+  wit/
+    command.wit               # Plugin interface for components
 ```
 
 The `wacli build` command:

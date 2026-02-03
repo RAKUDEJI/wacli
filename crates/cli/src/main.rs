@@ -79,7 +79,7 @@ struct InitArgs {
     #[arg(long)]
     with_components: bool,
 
-    /// Overwrite existing component files when downloading
+    /// Overwrite existing component and WIT files when initializing
     #[arg(long)]
     overwrite: bool,
 }
@@ -126,17 +126,12 @@ fn main() -> Result<()> {
     init_tracing();
     let cli = Cli::parse();
 
-    tokio::runtime::Builder::new_multi_thread()
-        .enable_all()
-        .build()?
-        .block_on(async {
-            match cli.command {
-                Commands::Init(args) => init(args),
-                Commands::Build(args) => build(args).await,
-                Commands::Compose(args) => compose(args).await,
-                Commands::Plug(args) => plug(args),
-            }
-        })
+    match cli.command {
+        Commands::Init(args) => init(args),
+        Commands::Build(args) => build(args),
+        Commands::Compose(args) => compose(args),
+        Commands::Plug(args) => plug(args),
+    }
 }
 
 fn init(args: InitArgs) -> Result<()> {
@@ -153,6 +148,8 @@ fn init(args: InitArgs) -> Result<()> {
     fs::create_dir_all(&commands_dir)
         .with_context(|| format!("failed to create directory: {}", commands_dir.display()))?;
 
+    write_plugin_wit(&dir, args.overwrite)?;
+
     if args.with_components {
         download_framework_components(&defaults_dir, args.overwrite)?;
     }
@@ -160,6 +157,7 @@ fn init(args: InitArgs) -> Result<()> {
     eprintln!("Created:");
     eprintln!("  {}", defaults_dir.display());
     eprintln!("  {}", commands_dir.display());
+    eprintln!("  {}", dir.join("wit").display());
     eprintln!();
     eprintln!("Next steps:");
     if args.with_components {
@@ -174,10 +172,36 @@ fn init(args: InitArgs) -> Result<()> {
     Ok(())
 }
 
+const PLUGIN_WIT: &str =
+    include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/wit/command.wit"));
 const HOST_COMPONENT_URL: &str =
     "https://github.com/RAKUDEJI/wacli/releases/latest/download/host.component.wasm";
 const CORE_COMPONENT_URL: &str =
     "https://github.com/RAKUDEJI/wacli/releases/latest/download/core.component.wasm";
+
+fn write_plugin_wit(project_dir: &Path, overwrite: bool) -> Result<()> {
+    let wit_dir = project_dir.join("wit");
+    fs::create_dir_all(&wit_dir)
+        .with_context(|| format!("failed to create directory: {}", wit_dir.display()))?;
+
+    let dest = wit_dir.join("command.wit");
+    if dest.exists() && !overwrite {
+        tracing::info!("command.wit already exists, skipping");
+        return Ok(());
+    }
+
+    let tmp_path = dest.with_extension("tmp");
+    fs::write(&tmp_path, PLUGIN_WIT)
+        .with_context(|| format!("failed to write {}", tmp_path.display()))?;
+    if overwrite && dest.exists() {
+        fs::remove_file(&dest)
+            .with_context(|| format!("failed to remove {}", dest.display()))?;
+    }
+    fs::rename(&tmp_path, &dest)
+        .with_context(|| format!("failed to move {} into place", dest.display()))?;
+    tracing::info!("installed command.wit -> {}", dest.display());
+    Ok(())
+}
 
 fn download_framework_components(defaults_dir: &Path, overwrite: bool) -> Result<()> {
     let host_path = defaults_dir.join("host.component.wasm");
@@ -235,7 +259,7 @@ fn download_component(url: &str, dest: &Path, overwrite: bool, label: &str) -> R
     Ok(())
 }
 
-async fn build(args: BuildArgs) -> Result<()> {
+fn build(args: BuildArgs) -> Result<()> {
     tracing::debug!("executing build command");
 
     let defaults_dir = PathBuf::from("defaults");
@@ -353,7 +377,7 @@ fn parse_dep(s: &str) -> Result<(String, PathBuf)> {
     Ok((k.trim().to_string(), PathBuf::from(v.trim())))
 }
 
-async fn compose(args: ComposeArgs) -> Result<()> {
+fn compose(args: ComposeArgs) -> Result<()> {
     tracing::debug!("executing compose command");
 
     // Read the WAC source file

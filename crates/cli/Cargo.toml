@@ -1,6 +1,6 @@
 [package]
 name = "wacli"
-version = "0.0.13"
+version = "0.0.14"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
@@ -40,7 +40,6 @@ wac-graph.workspace = true
 wac-types.workspace = true
 clap.workspace = true
 anyhow.workspace = true
-tokio.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 wasmparser.workspace = true
