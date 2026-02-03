@@ -2,7 +2,7 @@
 
 WebAssembly Component composition CLI tool.
 
-[![CI](https://github.com/aspect-build/wacli/actions/workflows/ci.yml/badge.svg)](https://github.com/aspect-build/wacli/actions/workflows/ci.yml)
+[![CI](https://github.com/RAKUDEJI/wacli/actions/workflows/ci.yml/badge.svg)](https://github.com/RAKUDEJI/wacli/actions/workflows/ci.yml)
 [![crates.io](https://img.shields.io/crates/v/wacli.svg)](https://crates.io/crates/wacli)
 [![License](https://img.shields.io/crates/l/wacli.svg)](LICENSE)
 
@@ -25,7 +25,7 @@ cargo install wacli
 Or build from source:
 
 ```bash
-git clone https://github.com/aspect-build/wacli.git
+git clone https://github.com/RAKUDEJI/wacli.git
 cd wacli
 cargo build --release
 ```
@@ -177,7 +177,7 @@ Pre-built framework components are available as release artifacts:
 - `host.component.wasm` - WASI to wacli bridge
 - `core.component.wasm` - Command router
 
-Download from [Releases](https://github.com/aspect-build/wacli/releases).
+Download from [Releases](https://github.com/RAKUDEJI/wacli/releases).
 
 ## WIT Interfaces
 
