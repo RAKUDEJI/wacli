@@ -1,6 +1,6 @@
 [package]
 name = "wacli-cdk"
-version = "0.0.16"
+version = "0.0.17"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
@@ -14,4 +14,4 @@ name = "wacli_cdk"
 path = "src/lib.rs"
 
 [dependencies]
-wit-bindgen = { version = "0.40", default-features = false, features = ["macros", "realloc"] }
+wit-bindgen.workspace = true

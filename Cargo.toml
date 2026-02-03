@@ -26,6 +26,7 @@ serde_json = "1.0"
 wasmparser = "0.244"
 wasm-encoder = "0.244"
 wat = "1.244"
+wit-bindgen = { version = "0.52", default-features = false, features = ["realloc"] }
 wit-component = "0.244"
 wit-parser = "0.244"
 

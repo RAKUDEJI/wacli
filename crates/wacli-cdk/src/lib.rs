@@ -1,74 +1,136 @@
 //! wacli command development kit for Rust plugins.
 //!
 //! # Example
-//! ```rust
-//! use wacli_cdk::{export_command, Command, CommandMetaBuilder, CommandResult};
+//!
+//! ```rust,ignore
+//! use wacli_cdk::{Command, CommandMeta, CommandResult, meta};
 //!
 //! struct Hello;
 //!
 //! impl Command for Hello {
-//!     fn meta() -> wacli_cdk::CommandMeta {
-//!         CommandMetaBuilder::new("hello")
-//!             .summary("Say hello")
-//!             .build()
+//!     fn meta() -> CommandMeta {
+//!         meta("hello").summary("Say hello").build()
 //!     }
 //!
-//!     fn run(_argv: Vec<String>) -> CommandResult {
-//!         wacli_cdk::io::stdout_println("Hello from Rust!");
+//!     fn run(argv: Vec<String>) -> CommandResult {
+//!         wacli_cdk::io::println("Hello!");
 //!         Ok(0)
 //!     }
 //! }
 //!
-//! export_command!(Hello);
+//! wacli_cdk::export!(Hello);
 //! ```
 
-wit_bindgen::generate!({
-    world: "plugin",
-    path: "wit/command.wit",
-    pub_export_macro: true,
-});
+#[doc(hidden)]
+pub mod bindings;
 
-use core::marker::PhantomData;
-
-pub use wacli::cli::host;
-pub use wacli::cli::types::{CommandError, CommandMeta, CommandResult};
+pub use bindings::wacli::cli::host;
+pub use bindings::wacli::cli::types::{CommandError, CommandMeta, CommandResult};
 
 /// Exit code type for commands.
 pub type ExitCode = u32;
 
-/// Trait implemented by command plugins.
+/// Trait for implementing a wacli command.
 pub trait Command {
-    /// Command metadata.
+    /// Return command metadata.
     fn meta() -> CommandMeta;
 
-    /// Execute the command with argv.
+    /// Execute the command with the given arguments.
     fn run(argv: Vec<String>) -> CommandResult;
 }
 
-/// Adapter to bridge `Command` into the WIT guest trait.
-pub struct CommandShim<T>(PhantomData<T>);
-
-impl<T: Command> exports::wacli::cli::command::Guest for CommandShim<T> {
-    fn meta() -> CommandMeta {
-        T::meta()
-    }
-
-    fn run(argv: Vec<String>) -> CommandResult {
-        T::run(argv)
-    }
-}
-
-/// Export a command implementation as a wacli plugin.
+/// Export a command implementation.
+///
+/// This macro generates the WASM exports required by the wacli plugin interface.
+///
+/// # Example
+///
+/// ```rust,ignore
+/// struct MyCommand;
+///
+/// impl wacli_cdk::Command for MyCommand {
+///     fn meta() -> wacli_cdk::CommandMeta {
+///         wacli_cdk::meta("my-cmd").build()
+///     }
+///
+///     fn run(argv: Vec<String>) -> wacli_cdk::CommandResult {
+///         Ok(0)
+///     }
+/// }
+///
+/// wacli_cdk::export!(MyCommand);
+/// ```
 #[macro_export]
-macro_rules! export_command {
+macro_rules! export {
     ($ty:ty) => {
-        $crate::export!($crate::CommandShim::<$ty>);
+        const _: () = {
+            struct __WacliShim;
+
+            impl $crate::bindings::exports::wacli::cli::command::Guest for __WacliShim {
+                fn meta() -> $crate::CommandMeta {
+                    <$ty as $crate::Command>::meta()
+                }
+
+                fn run(argv: Vec<String>) -> $crate::CommandResult {
+                    <$ty as $crate::Command>::run(argv)
+                }
+            }
+
+            #[unsafe(export_name = "wacli:cli/command@1.0.0#meta")]
+            unsafe extern "C" fn __export_meta() -> *mut u8 {
+                unsafe {
+                    $crate::bindings::exports::wacli::cli::command::_export_meta_cabi::<__WacliShim>()
+                }
+            }
+
+            #[unsafe(export_name = "wacli:cli/command@1.0.0#run")]
+            unsafe extern "C" fn __export_run(arg0: *mut u8, arg1: usize) -> *mut u8 {
+                unsafe {
+                    $crate::bindings::exports::wacli::cli::command::_export_run_cabi::<__WacliShim>(
+                        arg0, arg1,
+                    )
+                }
+            }
+
+            #[unsafe(export_name = "cabi_post_wacli:cli/command@1.0.0#meta")]
+            unsafe extern "C" fn __post_return_meta(arg0: *mut u8) {
+                unsafe {
+                    $crate::bindings::exports::wacli::cli::command::__post_return_meta::<__WacliShim>(
+                        arg0,
+                    )
+                }
+            }
+
+            #[unsafe(export_name = "cabi_post_wacli:cli/command@1.0.0#run")]
+            unsafe extern "C" fn __post_return_run(arg0: *mut u8) {
+                unsafe {
+                    $crate::bindings::exports::wacli::cli::command::__post_return_run::<__WacliShim>(
+                        arg0,
+                    )
+                }
+            }
+        };
     };
 }
 
-/// Builder for `CommandMeta` with sensible defaults.
+/// Create a metadata builder.
+///
+/// # Example
+///
+/// ```rust,ignore
+/// wacli_cdk::meta("greet")
+///     .summary("Greet someone")
+///     .usage("greet [NAME]")
+///     .version("1.0.0")
+///     .build()
+/// ```
+pub fn meta(name: impl Into<String>) -> MetaBuilder {
+    MetaBuilder::new(name)
+}
+
+/// Builder for `CommandMeta`.
 #[derive(Default)]
-pub struct CommandMetaBuilder {
+pub struct MetaBuilder {
     name: String,
     summary: String,
     usage: String,
@@ -79,8 +141,7 @@ pub struct CommandMetaBuilder {
     examples: Vec<String>,
 }
 
-impl CommandMetaBuilder {
-    /// Create a new builder with the required name.
+impl MetaBuilder {
     pub fn new(name: impl Into<String>) -> Self {
         Self {
             name: name.into(),
@@ -108,8 +169,8 @@ impl CommandMetaBuilder {
         self
     }
 
-    pub fn hidden(mut self, hidden: bool) -> Self {
-        self.hidden = hidden;
+    pub fn hidden(mut self) -> Self {
+        self.hidden = true;
         self
     }
 
@@ -137,27 +198,36 @@ impl CommandMetaBuilder {
     }
 }
 
-/// Convenience helpers for writing to stdout/stderr.
+/// I/O helpers for stdout/stderr.
 pub mod io {
     use super::host;
 
-    pub fn stdout_write_str(s: impl AsRef<str>) {
+    /// Write to stdout.
+    pub fn print(s: impl AsRef<str>) {
         host::stdout_write(s.as_ref().as_bytes());
     }
 
-    pub fn stderr_write_str(s: impl AsRef<str>) {
+    /// Write to stderr.
+    pub fn eprint(s: impl AsRef<str>) {
         host::stderr_write(s.as_ref().as_bytes());
     }
 
-    pub fn stdout_println(s: impl AsRef<str>) {
+    /// Write to stdout with newline.
+    pub fn println(s: impl AsRef<str>) {
         let mut buf = s.as_ref().as_bytes().to_vec();
         buf.push(b'\n');
         host::stdout_write(&buf);
     }
 
-    pub fn stderr_println(s: impl AsRef<str>) {
+    /// Write to stderr with newline.
+    pub fn eprintln(s: impl AsRef<str>) {
         let mut buf = s.as_ref().as_bytes().to_vec();
         buf.push(b'\n');
         host::stderr_write(&buf);
+    }
+
+    /// Flush stdout.
+    pub fn flush() {
+        host::stdout_flush();
     }
 }
