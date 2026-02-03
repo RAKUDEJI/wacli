@@ -13,7 +13,7 @@ use wit_component::ComponentEncoder;
 use wit_parser::{Resolve, UnresolvedPackageGroup};
 
 const REGISTRY_WIT_BASE: &str =
-    include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../wit/registry.wit"));
+    include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/wit/registry.wit"));
 const REGISTRY_WAT_TEMPLATE: &str = include_str!("registry_template.wat");
 
 struct NameTable {
