@@ -12,6 +12,18 @@ build_component() {
   local component_out="${comp_dir}/${name}.component.wasm"
   local root_component_out="${root_dir}/components/${name}.component.wasm"
 
+  if [[ -d "${gen_dir}/gen/interface" ]]; then
+    mkdir -p "${gen_dir}/interface"
+    for entry in "${gen_dir}/gen/interface"/*; do
+      [[ -e "${entry}" ]] || continue
+      local base
+      base="$(basename "${entry}")"
+      if [[ ! -e "${gen_dir}/interface/${base}" ]]; then
+        cp -R "${entry}" "${gen_dir}/interface/${base}"
+      fi
+    done
+  fi
+
   (cd "${gen_dir}" && moon build --target wasm)
 
   if [[ ! -f "${wasm_in}" ]]; then
