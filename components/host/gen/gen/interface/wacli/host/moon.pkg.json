@@ -1,0 +1,14 @@
+{
+  "import": [
+    { "path": "wacli/interface/wasi/cli/environment", "alias": "wasi_env" },
+    { "path": "wacli/interface/wasi/cli/stdin", "alias": "wasi_stdin" },
+    { "path": "wacli/interface/wasi/cli/stdout", "alias": "wasi_stdout" },
+    { "path": "wacli/interface/wasi/cli/stderr", "alias": "wasi_stderr" },
+    { "path": "wacli/interface/wasi/cli/exit", "alias": "wasi_exit" },
+    { "path": "wacli/interface/wasi/cli/terminalStdout", "alias": "wasi_terminal_stdout" },
+    { "path": "wacli/interface/wasi/cli/terminalStderr", "alias": "wasi_terminal_stderr" },
+    { "path": "wacli/interface/wasi/random/random", "alias": "wasi_random" },
+    { "path": "wacli/interface/wasi/random/insecure", "alias": "wasi_insecure" }
+  ],
+  "warn-list": "-44"
+}

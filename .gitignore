@@ -12,6 +12,10 @@ wkg.lock
 # Generated directories that can be recreated
 interface/
 world/
+!components/**/gen/gen/interface/
+!components/**/gen/gen/interface/**
+!components/**/gen/gen/world/
+!components/**/gen/gen/world/**
 
 # Reference/draft documents (not for distribution)
 docs/
