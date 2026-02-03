@@ -2086,7 +2086,7 @@ dependencies = [
 
 [[package]]
 name = "wacli"
-version = "0.0.19"
+version = "0.0.20"
 dependencies = [
  "anyhow",
  "clap",
@@ -2110,7 +2110,7 @@ dependencies = [
 
 [[package]]
 name = "wacli-cdk"
-version = "0.0.19"
+version = "0.0.20"
 dependencies = [
  "wit-bindgen 0.52.0",
 ]

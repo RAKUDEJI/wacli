@@ -59,13 +59,25 @@ impl Context {
     }
 
     /// Check if a flag like `--help` exists.
-    pub fn flag(&self, name: &str) -> bool {
-        args::flag(&self.argv, name)
+    ///
+    /// Accepts a single name or multiple names via array/slice.
+    pub fn flag<'a, N>(&self, names: N) -> bool
+    where
+        N: args::FlagNames<'a>,
+    {
+        args::flag(&self.argv, names)
     }
 
     /// Get a flag value such as `--name=value` or `--name value`.
     pub fn value(&self, name: &str) -> Option<&str> {
         args::value(&self.argv, name)
+    }
+
+    /// Require a positional argument by index.
+    pub fn require_arg(&self, index: usize, name: &str) -> Result<&str, CommandError> {
+        self.arg(index).ok_or_else(|| {
+            CommandError::InvalidArgs(format!("missing required argument: {name}"))
+        })
     }
 }
 
@@ -169,15 +181,65 @@ pub fn meta(name: impl Into<String>) -> MetaBuilder {
 
 /// Minimal argument helpers (no extra dependencies).
 pub mod args {
+    /// Argument name collection for flag matching.
+    pub trait FlagNames<'a> {
+        type Iter: Iterator<Item = &'a str>;
+        fn iter(self) -> Self::Iter;
+    }
+
+    impl<'a> FlagNames<'a> for &'a str {
+        type Iter = std::iter::Once<&'a str>;
+
+        fn iter(self) -> Self::Iter {
+            std::iter::once(self)
+        }
+    }
+
+    impl<'a> FlagNames<'a> for &'a [&'a str] {
+        type Iter = std::iter::Copied<std::slice::Iter<'a, &'a str>>;
+
+        fn iter(self) -> Self::Iter {
+            self.iter().copied()
+        }
+    }
+
+    impl<'a, const N: usize> FlagNames<'a> for [&'a str; N] {
+        type Iter = std::array::IntoIter<&'a str, N>;
+
+        fn iter(self) -> Self::Iter {
+            self.into_iter()
+        }
+    }
+
     /// Check if a flag like `--help` exists.
-    pub fn flag(argv: &[String], name: &str) -> bool {
-        argv.iter().any(|arg| arg == name)
+    ///
+    /// Accepts a single name or multiple names via array/slice.
+    /// Parsing stops at `--`.
+    pub fn flag<'a, N>(argv: &[String], names: N) -> bool
+    where
+        N: FlagNames<'a>,
+    {
+        let names: Vec<&str> = names.iter().collect();
+        for arg in argv {
+            if arg == "--" {
+                break;
+            }
+            if names.iter().any(|name| arg == name) {
+                return true;
+            }
+        }
+        false
     }
 
     /// Get a flag value like `--name=value` or `--name value`.
+    ///
+    /// Parsing stops at `--`.
     pub fn value<'a>(argv: &'a [String], name: &str) -> Option<&'a str> {
         let needle = format!("{name}=");
         for (idx, arg) in argv.iter().enumerate() {
+            if arg == "--" {
+                break;
+            }
             if let Some(rest) = arg.strip_prefix(&needle) {
                 return Some(rest);
             }
@@ -189,8 +251,30 @@ pub mod args {
     }
 
     /// Get a positional argument by index.
+    ///
+    /// Flags (arguments starting with `-`) are skipped.
+    /// If `--` is present, everything after it is treated as positional.
     pub fn positional<'a>(argv: &'a [String], index: usize) -> Option<&'a str> {
-        argv.get(index).map(|s| s.as_str())
+        let mut current = 0;
+        let mut after_separator = false;
+
+        for arg in argv {
+            if !after_separator {
+                if arg == "--" {
+                    after_separator = true;
+                    continue;
+                }
+                if arg.starts_with('-') {
+                    continue;
+                }
+            }
+
+            if current == index {
+                return Some(arg.as_str());
+            }
+            current += 1;
+        }
+        None
     }
 
     /// Get the remaining arguments from a start index.
@@ -200,6 +284,46 @@ pub mod args {
         } else {
             &argv[start..]
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::args;
+
+    #[test]
+    fn positional_skips_flags() {
+        let argv = vec!["--loud".to_string(), "Bob".to_string()];
+        assert_eq!(args::positional(&argv, 0), Some("Bob"));
+    }
+
+    #[test]
+    fn positional_after_separator() {
+        let argv = vec![
+            "--".to_string(),
+            "--not-a-flag".to_string(),
+            "Bob".to_string(),
+        ];
+        assert_eq!(args::positional(&argv, 0), Some("--not-a-flag"));
+        assert_eq!(args::positional(&argv, 1), Some("Bob"));
+    }
+
+    #[test]
+    fn flag_multiple_names() {
+        let argv = vec!["-l".to_string(), "Bob".to_string()];
+        assert!(args::flag(&argv, ["-l", "--loud"]));
+    }
+
+    #[test]
+    fn flag_stops_at_separator() {
+        let argv = vec!["--".to_string(), "--loud".to_string()];
+        assert!(!args::flag(&argv, "--loud"));
+    }
+
+    #[test]
+    fn value_stops_at_separator() {
+        let argv = vec!["--".to_string(), "--name".to_string(), "Bob".to_string()];
+        assert_eq!(args::value(&argv, "--name"), None);
     }
 }
 

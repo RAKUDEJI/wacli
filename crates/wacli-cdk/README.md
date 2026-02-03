@@ -32,7 +32,7 @@ edition = "2024"
 crate-type = ["cdylib"]
 
 [dependencies]
-wacli-cdk = "0.0.19"
+wacli-cdk = "0.0.20"
 ```
 
 ## Quick Start
@@ -81,6 +81,9 @@ wasm-tools component new \
 
 Wrap `argv` with `Context` to access environment variables and convenient argument helpers:
 
+`argv` contains only arguments (the command name is not included).
+Example: `my-cli greet Alice` -> `argv = ["Alice"]`.
+
 ```rust
 fn run(argv: Vec<String>) -> CommandResult {
     let ctx = wacli_cdk::Context::new(argv);
@@ -89,9 +92,12 @@ fn run(argv: Vec<String>) -> CommandResult {
     let name = ctx.arg(0).unwrap_or("default");
 
     // Boolean flags
-    if ctx.flag("--verbose") {
+    if ctx.flag(["-v", "--verbose"]) {
         wacli_cdk::io::eprintln("Verbose mode enabled");
     }
+
+    // Required arguments
+    let file = ctx.require_arg(0, "FILE")?;
 
     // Flag values (--key=value or --key value)
     if let Some(output) = ctx.value("--output") {
@@ -126,7 +132,7 @@ fn run(argv: Vec<String>) -> CommandResult {
         .and_then(|s| s.parse().ok())
         .unwrap_or(1);
 
-    // Get positional argument
+    // Get positional argument (flags are skipped; `--` ends flag parsing)
     let target = args::positional(&argv, 0).unwrap_or("default");
 
     // Get remaining arguments
