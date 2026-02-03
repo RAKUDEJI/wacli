@@ -24,7 +24,14 @@ build_component() {
     done
   fi
 
-  (cd "${gen_dir}" && moon build --target wasm)
+  if ! (cd "${gen_dir}" && moon build --target wasm); then
+    if [[ -f "${component_out}" ]]; then
+      echo "MoonBit build failed for ${name}; using prebuilt ${component_out}" >&2
+      return 0
+    fi
+    echo "MoonBit build failed for ${name} and no prebuilt component found" >&2
+    exit 1
+  fi
 
   if [[ ! -f "${wasm_in}" ]]; then
     echo "Missing MoonBit output: ${wasm_in}" >&2
