@@ -51,16 +51,28 @@ fn is_valid_command_name(name: &str) -> bool {
     !name.ends_with('-')
 }
 
-/// Extract component exports from a WASM binary.
-fn extract_exports(wasm_bytes: &[u8]) -> Result<Vec<String>> {
-    let mut exports = Vec::new();
+/// Result of analyzing a WASM binary.
+enum WasmKind {
+    /// A WebAssembly Component with its exports.
+    Component(Vec<String>),
+    /// A core WebAssembly module (not a component).
+    CoreModule,
+}
+
+/// Analyze a WASM binary to determine its kind and extract exports.
+fn analyze_wasm(wasm_bytes: &[u8]) -> Result<WasmKind> {
     let parser = Parser::new(0);
+    let mut is_component = false;
+    let mut exports = Vec::new();
     let mut depth = 0;
 
     for payload in parser.parse_all(wasm_bytes) {
         let payload = payload.context("failed to parse WASM")?;
 
         match payload {
+            Payload::Version { encoding, .. } => {
+                is_component = encoding == wasmparser::Encoding::Component;
+            }
             Payload::ModuleSection { .. } | Payload::ComponentSection { .. } => {
                 depth += 1;
             }
@@ -80,17 +92,33 @@ fn extract_exports(wasm_bytes: &[u8]) -> Result<Vec<String>> {
         }
     }
 
-    Ok(exports)
+    if is_component {
+        Ok(WasmKind::Component(exports))
+    } else {
+        Ok(WasmKind::CoreModule)
+    }
 }
 
 /// Check if a component exports the wacli:cli/command interface.
-fn exports_command_interface(wasm_bytes: &[u8]) -> Result<bool> {
-    let exports = extract_exports(wasm_bytes)?;
-    // The export name should be "wacli:cli/command@1.0.0" or just "command"
-    // depending on how the component was built
-    Ok(exports
-        .iter()
-        .any(|e| e == "wacli:cli/command@1.0.0" || e == "wacli:cli/command" || e == "command"))
+fn exports_command_interface(wasm_bytes: &[u8], path: &Path) -> Result<bool> {
+    match analyze_wasm(wasm_bytes)? {
+        WasmKind::CoreModule => {
+            bail!(
+                "'{}' is a core WebAssembly module, not a component.\n\
+                 Hint: run `wasm-tools component new {} -o {}`",
+                path.display(),
+                path.display(),
+                path.display()
+            );
+        }
+        WasmKind::Component(exports) => {
+            // The export name should be "wacli:cli/command@1.0.0" or just "command"
+            // depending on how the component was built
+            Ok(exports.iter().any(|e| {
+                e == "wacli:cli/command@1.0.0" || e == "wacli:cli/command" || e == "command"
+            }))
+        }
+    }
 }
 
 /// Scan the commands directory and return validated command info.
@@ -149,7 +177,7 @@ pub fn scan_commands(commands_dir: &Path) -> Result<Vec<CommandInfo>> {
         let wasm_bytes = fs::read(&path)
             .with_context(|| format!("failed to read component: {}", path.display()))?;
 
-        if !exports_command_interface(&wasm_bytes)? {
+        if !exports_command_interface(&wasm_bytes, &path)? {
             bail!(
                 "'{}' does not export wacli:cli/command interface",
                 path.display()

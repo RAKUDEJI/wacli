@@ -27,8 +27,44 @@ pub mod bindings;
 pub use bindings::wacli::cli::host;
 pub use bindings::wacli::cli::types::{CommandError, CommandMeta, CommandResult};
 
+/// Common imports for wacli command implementations.
+pub mod prelude {
+    pub use super::{args, io, meta, Command, CommandError, CommandMeta, CommandResult, Context};
+}
+
 /// Exit code type for commands.
 pub type ExitCode = u32;
+
+/// Execution context for commands.
+#[derive(Debug, Clone)]
+pub struct Context {
+    pub argv: Vec<String>,
+    pub env: Vec<(String, String)>,
+}
+
+impl Context {
+    pub fn new(argv: Vec<String>) -> Self {
+        Self {
+            argv,
+            env: host::env(),
+        }
+    }
+
+    /// Get the positional argument at the given index.
+    pub fn arg(&self, index: usize) -> Option<&str> {
+        args::positional(&self.argv, index)
+    }
+
+    /// Check if a flag like `--help` exists.
+    pub fn flag(&self, name: &str) -> bool {
+        args::flag(&self.argv, name)
+    }
+
+    /// Get a flag value such as `--name=value` or `--name value`.
+    pub fn value(&self, name: &str) -> Option<&str> {
+        args::value(&self.argv, name)
+    }
+}
 
 /// Trait for implementing a wacli command.
 pub trait Command {
@@ -126,6 +162,42 @@ macro_rules! export {
 /// ```
 pub fn meta(name: impl Into<String>) -> MetaBuilder {
     MetaBuilder::new(name)
+}
+
+/// Minimal argument helpers (no extra dependencies).
+pub mod args {
+    /// Check if a flag like `--help` exists.
+    pub fn flag(argv: &[String], name: &str) -> bool {
+        argv.iter().any(|arg| arg == name)
+    }
+
+    /// Get a flag value like `--name=value` or `--name value`.
+    pub fn value<'a>(argv: &'a [String], name: &str) -> Option<&'a str> {
+        let needle = format!("{name}=");
+        for (idx, arg) in argv.iter().enumerate() {
+            if let Some(rest) = arg.strip_prefix(&needle) {
+                return Some(rest);
+            }
+            if arg == name {
+                return argv.get(idx + 1).map(|s| s.as_str());
+            }
+        }
+        None
+    }
+
+    /// Get a positional argument by index.
+    pub fn positional<'a>(argv: &'a [String], index: usize) -> Option<&'a str> {
+        argv.get(index).map(|s| s.as_str())
+    }
+
+    /// Get the remaining arguments from a start index.
+    pub fn rest<'a>(argv: &'a [String], start: usize) -> &'a [String] {
+        if start >= argv.len() {
+            &argv[argv.len()..]
+        } else {
+            &argv[start..]
+        }
+    }
 }
 
 /// Builder for `CommandMeta`.
