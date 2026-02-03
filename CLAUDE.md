@@ -23,8 +23,14 @@ wacli/
 │   └── cli/                    # wacli CLIツール (Rust)
 │       ├── Cargo.toml
 │       └── src/
+│           ├── main.rs         # CLIエントリポイント
+│           ├── component_scan.rs   # コンポーネントスキャン
+│           ├── registry_gen_wat.rs # Registry自動生成（WAT）
+│           ├── registry_template.wat # WATテンプレート
+│           └── wac_gen.rs      # WAC生成
 ├── wit/                        # WIT定義
 │   ├── wacli.wit               # マスターWIT定義
+│   ├── registry.wit            # Registry用WIT（ベース）
 │   └── wacli-runner.wit        # 最終成果物のWIT定義
 ├── components/                 # フレームワークコンポーネント
 │   ├── host/                   # WASI → wacli/host ブリッジ
@@ -47,50 +53,46 @@ cargo build --release -p wacli
 
 ```bash
 # プロジェクト初期化
-wacli init [DIR] --name "example:my-cli"
+wacli init [DIR]
 
-# マニフェストからビルド
-wacli build -m wacli.json [-o output.wasm]
+# ディレクトリベースでビルド
+wacli build --name "example:my-cli" [-o output.wasm]
 
 # WAC直接合成
 wacli compose app.wac -o app.wasm -d "pkg:name=path.wasm"
 
 # プラグ合成
 wacli plug socket.wasm --plug a.wasm --plug b.wasm -o out.wasm
-
-# import検査
-wacli check component.wasm -m wacli.json [--json]
 ```
 
-### wacli.json 形式
+### ビルドオプション
 
-```json
-{
-  "package": {
-    "name": "example:my-cli",
-    "version": "0.1.0"
-  },
-  "framework": {
-    "host": "path/to/host.component.wasm",
-    "core": "path/to/core.component.wasm",
-    "registry": "registry/registry.component.wasm"
-  },
-  "command": [
-    {
-      "name": "greet",
-      "package": "example:greeter",
-      "plugin": "plugins/greeter/greeter.component.wasm"
-    }
-  ],
-  "output": {
-    "path": "dist/my-cli.component.wasm"
-  },
-  "allowlist": [
-    "wasi:filesystem/types",
-    "wasi:cli/stdin"
-  ]
-}
+| オプション | デフォルト | 説明 |
+|-----------|-----------|------|
+| `--name` | "example:my-cli" | パッケージ名 |
+| `--version` | "0.1.0" | パッケージバージョン |
+| `-o, --output` | "my-cli.component.wasm" | 出力ファイルパス |
+| `--no-validate` | false | 検証をスキップ |
+| `--print-wac` | false | 生成されたWACを表示（合成しない） |
+
+### ディレクトリ構成（ビルド時）
+
 ```
+my-project/
+├── defaults/
+│   ├── host.component.wasm       # 必須: WASIブリッジ
+│   ├── core.component.wasm       # 必須: コマンドルーター
+│   └── registry.component.wasm   # オプション: 未指定時は自動生成
+└── commands/
+    ├── greet.component.wasm      # コマンドプラグイン
+    └── hello.component.wasm
+```
+
+`wacli build` の動作:
+1. `defaults/` からフレームワークコンポーネント（host, core）を読み込み
+2. `commands/` から `*.component.wasm` をスキャン
+3. `registry.component.wasm` がなければWATテンプレートから自動生成
+4. WAC言語で合成し、最終CLIを出力
 
 ## WIT インターフェース
 

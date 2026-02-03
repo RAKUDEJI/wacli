@@ -1,5 +1,5 @@
 mod component_scan;
-mod registry_gen;
+mod registry_gen_wat;
 mod wac_gen;
 
 use anyhow::{Context, Result, bail};
@@ -18,7 +18,9 @@ use wac_resolver::{FileSystemPackageResolver, packages};
 use wac_types::{BorrowedPackageKey, Package};
 
 use crate::component_scan::{scan_commands, verify_defaults};
-use crate::registry_gen::{generate_registry, get_prebuilt_registry, should_use_prebuilt_registry};
+use crate::registry_gen_wat::{
+    generate_registry_wat, get_prebuilt_registry, should_use_prebuilt_registry,
+};
 use crate::wac_gen::generate_wac;
 
 #[derive(Parser)]
@@ -179,8 +181,9 @@ async fn build(args: BuildArgs) -> Result<()> {
     } else {
         // Generate registry component
         tracing::info!("generating registry component...");
-        let registry_bytes = generate_registry(&commands)
-            .context("failed to generate registry component")?;
+        tracing::info!("using WAT template registry generator");
+        let registry_bytes =
+            generate_registry_wat(&commands).context("failed to generate registry (WAT)")?;
 
         // Write to defaults directory
         let generated_path = defaults_dir.join("registry.component.wasm");

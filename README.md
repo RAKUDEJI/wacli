@@ -32,12 +32,26 @@ cargo build --release
 wacli init my-cli
 ```
 
+This creates the directory structure:
+```
+my-cli/
+  defaults/
+  commands/
+```
+
 ### Build from defaults/ and commands/
 
 ```bash
 cd my-cli
 wacli build --name "example:my-cli"
 ```
+
+Options:
+- `--name`: Package name (default: "example:my-cli")
+- `--version`: Package version (default: "0.1.0")
+- `-o, --output`: Output file path (default: "my-cli.component.wasm")
+- `--no-validate`: Skip validation of the composed component
+- `--print-wac`: Print generated WAC without composing
 
 ### Compose components directly
 
@@ -56,13 +70,19 @@ wacli plug socket.wasm --plug a.wasm --plug b.wasm -o out.wasm
 ```
 my-cli/
   defaults/
-    host.component.wasm
-    core.component.wasm
-    registry.component.wasm   (optional; generated if missing)
+    host.component.wasm       # Required: WASI to wacli bridge
+    core.component.wasm       # Required: Command router
+    registry.component.wasm   # Optional: Auto-generated if missing
   commands/
-    greet.component.wasm
+    greet.component.wasm      # Command plugins (*.component.wasm)
     hello-world.component.wasm
 ```
+
+The `wacli build` command:
+1. Scans `defaults/` for framework components (host, core, registry)
+2. Scans `commands/` for command plugins (`*.component.wasm`)
+3. Auto-generates `registry.component.wasm` if not present
+4. Composes all components into the final CLI
 
 ## Architecture
 

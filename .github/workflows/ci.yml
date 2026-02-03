@@ -30,6 +30,17 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
+      - name: Install MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+
+      - name: Install wasm-tools
+        run: cargo install wasm-tools --locked
+
+      - name: Build MoonBit components
+        run: bash scripts/build_components.sh
+
       - name: Build
         run: cargo build -p wacli --verbose
 
