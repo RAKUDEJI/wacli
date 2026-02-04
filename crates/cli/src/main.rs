@@ -47,6 +47,7 @@ enum Commands {
     /// Plug exports of components into imports of another component
     Plug(PlugArgs),
 
+    #[cfg(feature = "runtime")]
     /// Run a composed CLI component with dynamic pipes
     Run(RunArgs),
 
@@ -130,6 +131,7 @@ struct PlugArgs {
     output: Option<PathBuf>,
 }
 
+#[cfg(feature = "runtime")]
 #[derive(Parser)]
 struct RunArgs {
     /// Composed CLI component (.component.wasm)
@@ -157,6 +159,7 @@ fn main() -> Result<()> {
         Commands::Build(args) => build(args),
         Commands::Compose(args) => compose(args),
         Commands::Plug(args) => plug(args),
+        #[cfg(feature = "runtime")]
         Commands::Run(args) => run(args),
         Commands::SelfUpdate(args) => self_update(args),
     }
@@ -551,6 +554,7 @@ fn plug(args: PlugArgs) -> Result<()> {
     Ok(())
 }
 
+#[cfg(feature = "runtime")]
 fn run(args: RunArgs) -> Result<()> {
     let runner = plugin_loader::Runner::new()?;
     let code = runner.run_component(&args.component, &args.args)?;
