@@ -136,20 +136,7 @@ jobs:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: |
           set -euo pipefail
-          version="$(python - <<'PY'
-import tomllib
-def pkg_version(path):
-    with open(path, "rb") as f:
-        data = tomllib.load(f)
-    v = data["package"].get("version")
-    if isinstance(v, dict) and v.get("workspace"):
-        with open("Cargo.toml", "rb") as f:
-            root = tomllib.load(f)
-        v = root["workspace"]["package"]["version"]
-    return v
-print(pkg_version("crates/wacli-cdk/Cargo.toml"))
-PY
-)"
+          version="$(python -c 'import tomllib; root=tomllib.load(open("Cargo.toml","rb")); ws=root["workspace"]["package"]["version"]; data=tomllib.load(open("crates/wacli-cdk/Cargo.toml","rb")); v=data["package"].get("version"); print(ws if isinstance(v, dict) and v.get("workspace") else v)')"
           if [ "v${version}" != "${TAG}" ]; then
             echo "skip publish: tag ${TAG} != v${version}"
             exit 0
@@ -189,20 +176,7 @@ PY
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: |
           set -euo pipefail
-          version="$(python - <<'PY'
-import tomllib
-def pkg_version(path):
-    with open(path, "rb") as f:
-        data = tomllib.load(f)
-    v = data["package"].get("version")
-    if isinstance(v, dict) and v.get("workspace"):
-        with open("Cargo.toml", "rb") as f:
-            root = tomllib.load(f)
-        v = root["workspace"]["package"]["version"]
-    return v
-print(pkg_version("crates/plugin-loader/Cargo.toml"))
-PY
-)"
+          version="$(python -c 'import tomllib; root=tomllib.load(open("Cargo.toml","rb")); ws=root["workspace"]["package"]["version"]; data=tomllib.load(open("crates/plugin-loader/Cargo.toml","rb")); v=data["package"].get("version"); print(ws if isinstance(v, dict) and v.get("workspace") else v)')"
           if [ "v${version}" != "${TAG}" ]; then
             echo "skip publish: tag ${TAG} != v${version}"
             exit 0
@@ -243,20 +217,7 @@ PY
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: |
           set -euo pipefail
-          version="$(python - <<'PY'
-import tomllib
-def pkg_version(path):
-    with open(path, "rb") as f:
-        data = tomllib.load(f)
-    v = data["package"].get("version")
-    if isinstance(v, dict) and v.get("workspace"):
-        with open("Cargo.toml", "rb") as f:
-            root = tomllib.load(f)
-        v = root["workspace"]["package"]["version"]
-    return v
-print(pkg_version("crates/cli/Cargo.toml"))
-PY
-)"
+          version="$(python -c 'import tomllib; root=tomllib.load(open("Cargo.toml","rb")); ws=root["workspace"]["package"]["version"]; data=tomllib.load(open("crates/cli/Cargo.toml","rb")); v=data["package"].get("version"); print(ws if isinstance(v, dict) and v.get("workspace") else v)')"
           if [ "v${version}" != "${TAG}" ]; then
             echo "skip publish: tag ${TAG} != v${version}"
             exit 0
