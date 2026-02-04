@@ -135,20 +135,7 @@ jobs:
           TAG: ${{ github.ref_name }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: |
-          set -euo pipefail
-          version="$(python -c 'import tomllib; root=tomllib.load(open("Cargo.toml","rb")); ws=root["workspace"]["package"]["version"]; data=tomllib.load(open("crates/wacli-cdk/Cargo.toml","rb")); v=data["package"].get("version"); print(ws if isinstance(v, dict) and v.get("workspace") else v)')"
-          if [ "v${version}" != "${TAG}" ]; then
-            echo "skip publish: tag ${TAG} != v${version}"
-            exit 0
-          fi
-          if cargo publish -p wacli-cdk; then
-            exit 0
-          fi
-          if cargo info wacli-cdk --registry crates-io | grep -q "version: ${version}"; then
-            echo "already published"
-            exit 0
-          fi
-          exit 1
+          ./scripts/publish_if_tag.sh wacli-cdk crates/wacli-cdk/Cargo.toml
 
   publish-plugin-loader:
     runs-on: ubuntu-latest
@@ -175,20 +162,7 @@ jobs:
           TAG: ${{ github.ref_name }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: |
-          set -euo pipefail
-          version="$(python -c 'import tomllib; root=tomllib.load(open("Cargo.toml","rb")); ws=root["workspace"]["package"]["version"]; data=tomllib.load(open("crates/plugin-loader/Cargo.toml","rb")); v=data["package"].get("version"); print(ws if isinstance(v, dict) and v.get("workspace") else v)')"
-          if [ "v${version}" != "${TAG}" ]; then
-            echo "skip publish: tag ${TAG} != v${version}"
-            exit 0
-          fi
-          if cargo publish -p plugin-loader; then
-            exit 0
-          fi
-          if cargo info plugin-loader --registry crates-io | grep -q "version: ${version}"; then
-            echo "already published"
-            exit 0
-          fi
-          exit 1
+          ./scripts/publish_if_tag.sh plugin-loader crates/plugin-loader/Cargo.toml
 
   publish:
     needs: [publish-plugin-loader]
@@ -216,20 +190,7 @@ jobs:
           TAG: ${{ github.ref_name }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: |
-          set -euo pipefail
-          version="$(python -c 'import tomllib; root=tomllib.load(open("Cargo.toml","rb")); ws=root["workspace"]["package"]["version"]; data=tomllib.load(open("crates/cli/Cargo.toml","rb")); v=data["package"].get("version"); print(ws if isinstance(v, dict) and v.get("workspace") else v)')"
-          if [ "v${version}" != "${TAG}" ]; then
-            echo "skip publish: tag ${TAG} != v${version}"
-            exit 0
-          fi
-          if cargo publish -p wacli; then
-            exit 0
-          fi
-          if cargo info wacli --registry crates-io | grep -q "version: ${version}"; then
-            echo "already published"
-            exit 0
-          fi
-          exit 1
+          ./scripts/publish_if_tag.sh wacli crates/cli/Cargo.toml
 
   release:
     needs: [build, components, publish-cdk, publish-plugin-loader, publish]
