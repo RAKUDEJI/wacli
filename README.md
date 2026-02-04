@@ -243,6 +243,10 @@ world plugin {
 }
 ```
 
+**Note:** These unqualified imports are shorthand for the same-package interfaces.
+When embedded into a component they resolve to fully-qualified names like
+`wacli:cli/host-env@1.0.0`. This is expected and matches what `wacli` provides.
+
 ## License
 
 Apache-2.0

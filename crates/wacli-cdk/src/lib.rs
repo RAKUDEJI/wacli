@@ -129,6 +129,11 @@ impl Context {
         args::positional(&self.argv, index)
     }
 
+    /// Get all positional arguments (flags and their values are skipped).
+    pub fn positional_args(&self) -> Vec<&str> {
+        args::positional_args(&self.argv)
+    }
+
     /// Check if a flag like `--help` exists.
     ///
     /// Accepts a single name or multiple names via array/slice.
@@ -321,31 +326,63 @@ pub mod args {
         None
     }
 
-    /// Get a positional argument by index.
+    /// Get all positional arguments.
     ///
-    /// Flags (arguments starting with `-`) are skipped.
-    /// If `--` is present, everything after it is treated as positional.
-    pub fn positional<'a>(argv: &'a [String], index: usize) -> Option<&'a str> {
-        let mut current = 0;
+    /// Flags (arguments starting with `-`) are skipped. If a flag looks like it
+    /// takes a value (`--key value` or `-k value`), the value is also skipped.
+    /// Use `--` to stop flag parsing and treat everything after as positional.
+    pub fn positional_args<'a>(argv: &'a [String]) -> Vec<&'a str> {
+        let mut positionals = Vec::new();
+        let mut i = 0;
         let mut after_separator = false;
 
-        for arg in argv {
+        while i < argv.len() {
+            let arg = &argv[i];
             if !after_separator {
                 if arg == "--" {
                     after_separator = true;
+                    i += 1;
                     continue;
                 }
-                if arg.starts_with('-') {
+                if arg != "-" && arg.starts_with('-') {
+                    if arg.contains('=') {
+                        i += 1;
+                        continue;
+                    }
+                    let next = argv.get(i + 1);
+                    if arg.starts_with("--") {
+                        if let Some(next) = next {
+                            if !next.starts_with('-') {
+                                i += 2;
+                                continue;
+                            }
+                        }
+                        i += 1;
+                        continue;
+                    }
+                    if arg.len() == 2 {
+                        if let Some(next) = next {
+                            if !next.starts_with('-') {
+                                i += 2;
+                                continue;
+                            }
+                        }
+                    }
+                    i += 1;
                     continue;
                 }
             }
 
-            if current == index {
-                return Some(arg.as_str());
-            }
-            current += 1;
+            positionals.push(arg.as_str());
+            i += 1;
         }
-        None
+
+        positionals
+    }
+
+    /// Get a positional argument by index.
+    pub fn positional<'a>(argv: &'a [String], index: usize) -> Option<&'a str> {
+        positional_args(argv).get(index).copied()
     }
 
     /// Get the remaining arguments from a start index.
@@ -364,8 +401,24 @@ mod tests {
 
     #[test]
     fn positional_skips_flags() {
-        let argv = vec!["--loud".to_string(), "Bob".to_string()];
+        let argv = vec!["--loud".to_string(), "--".to_string(), "Bob".to_string()];
         assert_eq!(args::positional(&argv, 0), Some("Bob"));
+    }
+
+    #[test]
+    fn positional_skips_flag_values() {
+        let argv = vec![
+            "--format".to_string(),
+            "json".to_string(),
+            "file.txt".to_string(),
+        ];
+        assert_eq!(args::positional(&argv, 0), Some("file.txt"));
+    }
+
+    #[test]
+    fn positional_skips_short_flag_values() {
+        let argv = vec!["-o".to_string(), "out.txt".to_string(), "file".to_string()];
+        assert_eq!(args::positional(&argv, 0), Some("file"));
     }
 
     #[test]

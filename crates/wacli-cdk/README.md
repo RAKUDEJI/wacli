@@ -99,12 +99,15 @@ Wrap `argv` with `Context` to access environment variables and convenient argume
 `argv` contains only arguments (the command name is not included).
 Example: `my-cli greet Alice` -> `argv = ["Alice"]`.
 
+**Note:** If you need positional arguments after boolean flags, use `--` to end flag parsing.
+
 ```rust
 fn run(argv: Vec<String>) -> CommandResult {
     let ctx = wacli_cdk::Context::new(argv);
 
-    // Positional arguments
+    // Positional arguments (flags and their values are skipped)
     let name = ctx.arg(0).unwrap_or("default");
+    let rest = ctx.positional_args();
 
     // Boolean flags
     if ctx.flag(["-v", "--verbose"]) {
@@ -147,8 +150,13 @@ fn run(argv: Vec<String>) -> CommandResult {
         .and_then(|s| s.parse().ok())
         .unwrap_or(1);
 
-    // Get positional argument (flags are skipped; `--` ends flag parsing)
+    // Get positional argument (flags and their values are skipped; `--` ends flag parsing)
     let target = args::positional(&argv, 0).unwrap_or("default");
+
+    // Get all positional arguments
+    let args_only = args::positional_args(&argv);
+
+    // Tip: use `--` to pass positional args that start with `-`
 
     // Get remaining arguments
     let files = args::rest(&argv, 1);

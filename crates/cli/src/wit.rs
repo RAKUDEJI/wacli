@@ -125,6 +125,9 @@ interface command {
 }
 
 world plugin {
+  /// These are unqualified because they live in the same package.
+  /// When embedded into a component, they resolve to:
+  ///   wacli:cli/host-<name>@1.0.0
   import host-env;
   import host-io;
   import host-fs;

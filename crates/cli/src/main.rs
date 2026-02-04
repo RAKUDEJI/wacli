@@ -154,10 +154,17 @@ struct SelfUpdateArgs {
     version: Option<String>,
 }
 
-fn main() -> Result<()> {
+fn main() {
     init_tracing();
     let cli = Cli::parse();
 
+    if let Err(err) = dispatch(cli) {
+        report_error(err);
+        std::process::exit(1);
+    }
+}
+
+fn dispatch(cli: Cli) -> Result<()> {
     match cli.command {
         Commands::Init(args) => init(args),
         Commands::Build(args) => build(args),
@@ -167,6 +174,38 @@ fn main() -> Result<()> {
         Commands::Run(args) => run(args),
         Commands::SelfUpdate(args) => self_update(args),
     }
+}
+
+fn report_error(err: anyhow::Error) {
+    if is_component_interface_mismatch(&err) {
+        eprintln!("Error: Component interface mismatch\n");
+        eprintln!("This usually happens when:");
+        eprintln!("1. wacli and wacli-cdk versions don't match");
+        eprintln!("2. Old component files remain in commands/\n");
+        eprintln!("Solutions:");
+        eprintln!("- Update: wacli self-update && update wacli-cdk in Cargo.toml");
+        eprintln!("- Clean: rm commands/**/*.component.wasm && rebuild");
+        eprintln!("- Verify: wacli --version && rg wacli-cdk commands/*/Cargo.toml\n");
+        eprintln!("Details: {err}");
+    } else {
+        eprintln!("Error: {err}");
+    }
+}
+
+fn is_component_interface_mismatch(err: &anyhow::Error) -> bool {
+    let needles = [
+        "component has no import named",
+        "missing import",
+        "unknown import",
+        "no import named",
+    ];
+    for cause in err.chain() {
+        let msg = cause.to_string().to_lowercase();
+        if msg.contains("wacli:cli/") && needles.iter().any(|n| msg.contains(n)) {
+            return true;
+        }
+    }
+    false
 }
 
 fn init(args: InitArgs) -> Result<()> {
