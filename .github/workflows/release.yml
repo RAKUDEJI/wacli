@@ -132,11 +132,16 @@ jobs:
         run: |
           python - <<'PY'
           import os, tomllib
+          with open("Cargo.toml", "rb") as f:
+              root = tomllib.load(f)
+          ws_version = root["workspace"]["package"]["version"]
           with open("crates/wacli-cdk/Cargo.toml", "rb") as f:
               data = tomllib.load(f)
-          version = data["package"]["version"]
+          version = data["package"].get("version")
+          if isinstance(version, dict) and version.get("workspace"):
+              version = ws_version
           tag = os.environ["TAG"]
-          publish = "true" if tag == f"v{version}" else "false"
+          publish = "true" if version and tag == f"v{version}" else "false"
           print(f"publish={publish}")
           print(f"version={version}")
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
@@ -177,11 +182,16 @@ jobs:
         run: |
           python - <<'PY'
           import os, tomllib
+          with open("Cargo.toml", "rb") as f:
+              root = tomllib.load(f)
+          ws_version = root["workspace"]["package"]["version"]
           with open("crates/plugin-loader/Cargo.toml", "rb") as f:
               data = tomllib.load(f)
-          version = data["package"]["version"]
+          version = data["package"].get("version")
+          if isinstance(version, dict) and version.get("workspace"):
+              version = ws_version
           tag = os.environ["TAG"]
-          publish = "true" if tag == f"v{version}" else "false"
+          publish = "true" if version and tag == f"v{version}" else "false"
           print(f"publish={publish}")
           print(f"version={version}")
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
@@ -216,7 +226,32 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Check wacli version matches tag
+        id: wacli
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          python - <<'PY'
+          import os, tomllib
+          with open("Cargo.toml", "rb") as f:
+              root = tomllib.load(f)
+          ws_version = root["workspace"]["package"]["version"]
+          with open("crates/cli/Cargo.toml", "rb") as f:
+              data = tomllib.load(f)
+          version = data["package"].get("version")
+          if isinstance(version, dict) and version.get("workspace"):
+              version = ws_version
+          tag = os.environ["TAG"]
+          publish = "true" if version and tag == f"v{version}" else "false"
+          print(f"publish={publish}")
+          print(f"version={version}")
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+              out.write(f"publish={publish}\\n")
+              out.write(f"version={version}\\n")
+          PY
+
       - name: Publish to crates.io
+        if: steps.wacli.outputs.publish == 'true'
         run: cargo publish -p wacli
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
