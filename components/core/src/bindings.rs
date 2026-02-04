@@ -403,288 +403,279 @@ pub mod wacli {
 
     }
 
+
+    #[allow(dead_code, async_fn_in_trait, unused_imports, clippy::all)]
+    pub mod registry {
+      #[used]
+      #[doc(hidden)]
+      static __FORCE_SECTION_REF: fn() =
+      super::super::super::__link_custom_section_describing_imports;
+      
+      use super::super::super::_rt;
+      pub type CommandMeta = super::super::super::wacli::cli::types::CommandMeta;
+      pub type CommandResult = super::super::super::wacli::cli::types::CommandResult;
+      #[allow(unused_unsafe, clippy::all)]
+      #[allow(async_fn_in_trait)]
+      pub fn list_commands() -> _rt::Vec::<CommandMeta>{
+        unsafe {
+
+          #[cfg_attr(target_pointer_width="64", repr(align(8)))]
+          #[cfg_attr(target_pointer_width="32", repr(align(4)))]
+          struct RetArea([::core::mem::MaybeUninit::<u8>; 2*::core::mem::size_of::<*const u8>()]);
+          let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2*::core::mem::size_of::<*const u8>()]);
+          let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+          #[cfg(target_arch = "wasm32")]
+          #[link(wasm_import_module = "wacli:cli/registry@1.0.0")]
+          unsafe extern "C" {
+            #[link_name = "list-commands"]
+            fn wit_import1(_: *mut u8, );
+          }
+
+          #[cfg(not(target_arch = "wasm32"))]
+          unsafe extern "C" fn wit_import1(_: *mut u8, ) { unreachable!() }
+          wit_import1(ptr0);
+          let l2 = *ptr0.add(0).cast::<*mut u8>();
+          let l3 = *ptr0.add(::core::mem::size_of::<*const u8>()).cast::<usize>();
+          let base32 = l2;
+          let len32 = l3;
+          let mut result32 = _rt::Vec::with_capacity(len32);
+          for i in 0..len32 {
+            let base = base32.add(i * (15*::core::mem::size_of::<*const u8>()));
+            let e32 = {
+              let l4 = *base.add(0).cast::<*mut u8>();
+              let l5 = *base.add(::core::mem::size_of::<*const u8>()).cast::<usize>();
+              let len6 = l5;
+              let bytes6 = _rt::Vec::from_raw_parts(l4.cast(), len6, len6);
+              let l7 = *base.add(2*::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+              let l8 = *base.add(3*::core::mem::size_of::<*const u8>()).cast::<usize>();
+              let len9 = l8;
+              let bytes9 = _rt::Vec::from_raw_parts(l7.cast(), len9, len9);
+              let l10 = *base.add(4*::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+              let l11 = *base.add(5*::core::mem::size_of::<*const u8>()).cast::<usize>();
+              let len12 = l11;
+              let bytes12 = _rt::Vec::from_raw_parts(l10.cast(), len12, len12);
+              let l13 = *base.add(6*::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+              let l14 = *base.add(7*::core::mem::size_of::<*const u8>()).cast::<usize>();
+              let base18 = l13;
+              let len18 = l14;
+              let mut result18 = _rt::Vec::with_capacity(len18);
+              for i in 0..len18 {
+                let base = base18.add(i * (2*::core::mem::size_of::<*const u8>()));
+                let e18 = {
+                  let l15 = *base.add(0).cast::<*mut u8>();
+                  let l16 = *base.add(::core::mem::size_of::<*const u8>()).cast::<usize>();
+                  let len17 = l16;
+                  let bytes17 = _rt::Vec::from_raw_parts(l15.cast(), len17, len17);
+
+                  _rt::string_lift(bytes17)
+                };
+                result18.push(e18);
+              }
+              _rt::cabi_dealloc(base18, len18 * (2*::core::mem::size_of::<*const u8>()), ::core::mem::size_of::<*const u8>());
+              let l19 = *base.add(8*::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+              let l20 = *base.add(9*::core::mem::size_of::<*const u8>()).cast::<usize>();
+              let len21 = l20;
+              let bytes21 = _rt::Vec::from_raw_parts(l19.cast(), len21, len21);
+              let l22 = i32::from(*base.add(10*::core::mem::size_of::<*const u8>()).cast::<u8>());
+              let l23 = *base.add(11*::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+              let l24 = *base.add(12*::core::mem::size_of::<*const u8>()).cast::<usize>();
+              let len25 = l24;
+              let bytes25 = _rt::Vec::from_raw_parts(l23.cast(), len25, len25);
+              let l26 = *base.add(13*::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+              let l27 = *base.add(14*::core::mem::size_of::<*const u8>()).cast::<usize>();
+              let base31 = l26;
+              let len31 = l27;
+              let mut result31 = _rt::Vec::with_capacity(len31);
+              for i in 0..len31 {
+                let base = base31.add(i * (2*::core::mem::size_of::<*const u8>()));
+                let e31 = {
+                  let l28 = *base.add(0).cast::<*mut u8>();
+                  let l29 = *base.add(::core::mem::size_of::<*const u8>()).cast::<usize>();
+                  let len30 = l29;
+                  let bytes30 = _rt::Vec::from_raw_parts(l28.cast(), len30, len30);
+
+                  _rt::string_lift(bytes30)
+                };
+                result31.push(e31);
+              }
+              _rt::cabi_dealloc(base31, len31 * (2*::core::mem::size_of::<*const u8>()), ::core::mem::size_of::<*const u8>());
+
+              super::super::super::wacli::cli::types::CommandMeta{
+                name: _rt::string_lift(bytes6),
+                summary: _rt::string_lift(bytes9),
+                usage: _rt::string_lift(bytes12),
+                aliases: result18,
+                version: _rt::string_lift(bytes21),
+                hidden: _rt::bool_lift(l22 as u8),
+                description: _rt::string_lift(bytes25),
+                examples: result31,
+              }
+            };
+            result32.push(e32);
+          }
+          _rt::cabi_dealloc(base32, len32 * (15*::core::mem::size_of::<*const u8>()), ::core::mem::size_of::<*const u8>());
+          let result33 = result32;
+          result33
+        }
+      }
+      #[allow(unused_unsafe, clippy::all)]
+      #[allow(async_fn_in_trait)]
+      pub fn run(name: &str,argv: &[_rt::String],) -> CommandResult{
+        unsafe {
+
+          #[cfg_attr(target_pointer_width="64", repr(align(8)))]
+          #[cfg_attr(target_pointer_width="32", repr(align(4)))]
+          struct RetArea([::core::mem::MaybeUninit::<u8>; 4*::core::mem::size_of::<*const u8>()]);
+          let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 4*::core::mem::size_of::<*const u8>()]);
+          let vec0 = name;
+          let ptr0 = vec0.as_ptr().cast::<u8>();
+          let len0 = vec0.len();
+          let vec2 = argv;
+          let len2 = vec2.len();
+          let layout2 = _rt::alloc::Layout::from_size_align(vec2.len() * (2*::core::mem::size_of::<*const u8>()), ::core::mem::size_of::<*const u8>()).unwrap();
+          let (result2, _cleanup2) = wit_bindgen::rt::Cleanup::new(layout2);for (i, e) in vec2.into_iter().enumerate() {
+            let base = result2.add(i * (2*::core::mem::size_of::<*const u8>()));
+            {
+              let vec1 = e;
+              let ptr1 = vec1.as_ptr().cast::<u8>();
+              let len1 = vec1.len();
+              *base.add(::core::mem::size_of::<*const u8>()).cast::<usize>() = len1;
+              *base.add(0).cast::<*mut u8>() = ptr1.cast_mut();
+            }
+          }
+          let ptr3 = ret_area.0.as_mut_ptr().cast::<u8>();
+          #[cfg(target_arch = "wasm32")]
+          #[link(wasm_import_module = "wacli:cli/registry@1.0.0")]
+          unsafe extern "C" {
+            #[link_name = "run"]
+            fn wit_import4(_: *mut u8, _: usize, _: *mut u8, _: usize, _: *mut u8, );
+          }
+
+          #[cfg(not(target_arch = "wasm32"))]
+          unsafe extern "C" fn wit_import4(_: *mut u8, _: usize, _: *mut u8, _: usize, _: *mut u8, ) { unreachable!() }
+          wit_import4(ptr0.cast_mut(), len0, result2, len2, ptr3);
+          let l5 = i32::from(*ptr3.add(0).cast::<u8>());
+          let result21 = match l5 {
+            0 => {
+              let e = {
+                let l6 = *ptr3.add(::core::mem::size_of::<*const u8>()).cast::<i32>();
+
+                l6 as u32
+              };
+              Ok(e)
+            }
+            1 => {
+              let e = {
+                let l7 = i32::from(*ptr3.add(::core::mem::size_of::<*const u8>()).cast::<u8>());
+                use super::super::super::wacli::cli::types::CommandError as V20;
+                let v20 = match l7 {
+                  0 => {
+                    let e20 = {
+                      let l8 = *ptr3.add(2*::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+                      let l9 = *ptr3.add(3*::core::mem::size_of::<*const u8>()).cast::<usize>();
+                      let len10 = l9;
+                      let bytes10 = _rt::Vec::from_raw_parts(l8.cast(), len10, len10);
+
+                      _rt::string_lift(bytes10)
+                    };
+                    V20::UnknownCommand(e20)
+                  }
+                  1 => {
+                    let e20 = {
+                      let l11 = *ptr3.add(2*::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+                      let l12 = *ptr3.add(3*::core::mem::size_of::<*const u8>()).cast::<usize>();
+                      let len13 = l12;
+                      let bytes13 = _rt::Vec::from_raw_parts(l11.cast(), len13, len13);
+
+                      _rt::string_lift(bytes13)
+                    };
+                    V20::InvalidArgs(e20)
+                  }
+                  2 => {
+                    let e20 = {
+                      let l14 = *ptr3.add(2*::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+                      let l15 = *ptr3.add(3*::core::mem::size_of::<*const u8>()).cast::<usize>();
+                      let len16 = l15;
+                      let bytes16 = _rt::Vec::from_raw_parts(l14.cast(), len16, len16);
+
+                      _rt::string_lift(bytes16)
+                    };
+                    V20::Failed(e20)
+                  }
+                  n => {
+                    debug_assert_eq!(n, 3, "invalid enum discriminant");
+                    let e20 = {
+                      let l17 = *ptr3.add(2*::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+                      let l18 = *ptr3.add(3*::core::mem::size_of::<*const u8>()).cast::<usize>();
+                      let len19 = l18;
+                      let bytes19 = _rt::Vec::from_raw_parts(l17.cast(), len19, len19);
+
+                      _rt::string_lift(bytes19)
+                    };
+                    V20::Io(e20)
+                  }
+                };
+
+                v20
+              };
+              Err(e)
+            }
+            _ => _rt::invalid_enum_discriminant(),
+          };
+          result21
+        }
+      }
+
+    }
+
   }
 }
 #[allow(dead_code, clippy::all)]
 pub mod exports {
-  pub mod wacli {
+  pub mod wasi {
     pub mod cli {
 
       #[allow(dead_code, async_fn_in_trait, unused_imports, clippy::all)]
-      pub mod command {
+      pub mod run {
         #[used]
         #[doc(hidden)]
         static __FORCE_SECTION_REF: fn() =
         super::super::super::super::__link_custom_section_describing_imports;
         
         use super::super::super::super::_rt;
-        pub type CommandMeta = super::super::super::super::wacli::cli::types::CommandMeta;
-        pub type CommandResult = super::super::super::super::wacli::cli::types::CommandResult;
         #[doc(hidden)]
         #[allow(non_snake_case, unused_unsafe)]
-        pub unsafe fn _export_meta_cabi<T: Guest>() -> *mut u8 { unsafe {#[cfg(target_arch="wasm32")]
+        pub unsafe fn _export_run_cabi<T: Guest>() -> i32 { unsafe {#[cfg(target_arch="wasm32")]
         _rt::run_ctors_once();let result0 = {
-          T::meta()
+          T::run()
         };
-        let ptr1 = (&raw mut _RET_AREA.0).cast::<u8>();
-        let super::super::super::super::wacli::cli::types::CommandMeta{ name:name2, summary:summary2, usage:usage2, aliases:aliases2, version:version2, hidden:hidden2, description:description2, examples:examples2, } = result0;
-        let vec3 = (name2.into_bytes()).into_boxed_slice();
-        let ptr3 = vec3.as_ptr().cast::<u8>();
-        let len3 = vec3.len();
-        ::core::mem::forget(vec3);
-        *ptr1.add(::core::mem::size_of::<*const u8>()).cast::<usize>() = len3;
-        *ptr1.add(0).cast::<*mut u8>() = ptr3.cast_mut();
-        let vec4 = (summary2.into_bytes()).into_boxed_slice();
-        let ptr4 = vec4.as_ptr().cast::<u8>();
-        let len4 = vec4.len();
-        ::core::mem::forget(vec4);
-        *ptr1.add(3*::core::mem::size_of::<*const u8>()).cast::<usize>() = len4;
-        *ptr1.add(2*::core::mem::size_of::<*const u8>()).cast::<*mut u8>() = ptr4.cast_mut();
-        let vec5 = (usage2.into_bytes()).into_boxed_slice();
-        let ptr5 = vec5.as_ptr().cast::<u8>();
-        let len5 = vec5.len();
-        ::core::mem::forget(vec5);
-        *ptr1.add(5*::core::mem::size_of::<*const u8>()).cast::<usize>() = len5;
-        *ptr1.add(4*::core::mem::size_of::<*const u8>()).cast::<*mut u8>() = ptr5.cast_mut();
-        let vec7 = aliases2;
-        let len7 = vec7.len();
-        let layout7 = _rt::alloc::Layout::from_size_align(vec7.len() * (2*::core::mem::size_of::<*const u8>()), ::core::mem::size_of::<*const u8>()).unwrap();
-        let (result7, _cleanup7) = wit_bindgen::rt::Cleanup::new(layout7);if let Some(cleanup) = _cleanup7 { cleanup.forget(); }
-        for (i, e) in vec7.into_iter().enumerate() {
-          let base = result7.add(i * (2*::core::mem::size_of::<*const u8>()));
-          {
-            let vec6 = (e.into_bytes()).into_boxed_slice();
-            let ptr6 = vec6.as_ptr().cast::<u8>();
-            let len6 = vec6.len();
-            ::core::mem::forget(vec6);
-            *base.add(::core::mem::size_of::<*const u8>()).cast::<usize>() = len6;
-            *base.add(0).cast::<*mut u8>() = ptr6.cast_mut();
-          }
-        }
-        *ptr1.add(7*::core::mem::size_of::<*const u8>()).cast::<usize>() = len7;
-        *ptr1.add(6*::core::mem::size_of::<*const u8>()).cast::<*mut u8>() = result7;
-        let vec8 = (version2.into_bytes()).into_boxed_slice();
-        let ptr8 = vec8.as_ptr().cast::<u8>();
-        let len8 = vec8.len();
-        ::core::mem::forget(vec8);
-        *ptr1.add(9*::core::mem::size_of::<*const u8>()).cast::<usize>() = len8;
-        *ptr1.add(8*::core::mem::size_of::<*const u8>()).cast::<*mut u8>() = ptr8.cast_mut();
-        *ptr1.add(10*::core::mem::size_of::<*const u8>()).cast::<u8>() = (match hidden2 { true => 1, false => 0 }) as u8;
-        let vec9 = (description2.into_bytes()).into_boxed_slice();
-        let ptr9 = vec9.as_ptr().cast::<u8>();
-        let len9 = vec9.len();
-        ::core::mem::forget(vec9);
-        *ptr1.add(12*::core::mem::size_of::<*const u8>()).cast::<usize>() = len9;
-        *ptr1.add(11*::core::mem::size_of::<*const u8>()).cast::<*mut u8>() = ptr9.cast_mut();
-        let vec11 = examples2;
-        let len11 = vec11.len();
-        let layout11 = _rt::alloc::Layout::from_size_align(vec11.len() * (2*::core::mem::size_of::<*const u8>()), ::core::mem::size_of::<*const u8>()).unwrap();
-        let (result11, _cleanup11) = wit_bindgen::rt::Cleanup::new(layout11);if let Some(cleanup) = _cleanup11 { cleanup.forget(); }
-        for (i, e) in vec11.into_iter().enumerate() {
-          let base = result11.add(i * (2*::core::mem::size_of::<*const u8>()));
-          {
-            let vec10 = (e.into_bytes()).into_boxed_slice();
-            let ptr10 = vec10.as_ptr().cast::<u8>();
-            let len10 = vec10.len();
-            ::core::mem::forget(vec10);
-            *base.add(::core::mem::size_of::<*const u8>()).cast::<usize>() = len10;
-            *base.add(0).cast::<*mut u8>() = ptr10.cast_mut();
-          }
-        }
-        *ptr1.add(14*::core::mem::size_of::<*const u8>()).cast::<usize>() = len11;
-        *ptr1.add(13*::core::mem::size_of::<*const u8>()).cast::<*mut u8>() = result11;
-        ptr1
+        let result1 = match result0 {
+          Ok(_) => { 0i32 },
+          Err(_) => { 1i32 },
+        };result1
       } }
-      #[doc(hidden)]
-      #[allow(non_snake_case)]
-      pub unsafe fn __post_return_meta<T: Guest>(arg0: *mut u8,) { unsafe {
-        let l0 = *arg0.add(0).cast::<*mut u8>();
-        let l1 = *arg0.add(::core::mem::size_of::<*const u8>()).cast::<usize>();
-        _rt::cabi_dealloc(l0, l1, 1);
-        let l2 = *arg0.add(2*::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
-        let l3 = *arg0.add(3*::core::mem::size_of::<*const u8>()).cast::<usize>();
-        _rt::cabi_dealloc(l2, l3, 1);
-        let l4 = *arg0.add(4*::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
-        let l5 = *arg0.add(5*::core::mem::size_of::<*const u8>()).cast::<usize>();
-        _rt::cabi_dealloc(l4, l5, 1);
-        let l6 = *arg0.add(6*::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
-        let l7 = *arg0.add(7*::core::mem::size_of::<*const u8>()).cast::<usize>();
-        let base10 = l6;
-        let len10 = l7;
-        for i in 0..len10 {
-          let base = base10.add(i * (2*::core::mem::size_of::<*const u8>()));
-          {
-            let l8 = *base.add(0).cast::<*mut u8>();
-            let l9 = *base.add(::core::mem::size_of::<*const u8>()).cast::<usize>();
-            _rt::cabi_dealloc(l8, l9, 1);
-          }
-        }
-        _rt::cabi_dealloc(base10, len10 * (2*::core::mem::size_of::<*const u8>()), ::core::mem::size_of::<*const u8>());
-        let l11 = *arg0.add(8*::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
-        let l12 = *arg0.add(9*::core::mem::size_of::<*const u8>()).cast::<usize>();
-        _rt::cabi_dealloc(l11, l12, 1);
-        let l13 = *arg0.add(11*::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
-        let l14 = *arg0.add(12*::core::mem::size_of::<*const u8>()).cast::<usize>();
-        _rt::cabi_dealloc(l13, l14, 1);
-        let l15 = *arg0.add(13*::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
-        let l16 = *arg0.add(14*::core::mem::size_of::<*const u8>()).cast::<usize>();
-        let base19 = l15;
-        let len19 = l16;
-        for i in 0..len19 {
-          let base = base19.add(i * (2*::core::mem::size_of::<*const u8>()));
-          {
-            let l17 = *base.add(0).cast::<*mut u8>();
-            let l18 = *base.add(::core::mem::size_of::<*const u8>()).cast::<usize>();
-            _rt::cabi_dealloc(l17, l18, 1);
-          }
-        }
-        _rt::cabi_dealloc(base19, len19 * (2*::core::mem::size_of::<*const u8>()), ::core::mem::size_of::<*const u8>());
-      } }
-      #[doc(hidden)]
-      #[allow(non_snake_case, unused_unsafe)]
-      pub unsafe fn _export_run_cabi<T: Guest>(arg0: *mut u8,arg1: usize,) -> *mut u8 { unsafe {#[cfg(target_arch="wasm32")]
-      _rt::run_ctors_once();let result4 = {
-        let base3 = arg0;
-        let len3 = arg1;
-        let mut result3 = _rt::Vec::with_capacity(len3);
-        for i in 0..len3 {
-          let base = base3.add(i * (2*::core::mem::size_of::<*const u8>()));
-          let e3 = {
-            let l0 = *base.add(0).cast::<*mut u8>();
-            let l1 = *base.add(::core::mem::size_of::<*const u8>()).cast::<usize>();
-            let len2 = l1;
-            let bytes2 = _rt::Vec::from_raw_parts(l0.cast(), len2, len2);
-
-            _rt::string_lift(bytes2)
-          };
-          result3.push(e3);
-        }
-        _rt::cabi_dealloc(base3, len3 * (2*::core::mem::size_of::<*const u8>()), ::core::mem::size_of::<*const u8>());
-        T::run(result3)
-      };
-      let ptr5 = (&raw mut _RET_AREA.0).cast::<u8>();
-      match result4 {
-        Ok(e) => { {
-          *ptr5.add(0).cast::<u8>() = (0i32) as u8;
-          *ptr5.add(::core::mem::size_of::<*const u8>()).cast::<i32>() = _rt::as_i32(e);
-        } },
-        Err(e) => { {
-          *ptr5.add(0).cast::<u8>() = (1i32) as u8;
-          use super::super::super::super::wacli::cli::types::CommandError as V10;
-          match e {
-            V10::UnknownCommand(e) => {
-              *ptr5.add(::core::mem::size_of::<*const u8>()).cast::<u8>() = (0i32) as u8;
-              let vec6 = (e.into_bytes()).into_boxed_slice();
-              let ptr6 = vec6.as_ptr().cast::<u8>();
-              let len6 = vec6.len();
-              ::core::mem::forget(vec6);
-              *ptr5.add(3*::core::mem::size_of::<*const u8>()).cast::<usize>() = len6;
-              *ptr5.add(2*::core::mem::size_of::<*const u8>()).cast::<*mut u8>() = ptr6.cast_mut();
-            },
-            V10::InvalidArgs(e) => {
-              *ptr5.add(::core::mem::size_of::<*const u8>()).cast::<u8>() = (1i32) as u8;
-              let vec7 = (e.into_bytes()).into_boxed_slice();
-              let ptr7 = vec7.as_ptr().cast::<u8>();
-              let len7 = vec7.len();
-              ::core::mem::forget(vec7);
-              *ptr5.add(3*::core::mem::size_of::<*const u8>()).cast::<usize>() = len7;
-              *ptr5.add(2*::core::mem::size_of::<*const u8>()).cast::<*mut u8>() = ptr7.cast_mut();
-            },
-            V10::Failed(e) => {
-              *ptr5.add(::core::mem::size_of::<*const u8>()).cast::<u8>() = (2i32) as u8;
-              let vec8 = (e.into_bytes()).into_boxed_slice();
-              let ptr8 = vec8.as_ptr().cast::<u8>();
-              let len8 = vec8.len();
-              ::core::mem::forget(vec8);
-              *ptr5.add(3*::core::mem::size_of::<*const u8>()).cast::<usize>() = len8;
-              *ptr5.add(2*::core::mem::size_of::<*const u8>()).cast::<*mut u8>() = ptr8.cast_mut();
-            },
-            V10::Io(e) => {
-              *ptr5.add(::core::mem::size_of::<*const u8>()).cast::<u8>() = (3i32) as u8;
-              let vec9 = (e.into_bytes()).into_boxed_slice();
-              let ptr9 = vec9.as_ptr().cast::<u8>();
-              let len9 = vec9.len();
-              ::core::mem::forget(vec9);
-              *ptr5.add(3*::core::mem::size_of::<*const u8>()).cast::<usize>() = len9;
-              *ptr5.add(2*::core::mem::size_of::<*const u8>()).cast::<*mut u8>() = ptr9.cast_mut();
-            },
-          }
-        } },
-      };ptr5
-    } }
-    #[doc(hidden)]
-    #[allow(non_snake_case)]
-    pub unsafe fn __post_return_run<T: Guest>(arg0: *mut u8,) { unsafe {
-      let l0 = i32::from(*arg0.add(0).cast::<u8>());
-      match l0 {
-        0 => (),
-        _ => {
-          let l1 = i32::from(*arg0.add(::core::mem::size_of::<*const u8>()).cast::<u8>());
-          match l1 {
-            0 => {
-              let l2 = *arg0.add(2*::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
-              let l3 = *arg0.add(3*::core::mem::size_of::<*const u8>()).cast::<usize>();
-              _rt::cabi_dealloc(l2, l3, 1);
-            },
-            1 => {
-              let l4 = *arg0.add(2*::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
-              let l5 = *arg0.add(3*::core::mem::size_of::<*const u8>()).cast::<usize>();
-              _rt::cabi_dealloc(l4, l5, 1);
-            },
-            2 => {
-              let l6 = *arg0.add(2*::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
-              let l7 = *arg0.add(3*::core::mem::size_of::<*const u8>()).cast::<usize>();
-              _rt::cabi_dealloc(l6, l7, 1);
-            },
-            _ => {
-              let l8 = *arg0.add(2*::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
-              let l9 = *arg0.add(3*::core::mem::size_of::<*const u8>()).cast::<usize>();
-              _rt::cabi_dealloc(l8, l9, 1);
-            },
-          }
-        },
+      pub trait Guest {
+        /// Run the program.
+        #[allow(async_fn_in_trait)]
+        fn run() -> Result<(),()>;
       }
-    } }
-    pub trait Guest {
-      #[allow(async_fn_in_trait)]
-      fn meta() -> CommandMeta;
-      #[allow(async_fn_in_trait)]
-      fn run(argv: _rt::Vec::<_rt::String>,) -> CommandResult;
+      #[doc(hidden)]
+
+      macro_rules! __export_wasi_cli_run_0_2_9_cabi{
+        ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
+
+          #[unsafe(export_name = "wasi:cli/run@0.2.9#run")]
+          unsafe extern "C" fn export_run() -> i32 {
+            unsafe { $($path_to_types)*::_export_run_cabi::<$ty>() }
+          }
+        };);
+      }
+      #[doc(hidden)]
+      pub(crate) use __export_wasi_cli_run_0_2_9_cabi;
+
     }
-    #[doc(hidden)]
-
-    macro_rules! __export_wacli_cli_command_1_0_0_cabi{
-      ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
-
-        #[unsafe(export_name = "wacli:cli/command@1.0.0#meta")]
-        unsafe extern "C" fn export_meta() -> *mut u8 {
-          unsafe { $($path_to_types)*::_export_meta_cabi::<$ty>() }
-        }
-        #[unsafe(export_name = "cabi_post_wacli:cli/command@1.0.0#meta")]
-        unsafe extern "C" fn _post_return_meta(arg0: *mut u8,) {
-          unsafe { $($path_to_types)*::__post_return_meta::<$ty>(arg0) }
-        }
-        #[unsafe(export_name = "wacli:cli/command@1.0.0#run")]
-        unsafe extern "C" fn export_run(arg0: *mut u8,arg1: usize,) -> *mut u8 {
-          unsafe { $($path_to_types)*::_export_run_cabi::<$ty>(arg0, arg1) }
-        }
-        #[unsafe(export_name = "cabi_post_wacli:cli/command@1.0.0#run")]
-        unsafe extern "C" fn _post_return_run(arg0: *mut u8,) {
-          unsafe { $($path_to_types)*::__post_return_run::<$ty>(arg0) }
-        }
-      };);
-    }
-    #[doc(hidden)]
-    pub(crate) use __export_wacli_cli_command_1_0_0_cabi;
-
-    #[cfg_attr(target_pointer_width="64", repr(align(8)))]
-    #[cfg_attr(target_pointer_width="32", repr(align(4)))]
-    struct _RetArea([::core::mem::MaybeUninit::<u8>; 15*::core::mem::size_of::<*const u8>()]);
-    static mut _RET_AREA: _RetArea = _RetArea([::core::mem::MaybeUninit::uninit(); 15*::core::mem::size_of::<*const u8>()]);
 
   }
-
-}
 }
 }
 mod _rt {
@@ -795,12 +786,12 @@ mod _rt {
       unsafe { core::hint::unreachable_unchecked() }
     }
   }
-  
+  pub use alloc_crate::alloc;
+
   #[cfg(target_arch = "wasm32")]
   pub fn run_ctors_once() {
     wit_bindgen::rt::run_ctors_once();
   }
-  pub use alloc_crate::alloc;
   extern crate alloc as alloc_crate;
 }
 
@@ -823,22 +814,22 @@ mod _rt {
 #[allow(unused_macros)]
 #[doc(hidden)]
 
-macro_rules! __export_plugin_impl {
+macro_rules! __export_core_impl {
   ($ty:ident) => (self::export!($ty with_types_in self););
   ($ty:ident with_types_in $($path_to_types_root:tt)*) => (
-  $($path_to_types_root)*::exports::wacli::cli::command::__export_wacli_cli_command_1_0_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::wacli::cli::command);
+  $($path_to_types_root)*::exports::wasi::cli::run::__export_wasi_cli_run_0_2_9_cabi!($ty with_types_in $($path_to_types_root)*::exports::wasi::cli::run);
   )
 }
 #[doc(inline)]
-pub(crate) use __export_plugin_impl as export;
+pub(crate) use __export_core_impl as export;
 
 #[cfg(target_arch = "wasm32")]
-#[unsafe(link_section = "component-type:wit-bindgen:0.52.0:wacli:cli@1.0.0:plugin:encoded world")]
+#[unsafe(link_section = "component-type:wit-bindgen:0.52.0:wacli:cli@1.0.0:core:encoded world")]
 #[doc(hidden)]
 #[allow(clippy::octal_escapes)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 911] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x92\x06\x01A\x02\x01\
-A\x09\x01B\x09\x01y\x04\0\x09exit-code\x03\0\0\x01ps\x01r\x08\x04names\x07summar\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 969] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xce\x06\x01A\x02\x01\
+A\x0b\x01B\x09\x01y\x04\0\x09exit-code\x03\0\0\x01ps\x01r\x08\x04names\x07summar\
 ys\x05usages\x07aliases\x02\x07versions\x06hidden\x7f\x0bdescriptions\x08example\
 s\x02\x04\0\x0ccommand-meta\x03\0\x03\x01q\x04\x0funknown-command\x01s\0\x0cinva\
 lid-args\x01s\0\x06failed\x01s\0\x02io\x01s\0\x04\0\x0dcommand-error\x03\0\x05\x01\
@@ -852,12 +843,14 @@ e\x03\0\0\x01ps\x01@\0\0\x02\x04\0\x04args\x01\x03\x01o\x02ss\x01p\x04\x01@\0\0\
 \x02yy\x01k\x0c\x01@\0\0\x0d\x04\0\x0dterminal-size\x01\x0e\x01@\x01\x01ny\0\x07\
 \x04\0\x0crandom-bytes\x01\x0f\x04\0\x15insecure-random-bytes\x01\x0f\x01@\x01\x04\
 code\x01\x01\0\x04\0\x04exit\x01\x10\x03\0\x14wacli:cli/host@1.0.0\x05\x02\x02\x03\
-\0\0\x0ccommand-meta\x02\x03\0\0\x0ecommand-result\x01B\x09\x02\x03\x02\x01\x03\x04\
+\0\0\x0ccommand-meta\x02\x03\0\0\x0ecommand-result\x01B\x0a\x02\x03\x02\x01\x03\x04\
 \0\x0ccommand-meta\x03\0\0\x02\x03\x02\x01\x04\x04\0\x0ecommand-result\x03\0\x02\
-\x01@\0\0\x01\x04\0\x04meta\x01\x04\x01ps\x01@\x01\x04argv\x05\0\x03\x04\0\x03ru\
-n\x01\x06\x04\0\x17wacli:cli/command@1.0.0\x05\x05\x04\0\x16wacli:cli/plugin@1.0\
-.0\x04\0\x0b\x0c\x01\0\x06plugin\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\
-\x0dwit-component\x070.244.0\x10wit-bindgen-rust\x060.52.0";
+\x01p\x01\x01@\0\0\x04\x04\0\x0dlist-commands\x01\x05\x01ps\x01@\x02\x04names\x04\
+argv\x06\0\x03\x04\0\x03run\x01\x07\x03\0\x18wacli:cli/registry@1.0.0\x05\x05\x01\
+B\x03\x01j\0\0\x01@\0\0\0\x04\0\x03run\x01\x01\x04\0\x12wasi:cli/run@0.2.9\x05\x06\
+\x04\0\x14wacli:cli/core@1.0.0\x04\0\x0b\x0a\x01\0\x04core\x03\0\0\0G\x09produce\
+rs\x01\x0cprocessed-by\x02\x0dwit-component\x070.244.0\x10wit-bindgen-rust\x060.\
+52.0";
 
 #[inline(never)]
 #[doc(hidden)]

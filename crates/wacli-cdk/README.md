@@ -16,7 +16,6 @@ Command Development Kit for building [wacli](https://github.com/RAKUDEJI/wacli) 
 - **`Context`** - Access arguments and environment variables
 - **`args` module** - Lightweight argument parsing helpers
 - **`io` module** - stdout/stderr utilities
-- **`wasi` module** - WASI 0.2.9 filesystem and random access
 
 ## Installation
 
@@ -196,27 +195,8 @@ fn run(argv: Vec<String>) -> CommandResult {
 
 ### WASI Capabilities
 
-Plugins have access to WASI 0.2.9 filesystem and random APIs:
-
-```rust
-use wacli_cdk::wasi;
-
-fn run(argv: Vec<String>) -> CommandResult {
-    // Filesystem access via preopens
-    use wasi::filesystem::preopens::get_directories;
-    let dirs = get_directories();
-
-    // Random number generation
-    use wasi::random::random::get_random_bytes;
-    let bytes = get_random_bytes(16);
-
-    Ok(0)
-}
-```
-
-Available WASI interfaces:
-- `wasi::filesystem::{types, preopens}` - File and directory operations
-- `wasi::random::{random, insecure, insecure_seed}` - Random number generation
+Plugins do not import WASI directly. All host interactions should go through the
+`wacli:cli/host` interface.
 
 ### Prelude
 
@@ -224,7 +204,7 @@ Import common types with a single statement:
 
 ```rust
 use wacli_cdk::prelude::*;
-// Imports: Command, CommandMeta, CommandResult, CommandError, Context, meta, args, io, wasi
+// Imports: Command, CommandMeta, CommandResult, CommandError, Context, meta, args, io
 ```
 
 ## Integration with wacli

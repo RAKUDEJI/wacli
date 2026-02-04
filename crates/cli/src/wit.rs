@@ -1,4 +1,4 @@
-package wacli:cli@1.0.0;
+pub const TYPES_WIT: &str = r#"package wacli:cli@1.0.0;
 
 interface types {
   type exit-code = u32;
@@ -23,6 +23,9 @@ interface types {
 
   type command-result = result<exit-code, command-error>;
 }
+"#;
+
+pub const HOST_WIT: &str = r#"package wacli:cli@1.0.0;
 
 interface host {
   use types.{exit-code};
@@ -47,6 +50,9 @@ interface host {
 
   exit: func(code: exit-code);
 }
+"#;
+
+pub const COMMAND_WIT: &str = r#"package wacli:cli@1.0.0;
 
 interface command {
   use types.{command-meta, command-result};
@@ -57,5 +63,22 @@ interface command {
 
 world plugin {
   import host;
+
   export command;
 }
+"#;
+
+pub const REGISTRY_WIT: &str = r#"package wacli:cli@1.0.0;
+
+interface registry {
+  use types.{command-meta, command-result};
+
+  list-commands: func() -> list<command-meta>;
+  run: func(name: string, argv: list<string>) -> command-result;
+}
+
+world registry-provider {
+  import host;
+  export registry;
+}
+"#;

@@ -1,0 +1,14 @@
+package wacli:cli@1.0.0;
+
+interface command {
+  use types.{command-meta, command-result};
+
+  meta: func() -> command-meta;
+  run: func(argv: list<string>) -> command-result;
+}
+
+world plugin {
+  import host;
+
+  export command;
+}

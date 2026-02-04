@@ -1,15 +1,14 @@
 #![allow(clippy::all)]
 
-wit_bindgen::generate!({
-    path: "wit",
-    world: "core",
-});
+mod bindings;
 
-use crate::wacli::cli::{host, registry, types};
+use bindings::export;
+use bindings::exports::wasi::cli::run;
+use bindings::wacli::cli::{host, registry, types};
 
 struct Core;
 
-impl exports::wasi::cli::run::Guest for Core {
+impl run::Guest for Core {
     fn run() -> Result<(), ()> {
         let args = host::args();
         let argv = trim_program_name(args);
@@ -43,7 +42,7 @@ impl exports::wasi::cli::run::Guest for Core {
     }
 }
 
-export!(Core);
+export!(Core with_types_in bindings);
 
 fn trim_program_name(mut args: Vec<String>) -> Vec<String> {
     if !args.is_empty() {

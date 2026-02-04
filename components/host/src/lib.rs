@@ -1,14 +1,14 @@
 #![allow(clippy::all)]
 
-wit_bindgen::generate!({
-    path: "wit",
-    world: "host-provider",
-    generate_all,
-});
+mod bindings;
+
+use bindings::export;
+use bindings::exports::wacli::cli::host;
+use bindings::wasi;
 
 struct HostProvider;
 
-impl exports::wacli::cli::host::Guest for HostProvider {
+impl host::Guest for HostProvider {
     fn args() -> Vec<String> {
         wasi::cli::environment::get_arguments()
     }
@@ -66,7 +66,7 @@ impl exports::wacli::cli::host::Guest for HostProvider {
     }
 }
 
-export!(HostProvider);
+export!(HostProvider with_types_in bindings);
 
 enum StreamTarget {
     Stdout,

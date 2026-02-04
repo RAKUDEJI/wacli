@@ -1,6 +1,7 @@
 mod component_scan;
 mod registry_gen_wat;
 mod wac_gen;
+mod wit;
 
 use anyhow::{Context, Result, bail};
 use clap::{Parser, Subcommand};
@@ -184,8 +185,7 @@ fn init(args: InitArgs) -> Result<()> {
     Ok(())
 }
 
-const PLUGIN_WIT: &str =
-    include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/wit/command.wit"));
+const PLUGIN_WIT: &str = wit::COMMAND_WIT;
 const HOST_COMPONENT_URL: &str =
     "https://github.com/RAKUDEJI/wacli/releases/latest/download/host.component.wasm";
 const CORE_COMPONENT_URL: &str =

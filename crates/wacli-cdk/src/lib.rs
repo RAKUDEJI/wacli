@@ -26,13 +26,10 @@ pub mod bindings;
 
 pub use bindings::wacli::cli::host;
 pub use bindings::wacli::cli::types::{CommandError, CommandMeta, CommandResult};
-pub use bindings::wasi;
 
 /// Common imports for wacli command implementations.
 pub mod prelude {
-    pub use super::{
-        args, io, meta, wasi, Command, CommandError, CommandMeta, CommandResult, Context,
-    };
+    pub use super::{args, io, meta, Command, CommandError, CommandMeta, CommandResult, Context};
 }
 
 /// Exit code type for commands.

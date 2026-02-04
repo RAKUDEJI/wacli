@@ -12,7 +12,6 @@ wacli is a CLI tool for composing WebAssembly Components using the [WAC](https:/
 
 **Key Features:**
 - Build CLI apps from modular WASM components
-- Plugins have access to WASI filesystem and random APIs
 - Auto-generates registry component from command plugins
 - Single binary, no external dependencies (wac, wasm-tools, jq)
 
@@ -152,23 +151,10 @@ impl Command for Greet {
 wacli_cdk::export!(Greet);
 ```
 
-### WASI Capabilities
+### Host Access
 
-Plugins have access to WASI 0.2.9 capabilities:
-
-- **Filesystem**: `wacli_cdk::wasi::filesystem::{types, preopens}`
-- **Random**: `wacli_cdk::wasi::random::{random, insecure, insecure_seed}`
-
-```rust
-fn run(argv: Vec<String>) -> CommandResult {
-    use wacli_cdk::wasi::filesystem::preopens::get_directories;
-
-    // Access filesystem via WASI preopens
-    let dirs = get_directories();
-    // ...
-    Ok(0)
-}
-```
+Plugins do not import WASI directly. All host interactions go through
+`wacli:cli/host`.
 
 ## Framework Components
 
@@ -193,7 +179,6 @@ Download from [Releases](https://github.com/RAKUDEJI/wacli/releases).
 ```wit
 world plugin {
   import host;
-  include wasi-capabilities;  // filesystem, random
   export command;
 }
 ```

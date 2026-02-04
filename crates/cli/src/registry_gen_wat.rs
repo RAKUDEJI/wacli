@@ -6,14 +6,14 @@
 //! as a component with embedded WIT metadata.
 
 use crate::component_scan::CommandInfo;
+use crate::wit;
 use anyhow::{Context, Result, bail};
 use std::path::{Path, PathBuf};
 use wasm_encoder::{CustomSection, Section};
 use wit_component::ComponentEncoder;
 use wit_parser::{Resolve, UnresolvedPackageGroup};
 
-const REGISTRY_WIT_BASE: &str =
-    include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/wit/registry.wit"));
+const REGISTRY_WIT_BASE: &str = wit::REGISTRY_WIT;
 const REGISTRY_WAT_TEMPLATE: &str = include_str!("registry_template.wat");
 
 struct NameTable {
@@ -76,9 +76,7 @@ pub fn generate_registry_wat(commands: &[CommandInfo]) -> Result<Vec<u8>> {
 /// Generate WIT source dynamically based on discovered commands.
 fn generate_dynamic_wit(commands: &[CommandInfo]) -> String {
     let mut wit = String::new();
-
-    wit.push_str(REGISTRY_WIT_BASE.trim_end());
-    wit.push_str("\n\n");
+    append_wit_base(&mut wit);
 
     for cmd in commands {
         wit.push_str(&format!("interface {}-command {{\n", cmd.name));
@@ -99,6 +97,36 @@ fn generate_dynamic_wit(commands: &[CommandInfo]) -> String {
     wit.push_str("}\n");
 
     wit
+}
+
+fn append_wit_base(dst: &mut String) {
+    dst.push_str(wit::TYPES_WIT.trim_end());
+    dst.push_str("\n\n");
+    append_without_package(dst, wit::HOST_WIT);
+    dst.push_str("\n\n");
+    append_without_package(dst, REGISTRY_WIT_BASE);
+    dst.push_str("\n\n");
+}
+
+fn append_without_package(dst: &mut String, wit: &str) {
+    let mut lines = wit.lines();
+    let mut saw_package = false;
+    let mut started = false;
+
+    while let Some(line) = lines.next() {
+        if !started {
+            if !saw_package && line.trim_start().starts_with("package ") {
+                saw_package = true;
+                continue;
+            }
+            if saw_package && line.trim().is_empty() {
+                continue;
+            }
+            started = true;
+        }
+        dst.push_str(line);
+        dst.push('\n');
+    }
 }
 
 fn build_name_table(commands: &[CommandInfo]) -> NameTable {

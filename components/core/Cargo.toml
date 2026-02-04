@@ -9,4 +9,4 @@ name = "wacli_core"
 crate-type = ["cdylib"]
 
 [dependencies]
-wit-bindgen = { workspace = true, features = ["macros"] }
+wit-bindgen = { workspace = true }

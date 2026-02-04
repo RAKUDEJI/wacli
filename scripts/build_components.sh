@@ -7,6 +7,7 @@ build_component() {
   local name="$1"
   local package="$2"
   local crate="$3"
+  local world="$4"
   local comp_dir="${root_dir}/components/${name}"
   local wasm_in="${root_dir}/target/wasm32-unknown-unknown/release/${crate}.wasm"
   local wasm_out="${comp_dir}/${name}.wasm"
@@ -20,10 +21,10 @@ build_component() {
     exit 1
   fi
 
-  wasm-tools component embed "${comp_dir}/wit" "${wasm_in}" -o "${wasm_out}" --encoding utf8
+  wasm-tools component embed "${root_dir}/wit/cli" "${wasm_in}" -o "${wasm_out}" --encoding utf8 --world "${world}"
   wasm-tools component new "${wasm_out}" -o "${component_out}"
   cp "${component_out}" "${root_component_out}"
 }
 
-build_component host wacli-host wacli_host
-build_component core wacli-core wacli_core
+build_component host wacli-host wacli_host host-provider
+build_component core wacli-core wacli_core core

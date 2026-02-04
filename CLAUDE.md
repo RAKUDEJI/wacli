@@ -33,18 +33,21 @@ wacli/
 │           ├── lib.rs          # CDKメインAPI
 │           └── bindings.rs     # WIT生成コード
 ├── wit/                        # WIT定義
-│   ├── wacli.wit               # マスターWIT定義 (WASI 0.2.9)
-│   ├── registry.wit            # Registry用WIT（ベース）
-│   └── wacli-runner.wit        # 最終成果物のWIT定義
+│   ├── cli/                    # wacli:cli パッケージ
+│   │   ├── types.wit           # 共通型定義
+│   │   ├── host.wit            # wacli/host インターフェース
+│   │   ├── command.wit         # plugin world
+│   │   ├── registry.wit        # registry インターフェース
+│   │   └── wacli.wit           # worlds 定義 (WASI 0.2.9)
+│   └── runner/                 # wacli:runner パッケージ
+│       └── wacli-runner.wit    # 最終成果物のWIT定義
 ├── components/                 # フレームワークコンポーネント (Rust)
 │   ├── host/                   # WASI → wacli/host ブリッジ
 │   │   ├── Cargo.toml
-│   │   ├── src/lib.rs
-│   │   └── wit/
+│   │   └── src/lib.rs
 │   └── core/                   # コマンドルーター
 │       ├── Cargo.toml
-│       ├── src/lib.rs
-│       └── wit/
+│       └── src/lib.rs
 └── CLAUDE.md
 ```
 
@@ -107,7 +110,7 @@ my-project/
 ## WIT インターフェース
 
 ### WASI バージョン
-WASI 0.2.9 を使用。プラグインは `wasi-capabilities` を通じてファイルシステムとランダムにアクセス可能。
+WASI 0.2.9 を使用。WASI は host/core 側で利用し、プラグインは直接インポートしない。
 
 ### wacli/types
 共有型定義: `exit-code`, `command-meta`, `command-error`, `command-result`
@@ -126,7 +129,6 @@ WASI 0.2.9 を使用。プラグインは `wasi-capabilities` を通じてファ
 ```wit
 world plugin {
   import host;
-  include wasi-capabilities;  // filesystem, random
   export command;
 }
 ```
@@ -144,13 +146,13 @@ cargo build -p wacli-host --target wasm32-unknown-unknown --release
 cargo build -p wacli-core --target wasm32-unknown-unknown --release
 
 # WIT埋め込み + コンポーネント化
-wasm-tools component embed components/host/wit \
+wasm-tools component embed wit/cli \
   target/wasm32-unknown-unknown/release/wacli_host.wasm \
   -o components/host/host.wasm --encoding utf8
 wasm-tools component new components/host/host.wasm \
   -o components/host.component.wasm
 
-wasm-tools component embed components/core/wit \
+wasm-tools component embed wit/cli \
   target/wasm32-unknown-unknown/release/wacli_core.wasm \
   -o components/core/core.wasm --encoding utf8
 wasm-tools component new components/core/core.wasm \
@@ -163,7 +165,6 @@ wasm-tools component new components/core/core.wasm \
 
 ### 特徴
 - `Command` trait + `export!` マクロ
-- `wasi` モジュール再エクスポート（ファイルシステム、ランダム）
 - `host` モジュール（stdout, stderr, args, env）
 - `args` モジュール（引数パース）
 - `io` モジュール（print, println, eprint, eprintln）
@@ -184,8 +185,8 @@ impl Command for Show {
     }
 
     fn run(argv: Vec<String>) -> CommandResult {
-        use wacli_cdk::wasi::filesystem::preopens::get_directories;
-        // WASI filesystem APIを使用可能
+        let name = argv.first().map(|s| s.as_str()).unwrap_or("World");
+        wacli_cdk::io::println(format!("Hello, {name}!"));
         Ok(0)
     }
 }
@@ -203,5 +204,5 @@ Rustの文字列はUTF-8。WIT埋め込み時は `--encoding utf8` を使用す�
 WIT変更時は再生成が必要:
 
 ```bash
-wit-bindgen rust crates/wacli-cdk/wit --world plugin --out-dir crates/wacli-cdk/src/
+wit-bindgen rust wit/cli --world plugin --out-dir crates/wacli-cdk/src/
 ```
