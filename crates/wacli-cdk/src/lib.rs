@@ -32,21 +32,41 @@ pub use bindings::wacli::cli::types::{
 #[doc(hidden)]
 #[allow(dead_code)]
 #[used]
-static __WACLI_FORCE_HOST_IMPORTS: (
-    fn() -> Vec<String>,
-    fn() -> Vec<(String, String)>,
-    fn(&[u8]),
-    fn(&str) -> Result<Vec<u8>, String>,
-    fn(u32),
-    fn() -> Vec<PipeInfo>,
-) = (
-    host_env::args,
-    host_env::env,
-    host_io::stdout_write,
-    host_fs::read_file,
-    host_process::exit,
-    host_pipes::list_pipes,
-);
+static __WACLI_FORCE_HOST_IMPORTS: ForceHostImports = ForceHostImports {
+    env_args: host_env::args,
+    env_env: host_env::env,
+    io_stdout_write: host_io::stdout_write,
+    io_stderr_write: host_io::stderr_write,
+    io_stdout_flush: host_io::stdout_flush,
+    io_stderr_flush: host_io::stderr_flush,
+    fs_read: host_fs::read_file,
+    fs_write: host_fs::write_file,
+    fs_list: host_fs::list_dir,
+    process_exit: host_process::exit,
+    pipes_list: host_pipes::list_pipes,
+    pipes_load: host_pipes::load_pipe,
+    pipe_meta: host_pipes::Pipe::meta,
+    pipe_process: host_pipes::Pipe::process,
+};
+
+#[doc(hidden)]
+#[allow(dead_code)]
+struct ForceHostImports {
+    env_args: fn() -> Vec<String>,
+    env_env: fn() -> Vec<(String, String)>,
+    io_stdout_write: fn(&[u8]),
+    io_stderr_write: fn(&[u8]),
+    io_stdout_flush: fn(),
+    io_stderr_flush: fn(),
+    fs_read: fn(&str) -> Result<Vec<u8>, String>,
+    fs_write: fn(&str, &[u8]) -> Result<(), String>,
+    fs_list: fn(&str) -> Result<Vec<String>, String>,
+    process_exit: fn(u32),
+    pipes_list: fn() -> Vec<PipeInfo>,
+    pipes_load: fn(&str) -> Result<host_pipes::Pipe, String>,
+    pipe_meta: fn(&host_pipes::Pipe) -> PipeMeta,
+    pipe_process: fn(&host_pipes::Pipe, &[u8], &[String]) -> Result<Vec<u8>, PipeError>,
+}
 
 /// Convenience facade over the split host interfaces.
 pub mod host {
