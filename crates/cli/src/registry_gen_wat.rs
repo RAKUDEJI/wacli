@@ -11,7 +11,7 @@ use anyhow::{Context, Result, bail};
 use std::path::{Path, PathBuf};
 use wasm_encoder::{CustomSection, Section};
 use wit_component::ComponentEncoder;
-use wit_parser::{Resolve, UnresolvedPackageGroup};
+use wit_parser::{PackageName, Resolve, UnresolvedPackageGroup};
 
 const REGISTRY_WIT_BASE: &str = wit::REGISTRY_WIT;
 const REGISTRY_WAT_TEMPLATE: &str = include_str!("registry_template.wat");
@@ -150,7 +150,7 @@ fn build_name_table(commands: &[CommandInfo]) -> NameTable {
 }
 
 fn build_wat_module(commands: &[CommandInfo], name_table: &NameTable) -> Result<String> {
-    let imports = build_imports(commands);
+    let imports = build_imports(commands)?;
     let list_body = build_list_commands_body(commands, &name_table.offsets);
     let run_body = build_run_body(commands, &name_table.offsets);
     let heap_start = compute_heap_start(name_table.data.len());
@@ -168,24 +168,33 @@ fn build_wat_module(commands: &[CommandInfo], name_table: &NameTable) -> Result<
     )
 }
 
-fn build_imports(commands: &[CommandInfo]) -> String {
+fn build_imports(commands: &[CommandInfo]) -> Result<String> {
     let mut imports = String::new();
+    let pkg = registry_package_name()?;
 
     for cmd in commands {
         let ident = command_ident(&cmd.name);
+        let iface = pkg.interface_id(&format!("{}-command", cmd.name));
         imports.push_str(&format!(
-            "  (import \"wacli:cli/{name}-command@1.0.0\" \"meta\" (func ${ident}_meta (type $import_meta)))\n",
-            name = cmd.name,
+            "  (import \"{iface}\" \"meta\" (func ${ident}_meta (type $import_meta)))\n",
+            iface = iface,
             ident = ident
         ));
         imports.push_str(&format!(
-            "  (import \"wacli:cli/{name}-command@1.0.0\" \"run\" (func ${ident}_run (type $import_run)))\n",
-            name = cmd.name,
+            "  (import \"{iface}\" \"run\" (func ${ident}_run (type $import_run)))\n",
+            iface = iface,
             ident = ident
         ));
     }
 
-    imports
+    Ok(imports)
+}
+
+fn registry_package_name() -> Result<PackageName> {
+    let wit_path = Path::new("registry.wit");
+    let pkg_group = UnresolvedPackageGroup::parse(wit_path, REGISTRY_WIT_BASE)
+        .context("failed to parse registry WIT for package name")?;
+    Ok(pkg_group.main.name)
 }
 
 fn build_list_commands_body(commands: &[CommandInfo], name_offsets: &[(u32, u32)]) -> String {
