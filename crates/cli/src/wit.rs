@@ -45,9 +45,6 @@ interface host {
 
   terminal-size: func() -> option<tuple<u32, u32>>;
 
-  random-bytes: func(n: u32) -> list<u8>;
-  insecure-random-bytes: func(n: u32) -> list<u8>;
-
   exit: func(code: exit-code);
 }
 "#;

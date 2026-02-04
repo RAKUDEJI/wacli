@@ -31,7 +31,7 @@ edition = "2024"
 crate-type = ["cdylib"]
 
 [dependencies]
-wacli-cdk = "0.0.20"
+wacli-cdk = "0.0.21"
 ```
 
 ## Quick Start

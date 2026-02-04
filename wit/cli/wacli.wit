@@ -1,10 +1,5 @@
 package wacli:cli@1.0.0;
 
-use wasi:filesystem/types@0.2.9 as wasi-filesystem-types;
-use wasi:filesystem/preopens@0.2.9 as wasi-filesystem-preopens;
-use wasi:random/random@0.2.9 as wasi-random;
-use wasi:random/insecure@0.2.9 as wasi-random-insecure;
-use wasi:random/insecure-seed@0.2.9 as wasi-random-insecure-seed;
 use wasi:cli/environment@0.2.9 as wasi-cli-environment;
 use wasi:cli/exit@0.2.9 as wasi-cli-exit;
 use wasi:cli/stdin@0.2.9 as wasi-cli-stdin;
@@ -15,15 +10,6 @@ use wasi:cli/terminal-output@0.2.9 as wasi-cli-terminal-output;
 use wasi:cli/terminal-stdin@0.2.9 as wasi-cli-terminal-stdin;
 use wasi:cli/terminal-stdout@0.2.9 as wasi-cli-terminal-stdout;
 use wasi:cli/terminal-stderr@0.2.9 as wasi-cli-terminal-stderr;
-
-world wasi-capabilities {
-  import wasi-filesystem-types;
-  import wasi-filesystem-preopens;
-
-  import wasi-random;
-  import wasi-random-insecure;
-  import wasi-random-insecure-seed;
-}
 
 world wasi-cli-capabilities {
   import wasi-cli-environment;
@@ -39,7 +25,6 @@ world wasi-cli-capabilities {
 }
 
 world host-provider {
-  include wasi-capabilities;
   include wasi-cli-capabilities;
 
   export types;

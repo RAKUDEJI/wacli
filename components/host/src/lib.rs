@@ -49,14 +49,6 @@ impl host::Guest for HostProvider {
         None
     }
 
-    fn random_bytes(n: u32) -> Vec<u8> {
-        wasi::random::random::get_random_bytes(n as u64)
-    }
-
-    fn insecure_random_bytes(n: u32) -> Vec<u8> {
-        wasi::random::insecure::get_insecure_random_bytes(n as u64)
-    }
-
     fn exit(code: u32) {
         if code == 0 {
             wasi::cli::exit::exit(Ok(()));

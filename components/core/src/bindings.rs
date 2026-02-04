@@ -331,60 +331,6 @@ pub mod wacli {
       }
       #[allow(unused_unsafe, clippy::all)]
       #[allow(async_fn_in_trait)]
-      pub fn random_bytes(n: u32,) -> _rt::Vec::<u8>{
-        unsafe {
-
-          #[cfg_attr(target_pointer_width="64", repr(align(8)))]
-          #[cfg_attr(target_pointer_width="32", repr(align(4)))]
-          struct RetArea([::core::mem::MaybeUninit::<u8>; 2*::core::mem::size_of::<*const u8>()]);
-          let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2*::core::mem::size_of::<*const u8>()]);
-          let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
-          #[cfg(target_arch = "wasm32")]
-          #[link(wasm_import_module = "wacli:cli/host@1.0.0")]
-          unsafe extern "C" {
-            #[link_name = "random-bytes"]
-            fn wit_import1(_: i32, _: *mut u8, );
-          }
-
-          #[cfg(not(target_arch = "wasm32"))]
-          unsafe extern "C" fn wit_import1(_: i32, _: *mut u8, ) { unreachable!() }
-          wit_import1(_rt::as_i32(&n), ptr0);
-          let l2 = *ptr0.add(0).cast::<*mut u8>();
-          let l3 = *ptr0.add(::core::mem::size_of::<*const u8>()).cast::<usize>();
-          let len4 = l3;
-          let result5 = <_ as From<_rt::Vec<_>>>::from(_rt::Vec::from_raw_parts(l2.cast(), len4, len4));
-          result5
-        }
-      }
-      #[allow(unused_unsafe, clippy::all)]
-      #[allow(async_fn_in_trait)]
-      pub fn insecure_random_bytes(n: u32,) -> _rt::Vec::<u8>{
-        unsafe {
-
-          #[cfg_attr(target_pointer_width="64", repr(align(8)))]
-          #[cfg_attr(target_pointer_width="32", repr(align(4)))]
-          struct RetArea([::core::mem::MaybeUninit::<u8>; 2*::core::mem::size_of::<*const u8>()]);
-          let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2*::core::mem::size_of::<*const u8>()]);
-          let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
-          #[cfg(target_arch = "wasm32")]
-          #[link(wasm_import_module = "wacli:cli/host@1.0.0")]
-          unsafe extern "C" {
-            #[link_name = "insecure-random-bytes"]
-            fn wit_import1(_: i32, _: *mut u8, );
-          }
-
-          #[cfg(not(target_arch = "wasm32"))]
-          unsafe extern "C" fn wit_import1(_: i32, _: *mut u8, ) { unreachable!() }
-          wit_import1(_rt::as_i32(&n), ptr0);
-          let l2 = *ptr0.add(0).cast::<*mut u8>();
-          let l3 = *ptr0.add(::core::mem::size_of::<*const u8>()).cast::<usize>();
-          let len4 = l3;
-          let result5 = <_ as From<_rt::Vec<_>>>::from(_rt::Vec::from_raw_parts(l2.cast(), len4, len4));
-          result5
-        }
-      }
-      #[allow(unused_unsafe, clippy::all)]
-      #[allow(async_fn_in_trait)]
       pub fn exit(code: ExitCode,) -> (){
         unsafe {
 
@@ -827,30 +773,28 @@ pub(crate) use __export_core_impl as export;
 #[unsafe(link_section = "component-type:wit-bindgen:0.52.0:wacli:cli@1.0.0:core:encoded world")]
 #[doc(hidden)]
 #[allow(clippy::octal_escapes)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 969] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xce\x06\x01A\x02\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 918] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x9b\x06\x01A\x02\x01\
 A\x0b\x01B\x09\x01y\x04\0\x09exit-code\x03\0\0\x01ps\x01r\x08\x04names\x07summar\
 ys\x05usages\x07aliases\x02\x07versions\x06hidden\x7f\x0bdescriptions\x08example\
 s\x02\x04\0\x0ccommand-meta\x03\0\x03\x01q\x04\x0funknown-command\x01s\0\x0cinva\
 lid-args\x01s\0\x06failed\x01s\0\x02io\x01s\0\x04\0\x0dcommand-error\x03\0\x05\x01\
 j\x01\x01\x01\x06\x04\0\x0ecommand-result\x03\0\x07\x03\0\x15wacli:cli/types@1.0\
-.0\x05\0\x02\x03\0\0\x09exit-code\x01B\x1e\x02\x03\x02\x01\x01\x04\0\x09exit-cod\
+.0\x05\0\x02\x03\0\0\x09exit-code\x01B\x1b\x02\x03\x02\x01\x01\x04\0\x09exit-cod\
 e\x03\0\0\x01ps\x01@\0\0\x02\x04\0\x04args\x01\x03\x01o\x02ss\x01p\x04\x01@\0\0\x05\
 \x04\0\x03env\x01\x06\x01p}\x01@\x01\x05bytes\x07\x01\0\x04\0\x0cstdout-write\x01\
 \x08\x04\0\x0cstderr-write\x01\x08\x01@\0\x01\0\x04\0\x0cstdout-flush\x01\x09\x04\
 \0\x0cstderr-flush\x01\x09\x01@\x01\x09max-bytesy\0\x07\x04\0\x0astdin-read\x01\x0a\
 \x01@\0\0\x7f\x04\0\x0dis-tty-stdout\x01\x0b\x04\0\x0dis-tty-stderr\x01\x0b\x01o\
-\x02yy\x01k\x0c\x01@\0\0\x0d\x04\0\x0dterminal-size\x01\x0e\x01@\x01\x01ny\0\x07\
-\x04\0\x0crandom-bytes\x01\x0f\x04\0\x15insecure-random-bytes\x01\x0f\x01@\x01\x04\
-code\x01\x01\0\x04\0\x04exit\x01\x10\x03\0\x14wacli:cli/host@1.0.0\x05\x02\x02\x03\
-\0\0\x0ccommand-meta\x02\x03\0\0\x0ecommand-result\x01B\x0a\x02\x03\x02\x01\x03\x04\
-\0\x0ccommand-meta\x03\0\0\x02\x03\x02\x01\x04\x04\0\x0ecommand-result\x03\0\x02\
-\x01p\x01\x01@\0\0\x04\x04\0\x0dlist-commands\x01\x05\x01ps\x01@\x02\x04names\x04\
-argv\x06\0\x03\x04\0\x03run\x01\x07\x03\0\x18wacli:cli/registry@1.0.0\x05\x05\x01\
-B\x03\x01j\0\0\x01@\0\0\0\x04\0\x03run\x01\x01\x04\0\x12wasi:cli/run@0.2.9\x05\x06\
-\x04\0\x14wacli:cli/core@1.0.0\x04\0\x0b\x0a\x01\0\x04core\x03\0\0\0G\x09produce\
-rs\x01\x0cprocessed-by\x02\x0dwit-component\x070.244.0\x10wit-bindgen-rust\x060.\
-52.0";
+\x02yy\x01k\x0c\x01@\0\0\x0d\x04\0\x0dterminal-size\x01\x0e\x01@\x01\x04code\x01\
+\x01\0\x04\0\x04exit\x01\x0f\x03\0\x14wacli:cli/host@1.0.0\x05\x02\x02\x03\0\0\x0c\
+command-meta\x02\x03\0\0\x0ecommand-result\x01B\x0a\x02\x03\x02\x01\x03\x04\0\x0c\
+command-meta\x03\0\0\x02\x03\x02\x01\x04\x04\0\x0ecommand-result\x03\0\x02\x01p\x01\
+\x01@\0\0\x04\x04\0\x0dlist-commands\x01\x05\x01ps\x01@\x02\x04names\x04argv\x06\
+\0\x03\x04\0\x03run\x01\x07\x03\0\x18wacli:cli/registry@1.0.0\x05\x05\x01B\x03\x01\
+j\0\0\x01@\0\0\0\x04\0\x03run\x01\x01\x04\0\x12wasi:cli/run@0.2.9\x05\x06\x04\0\x14\
+wacli:cli/core@1.0.0\x04\0\x0b\x0a\x01\0\x04core\x03\0\0\0G\x09producers\x01\x0c\
+processed-by\x02\x0dwit-component\x070.244.0\x10wit-bindgen-rust\x060.52.0";
 
 #[inline(never)]
 #[doc(hidden)]
