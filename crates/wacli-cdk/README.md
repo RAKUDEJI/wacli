@@ -200,6 +200,9 @@ let text = String::from_utf8(bytes)
 ```rust
 use wacli_cdk::fs;
 
+// Create a directory
+fs::create_dir("output")?;
+
 // Write string data
 fs::write("output.txt", "Hello, World!")?;
 

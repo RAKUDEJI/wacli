@@ -63,6 +63,7 @@ static __WACLI_FORCE_HOST_IMPORTS: ForceHostImports = ForceHostImports {
     io_stderr_flush: host_io::stderr_flush,
     fs_read: host_fs::read_file,
     fs_write: host_fs::write_file,
+    fs_create: host_fs::create_dir,
     fs_list: host_fs::list_dir,
     process_exit: host_process::exit,
     pipes_list: host_pipes::list_pipes,
@@ -82,6 +83,7 @@ struct ForceHostImports {
     io_stderr_flush: fn(),
     fs_read: fn(&str) -> Result<Vec<u8>, String>,
     fs_write: fn(&str, &[u8]) -> Result<(), String>,
+    fs_create: fn(&str) -> Result<(), String>,
     fs_list: fn(&str) -> Result<Vec<String>, String>,
     process_exit: fn(u32),
     pipes_list: fn() -> Vec<PipeInfo>,
@@ -93,7 +95,7 @@ struct ForceHostImports {
 /// Convenience facade over the split host interfaces.
 pub mod host {
     pub use super::host_env::{args, env};
-    pub use super::host_fs::{list_dir, read_file, write_file};
+    pub use super::host_fs::{create_dir, list_dir, read_file, write_file};
     pub use super::host_io::{stderr_flush, stderr_write, stdout_flush, stdout_write};
     pub use super::host_pipes::{list_pipes, load_pipe, Pipe};
     pub use super::host_process::exit;
@@ -567,6 +569,11 @@ pub mod fs {
     /// Write a file, creating or truncating it.
     pub fn write(path: impl AsRef<str>, contents: impl AsRef<[u8]>) -> Result<(), String> {
         host::write_file(path.as_ref(), contents.as_ref())
+    }
+
+    /// Create a directory.
+    pub fn create_dir(path: impl AsRef<str>) -> Result<(), String> {
+        host::create_dir(path.as_ref())
     }
 
     /// List entries in a directory.

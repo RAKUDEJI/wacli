@@ -4347,6 +4347,43 @@ pub unsafe fn __post_return_write_file<T: Guest>(arg0: *mut u8,) { unsafe {
 } }
 #[doc(hidden)]
 #[allow(non_snake_case, unused_unsafe)]
+pub unsafe fn _export_create_dir_cabi<T: Guest>(arg0: *mut u8,arg1: usize,) -> *mut u8 { unsafe {#[cfg(target_arch="wasm32")]
+_rt::run_ctors_once();let result1 = {
+  let len0 = arg1;
+  let bytes0 = _rt::Vec::from_raw_parts(arg0.cast(), len0, len0);
+  T::create_dir(_rt::string_lift(bytes0))
+};
+let ptr2 = (&raw mut _RET_AREA.0).cast::<u8>();
+match result1 {
+  Ok(_) => { {
+    *ptr2.add(0).cast::<u8>() = (0i32) as u8;
+  } },
+  Err(e) => { {
+    *ptr2.add(0).cast::<u8>() = (1i32) as u8;
+    let vec3 = (e.into_bytes()).into_boxed_slice();
+    let ptr3 = vec3.as_ptr().cast::<u8>();
+    let len3 = vec3.len();
+    ::core::mem::forget(vec3);
+    *ptr2.add(2*::core::mem::size_of::<*const u8>()).cast::<usize>() = len3;
+    *ptr2.add(::core::mem::size_of::<*const u8>()).cast::<*mut u8>() = ptr3.cast_mut();
+  } },
+};ptr2
+} }
+#[doc(hidden)]
+#[allow(non_snake_case)]
+pub unsafe fn __post_return_create_dir<T: Guest>(arg0: *mut u8,) { unsafe {
+  let l0 = i32::from(*arg0.add(0).cast::<u8>());
+  match l0 {
+    0 => (),
+    _ => {
+      let l1 = *arg0.add(::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+      let l2 = *arg0.add(2*::core::mem::size_of::<*const u8>()).cast::<usize>();
+      _rt::cabi_dealloc(l1, l2, 1);
+    },
+  }
+} }
+#[doc(hidden)]
+#[allow(non_snake_case, unused_unsafe)]
 pub unsafe fn _export_list_dir_cabi<T: Guest>(arg0: *mut u8,arg1: usize,) -> *mut u8 { unsafe {#[cfg(target_arch="wasm32")]
 _rt::run_ctors_once();let result1 = {
   let len0 = arg1;
@@ -4419,6 +4456,8 @@ pub trait Guest {
   #[allow(async_fn_in_trait)]
   fn write_file(path: _rt::String,contents: _rt::Vec::<u8>,) -> Result<(),_rt::String>;
   #[allow(async_fn_in_trait)]
+  fn create_dir(path: _rt::String,) -> Result<(),_rt::String>;
+  #[allow(async_fn_in_trait)]
   fn list_dir(path: _rt::String,) -> Result<_rt::Vec::<_rt::String>,_rt::String>;
 }
 #[doc(hidden)]
@@ -4441,6 +4480,14 @@ macro_rules! __export_wacli_cli_host_fs_1_0_0_cabi{
     #[unsafe(export_name = "cabi_post_wacli:cli/host-fs@1.0.0#write-file")]
     unsafe extern "C" fn _post_return_write_file(arg0: *mut u8,) {
       unsafe { $($path_to_types)*::__post_return_write_file::<$ty>(arg0) }
+    }
+    #[unsafe(export_name = "wacli:cli/host-fs@1.0.0#create-dir")]
+    unsafe extern "C" fn export_create_dir(arg0: *mut u8,arg1: usize,) -> *mut u8 {
+      unsafe { $($path_to_types)*::_export_create_dir_cabi::<$ty>(arg0, arg1) }
+    }
+    #[unsafe(export_name = "cabi_post_wacli:cli/host-fs@1.0.0#create-dir")]
+    unsafe extern "C" fn _post_return_create_dir(arg0: *mut u8,) {
+      unsafe { $($path_to_types)*::__post_return_create_dir::<$ty>(arg0) }
     }
     #[unsafe(export_name = "wacli:cli/host-fs@1.0.0#list-dir")]
     unsafe extern "C" fn export_list_dir(arg0: *mut u8,arg1: usize,) -> *mut u8 {
@@ -5331,8 +5378,8 @@ pub(crate) use __export_host_provider_impl as export;
 #[unsafe(link_section = "component-type:wit-bindgen:0.52.0:wacli:cli@1.0.0:host-provider:encoded world")]
 #[doc(hidden)]
 #[allow(clippy::octal_escapes)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 6827] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xa74\x01A\x02\x01A/\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 6853] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xc14\x01A\x02\x01A/\x01\
 B\x0f\x01y\x04\0\x09exit-code\x03\0\0\x01ps\x01r\x08\x04names\x07summarys\x05usa\
 ges\x07aliases\x02\x07versions\x06hidden\x7f\x0bdescriptions\x08examples\x02\x04\
 \0\x0ccommand-meta\x03\0\x03\x01q\x04\x0funknown-command\x01s\0\x0cinvalid-args\x01\
@@ -5458,21 +5505,22 @@ info\x03\0\x0d\x04\0\x15wacli:cli/types@1.0.0\x05\x16\x01B\x07\x01ps\x01@\0\0\0\
 wacli:cli/host-env@1.0.0\x05\x17\x01B\x07\x01p}\x01@\x01\x05bytes\0\x01\0\x04\0\x0c\
 stdout-write\x01\x01\x04\0\x0cstderr-write\x01\x01\x01@\0\x01\0\x04\0\x0cstdout-\
 flush\x01\x02\x04\0\x0cstderr-flush\x01\x02\x04\0\x17wacli:cli/host-io@1.0.0\x05\
-\x18\x01B\x0b\x01p}\x01j\x01\0\x01s\x01@\x01\x04paths\0\x01\x04\0\x09read-file\x01\
+\x18\x01B\x0d\x01p}\x01j\x01\0\x01s\x01@\x01\x04paths\0\x01\x04\0\x09read-file\x01\
 \x02\x01j\0\x01s\x01@\x02\x04paths\x08contents\0\0\x03\x04\0\x0awrite-file\x01\x04\
-\x01ps\x01j\x01\x05\x01s\x01@\x01\x04paths\0\x06\x04\0\x08list-dir\x01\x07\x04\0\
-\x17wacli:cli/host-fs@1.0.0\x05\x19\x02\x03\0\x0c\x09exit-code\x01B\x04\x02\x03\x02\
-\x01\x1a\x04\0\x09exit-code\x03\0\0\x01@\x01\x04code\x01\x01\0\x04\0\x04exit\x01\
-\x02\x04\0\x1cwacli:cli/host-process@1.0.0\x05\x1b\x01B\x16\x02\x03\x02\x01\x01\x04\
-\0\x09pipe-meta\x03\0\0\x02\x03\x02\x01\x02\x04\0\x0apipe-error\x03\0\x02\x02\x03\
-\x02\x01\x03\x04\0\x09pipe-info\x03\0\x04\x04\0\x04pipe\x03\x01\x01h\x06\x01@\x01\
-\x04self\x07\0\x01\x04\0\x11[method]pipe.meta\x01\x08\x01p}\x01ps\x01j\x01\x09\x01\
-\x03\x01@\x03\x04self\x07\x05input\x09\x07options\x0a\0\x0b\x04\0\x14[method]pip\
-e.process\x01\x0c\x01p\x05\x01@\0\0\x0d\x04\0\x0alist-pipes\x01\x0e\x01i\x06\x01\
-j\x01\x0f\x01s\x01@\x01\x04names\0\x10\x04\0\x09load-pipe\x01\x11\x04\0\x1awacli\
-:cli/host-pipes@1.0.0\x05\x1c\x04\0\x1dwacli:cli/host-provider@1.0.0\x04\0\x0b\x13\
-\x01\0\x0dhost-provider\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-c\
-omponent\x070.244.0\x10wit-bindgen-rust\x060.52.0";
+\x01@\x01\x04paths\0\x03\x04\0\x0acreate-dir\x01\x05\x01ps\x01j\x01\x06\x01s\x01\
+@\x01\x04paths\0\x07\x04\0\x08list-dir\x01\x08\x04\0\x17wacli:cli/host-fs@1.0.0\x05\
+\x19\x02\x03\0\x0c\x09exit-code\x01B\x04\x02\x03\x02\x01\x1a\x04\0\x09exit-code\x03\
+\0\0\x01@\x01\x04code\x01\x01\0\x04\0\x04exit\x01\x02\x04\0\x1cwacli:cli/host-pr\
+ocess@1.0.0\x05\x1b\x01B\x16\x02\x03\x02\x01\x01\x04\0\x09pipe-meta\x03\0\0\x02\x03\
+\x02\x01\x02\x04\0\x0apipe-error\x03\0\x02\x02\x03\x02\x01\x03\x04\0\x09pipe-inf\
+o\x03\0\x04\x04\0\x04pipe\x03\x01\x01h\x06\x01@\x01\x04self\x07\0\x01\x04\0\x11[\
+method]pipe.meta\x01\x08\x01p}\x01ps\x01j\x01\x09\x01\x03\x01@\x03\x04self\x07\x05\
+input\x09\x07options\x0a\0\x0b\x04\0\x14[method]pipe.process\x01\x0c\x01p\x05\x01\
+@\0\0\x0d\x04\0\x0alist-pipes\x01\x0e\x01i\x06\x01j\x01\x0f\x01s\x01@\x01\x04nam\
+es\0\x10\x04\0\x09load-pipe\x01\x11\x04\0\x1awacli:cli/host-pipes@1.0.0\x05\x1c\x04\
+\0\x1dwacli:cli/host-provider@1.0.0\x04\0\x0b\x13\x01\0\x0dhost-provider\x03\0\0\
+\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.244.0\x10wit-bind\
+gen-rust\x060.52.0";
 
 #[inline(never)]
 #[doc(hidden)]

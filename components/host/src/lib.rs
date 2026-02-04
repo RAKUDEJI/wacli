@@ -94,6 +94,15 @@ impl host_fs::Guest for HostProvider {
         Ok(())
     }
 
+    fn create_dir(path: String) -> Result<(), String> {
+        if path.is_empty() {
+            return Err("path is empty".to_string());
+        }
+        let dir = pick_preopen()?;
+        dir.create_directory_at(&path).map_err(fs_error)?;
+        Ok(())
+    }
+
     fn list_dir(path: String) -> Result<Vec<String>, String> {
         let dir = pick_preopen()?;
         let target = if path.is_empty() || path == "." {

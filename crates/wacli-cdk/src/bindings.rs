@@ -299,6 +299,51 @@ pub mod wacli {
       }
       #[allow(unused_unsafe, clippy::all)]
       #[allow(async_fn_in_trait)]
+      pub fn create_dir(path: &str,) -> Result<(),_rt::String>{
+        unsafe {
+
+          #[cfg_attr(target_pointer_width="64", repr(align(8)))]
+          #[cfg_attr(target_pointer_width="32", repr(align(4)))]
+          struct RetArea([::core::mem::MaybeUninit::<u8>; 3*::core::mem::size_of::<*const u8>()]);
+          let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 3*::core::mem::size_of::<*const u8>()]);
+          let vec0 = path;
+          let ptr0 = vec0.as_ptr().cast::<u8>();
+          let len0 = vec0.len();
+          let ptr1 = ret_area.0.as_mut_ptr().cast::<u8>();
+          #[cfg(target_arch = "wasm32")]
+          #[link(wasm_import_module = "wacli:cli/host-fs@1.0.0")]
+          unsafe extern "C" {
+            #[link_name = "create-dir"]
+            fn wit_import2(_: *mut u8, _: usize, _: *mut u8, );
+          }
+
+          #[cfg(not(target_arch = "wasm32"))]
+          unsafe extern "C" fn wit_import2(_: *mut u8, _: usize, _: *mut u8, ) { unreachable!() }
+          wit_import2(ptr0.cast_mut(), len0, ptr1);
+          let l3 = i32::from(*ptr1.add(0).cast::<u8>());
+          let result7 = match l3 {
+            0 => {
+              let e = ();
+              Ok(e)
+            }
+            1 => {
+              let e = {
+                let l4 = *ptr1.add(::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+                let l5 = *ptr1.add(2*::core::mem::size_of::<*const u8>()).cast::<usize>();
+                let len6 = l5;
+                let bytes6 = _rt::Vec::from_raw_parts(l4.cast(), len6, len6);
+
+                _rt::string_lift(bytes6)
+              };
+              Err(e)
+            }
+            _ => _rt::invalid_enum_discriminant(),
+          };
+          result7
+        }
+      }
+      #[allow(unused_unsafe, clippy::all)]
+      #[allow(async_fn_in_trait)]
       pub fn list_dir(path: &str,) -> Result<_rt::Vec::<_rt::String>,_rt::String>{
         unsafe {
 
@@ -1350,41 +1395,42 @@ pub(crate) use __export_plugin_impl as export;
 #[unsafe(link_section = "component-type:wit-bindgen:0.52.0:wacli:cli@1.0.0:plugin:encoded world")]
 #[doc(hidden)]
 #[allow(clippy::octal_escapes)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 1449] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xac\x0a\x01A\x02\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 1475] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xc6\x0a\x01A\x02\x01\
 A\x14\x01B\x07\x01ps\x01@\0\0\0\x04\0\x04args\x01\x01\x01o\x02ss\x01p\x02\x01@\0\
 \0\x03\x04\0\x03env\x01\x04\x03\0\x18wacli:cli/host-env@1.0.0\x05\0\x01B\x07\x01\
 p}\x01@\x01\x05bytes\0\x01\0\x04\0\x0cstdout-write\x01\x01\x04\0\x0cstderr-write\
 \x01\x01\x01@\0\x01\0\x04\0\x0cstdout-flush\x01\x02\x04\0\x0cstderr-flush\x01\x02\
-\x03\0\x17wacli:cli/host-io@1.0.0\x05\x01\x01B\x0b\x01p}\x01j\x01\0\x01s\x01@\x01\
+\x03\0\x17wacli:cli/host-io@1.0.0\x05\x01\x01B\x0d\x01p}\x01j\x01\0\x01s\x01@\x01\
 \x04paths\0\x01\x04\0\x09read-file\x01\x02\x01j\0\x01s\x01@\x02\x04paths\x08cont\
-ents\0\0\x03\x04\0\x0awrite-file\x01\x04\x01ps\x01j\x01\x05\x01s\x01@\x01\x04pat\
-hs\0\x06\x04\0\x08list-dir\x01\x07\x03\0\x17wacli:cli/host-fs@1.0.0\x05\x02\x01B\
-\x0f\x01y\x04\0\x09exit-code\x03\0\0\x01ps\x01r\x08\x04names\x07summarys\x05usag\
-es\x07aliases\x02\x07versions\x06hidden\x7f\x0bdescriptions\x08examples\x02\x04\0\
-\x0ccommand-meta\x03\0\x03\x01q\x04\x0funknown-command\x01s\0\x0cinvalid-args\x01\
-s\0\x06failed\x01s\0\x02io\x01s\0\x04\0\x0dcommand-error\x03\0\x05\x01j\x01\x01\x01\
-\x06\x04\0\x0ecommand-result\x03\0\x07\x01r\x05\x04names\x07summarys\x0binput-ty\
-pes\x02\x0boutput-types\x07versions\x04\0\x09pipe-meta\x03\0\x09\x01q\x03\x0bpar\
-se-error\x01s\0\x0ftransform-error\x01s\0\x0einvalid-option\x01s\0\x04\0\x0apipe\
--error\x03\0\x0b\x01r\x03\x04names\x07summarys\x04paths\x04\0\x09pipe-info\x03\0\
-\x0d\x03\0\x15wacli:cli/types@1.0.0\x05\x03\x02\x03\0\x03\x09exit-code\x01B\x04\x02\
-\x03\x02\x01\x04\x04\0\x09exit-code\x03\0\0\x01@\x01\x04code\x01\x01\0\x04\0\x04\
-exit\x01\x02\x03\0\x1cwacli:cli/host-process@1.0.0\x05\x05\x02\x03\0\x03\x09pipe\
--meta\x02\x03\0\x03\x0apipe-error\x02\x03\0\x03\x09pipe-info\x01B\x16\x02\x03\x02\
-\x01\x06\x04\0\x09pipe-meta\x03\0\0\x02\x03\x02\x01\x07\x04\0\x0apipe-error\x03\0\
-\x02\x02\x03\x02\x01\x08\x04\0\x09pipe-info\x03\0\x04\x04\0\x04pipe\x03\x01\x01h\
-\x06\x01@\x01\x04self\x07\0\x01\x04\0\x11[method]pipe.meta\x01\x08\x01p}\x01ps\x01\
-j\x01\x09\x01\x03\x01@\x03\x04self\x07\x05input\x09\x07options\x0a\0\x0b\x04\0\x14\
-[method]pipe.process\x01\x0c\x01p\x05\x01@\0\0\x0d\x04\0\x0alist-pipes\x01\x0e\x01\
-i\x06\x01j\x01\x0f\x01s\x01@\x01\x04names\0\x10\x04\0\x09load-pipe\x01\x11\x03\0\
-\x1awacli:cli/host-pipes@1.0.0\x05\x09\x02\x03\0\x03\x0ccommand-meta\x02\x03\0\x03\
-\x0ecommand-result\x01B\x09\x02\x03\x02\x01\x0a\x04\0\x0ccommand-meta\x03\0\0\x02\
-\x03\x02\x01\x0b\x04\0\x0ecommand-result\x03\0\x02\x01@\0\0\x01\x04\0\x04meta\x01\
-\x04\x01ps\x01@\x01\x04argv\x05\0\x03\x04\0\x03run\x01\x06\x04\0\x17wacli:cli/co\
-mmand@1.0.0\x05\x0c\x04\0\x16wacli:cli/plugin@1.0.0\x04\0\x0b\x0c\x01\0\x06plugi\
-n\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.244.0\x10\
-wit-bindgen-rust\x060.52.0";
+ents\0\0\x03\x04\0\x0awrite-file\x01\x04\x01@\x01\x04paths\0\x03\x04\0\x0acreate\
+-dir\x01\x05\x01ps\x01j\x01\x06\x01s\x01@\x01\x04paths\0\x07\x04\0\x08list-dir\x01\
+\x08\x03\0\x17wacli:cli/host-fs@1.0.0\x05\x02\x01B\x0f\x01y\x04\0\x09exit-code\x03\
+\0\0\x01ps\x01r\x08\x04names\x07summarys\x05usages\x07aliases\x02\x07versions\x06\
+hidden\x7f\x0bdescriptions\x08examples\x02\x04\0\x0ccommand-meta\x03\0\x03\x01q\x04\
+\x0funknown-command\x01s\0\x0cinvalid-args\x01s\0\x06failed\x01s\0\x02io\x01s\0\x04\
+\0\x0dcommand-error\x03\0\x05\x01j\x01\x01\x01\x06\x04\0\x0ecommand-result\x03\0\
+\x07\x01r\x05\x04names\x07summarys\x0binput-types\x02\x0boutput-types\x07version\
+s\x04\0\x09pipe-meta\x03\0\x09\x01q\x03\x0bparse-error\x01s\0\x0ftransform-error\
+\x01s\0\x0einvalid-option\x01s\0\x04\0\x0apipe-error\x03\0\x0b\x01r\x03\x04names\
+\x07summarys\x04paths\x04\0\x09pipe-info\x03\0\x0d\x03\0\x15wacli:cli/types@1.0.\
+0\x05\x03\x02\x03\0\x03\x09exit-code\x01B\x04\x02\x03\x02\x01\x04\x04\0\x09exit-\
+code\x03\0\0\x01@\x01\x04code\x01\x01\0\x04\0\x04exit\x01\x02\x03\0\x1cwacli:cli\
+/host-process@1.0.0\x05\x05\x02\x03\0\x03\x09pipe-meta\x02\x03\0\x03\x0apipe-err\
+or\x02\x03\0\x03\x09pipe-info\x01B\x16\x02\x03\x02\x01\x06\x04\0\x09pipe-meta\x03\
+\0\0\x02\x03\x02\x01\x07\x04\0\x0apipe-error\x03\0\x02\x02\x03\x02\x01\x08\x04\0\
+\x09pipe-info\x03\0\x04\x04\0\x04pipe\x03\x01\x01h\x06\x01@\x01\x04self\x07\0\x01\
+\x04\0\x11[method]pipe.meta\x01\x08\x01p}\x01ps\x01j\x01\x09\x01\x03\x01@\x03\x04\
+self\x07\x05input\x09\x07options\x0a\0\x0b\x04\0\x14[method]pipe.process\x01\x0c\
+\x01p\x05\x01@\0\0\x0d\x04\0\x0alist-pipes\x01\x0e\x01i\x06\x01j\x01\x0f\x01s\x01\
+@\x01\x04names\0\x10\x04\0\x09load-pipe\x01\x11\x03\0\x1awacli:cli/host-pipes@1.\
+0.0\x05\x09\x02\x03\0\x03\x0ccommand-meta\x02\x03\0\x03\x0ecommand-result\x01B\x09\
+\x02\x03\x02\x01\x0a\x04\0\x0ccommand-meta\x03\0\0\x02\x03\x02\x01\x0b\x04\0\x0e\
+command-result\x03\0\x02\x01@\0\0\x01\x04\0\x04meta\x01\x04\x01ps\x01@\x01\x04ar\
+gv\x05\0\x03\x04\0\x03run\x01\x06\x04\0\x17wacli:cli/command@1.0.0\x05\x0c\x04\0\
+\x16wacli:cli/plugin@1.0.0\x04\0\x0b\x0c\x01\0\x06plugin\x03\0\0\0G\x09producers\
+\x01\x0cprocessed-by\x02\x0dwit-component\x070.244.0\x10wit-bindgen-rust\x060.52\
+.0";
 
 #[inline(never)]
 #[doc(hidden)]
