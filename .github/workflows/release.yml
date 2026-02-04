@@ -130,35 +130,39 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Check wacli-cdk version matches tag
-        id: cdk
+      - name: Publish wacli-cdk to crates.io
         env:
           TAG: ${{ github.ref_name }}
-        run: |
-          python - <<'PY'
-          import os, tomllib
-          with open("Cargo.toml", "rb") as f:
-              root = tomllib.load(f)
-          ws_version = root["workspace"]["package"]["version"]
-          with open("crates/wacli-cdk/Cargo.toml", "rb") as f:
-              data = tomllib.load(f)
-          version = data["package"].get("version")
-          if isinstance(version, dict) and version.get("workspace"):
-              version = ws_version
-          tag = os.environ["TAG"]
-          publish = "true" if version and tag == f"v{version}" else "false"
-          print(f"publish={publish}")
-          print(f"version={version}")
-          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
-              out.write(f"publish={publish}\\n")
-              out.write(f"version={version}\\n")
-          PY
-
-      - name: Publish wacli-cdk to crates.io
-        if: steps.cdk.outputs.publish == 'true'
-        run: cargo publish -p wacli-cdk
-        env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          set -euo pipefail
+          version="$(
+            python - <<'PY'
+            import tomllib
+            def pkg_version(path):
+                with open(path, "rb") as f:
+                    data = tomllib.load(f)
+                v = data["package"].get("version")
+                if isinstance(v, dict) and v.get("workspace"):
+                    with open("Cargo.toml", "rb") as f:
+                        root = tomllib.load(f)
+                    v = root["workspace"]["package"]["version"]
+                return v
+            print(pkg_version("crates/wacli-cdk/Cargo.toml"))
+            PY
+          )"
+          if [ "v${version}" != "${TAG}" ]; then
+            echo "skip publish: tag ${TAG} != v${version}"
+            exit 0
+          fi
+          if cargo publish -p wacli-cdk; then
+            exit 0
+          fi
+          if cargo info wacli-cdk --registry crates-io | grep -q "version: ${version}"; then
+            echo "already published"
+            exit 0
+          fi
+          exit 1
 
   publish-plugin-loader:
     runs-on: ubuntu-latest
@@ -180,35 +184,39 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Check plugin-loader version matches tag
-        id: plugin_loader
+      - name: Publish plugin-loader to crates.io
         env:
           TAG: ${{ github.ref_name }}
-        run: |
-          python - <<'PY'
-          import os, tomllib
-          with open("Cargo.toml", "rb") as f:
-              root = tomllib.load(f)
-          ws_version = root["workspace"]["package"]["version"]
-          with open("crates/plugin-loader/Cargo.toml", "rb") as f:
-              data = tomllib.load(f)
-          version = data["package"].get("version")
-          if isinstance(version, dict) and version.get("workspace"):
-              version = ws_version
-          tag = os.environ["TAG"]
-          publish = "true" if version and tag == f"v{version}" else "false"
-          print(f"publish={publish}")
-          print(f"version={version}")
-          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
-              out.write(f"publish={publish}\\n")
-              out.write(f"version={version}\\n")
-          PY
-
-      - name: Publish plugin-loader to crates.io
-        if: steps.plugin_loader.outputs.publish == 'true'
-        run: cargo publish -p plugin-loader
-        env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          set -euo pipefail
+          version="$(
+            python - <<'PY'
+            import tomllib
+            def pkg_version(path):
+                with open(path, "rb") as f:
+                    data = tomllib.load(f)
+                v = data["package"].get("version")
+                if isinstance(v, dict) and v.get("workspace"):
+                    with open("Cargo.toml", "rb") as f:
+                        root = tomllib.load(f)
+                    v = root["workspace"]["package"]["version"]
+                return v
+            print(pkg_version("crates/plugin-loader/Cargo.toml"))
+            PY
+          )"
+          if [ "v${version}" != "${TAG}" ]; then
+            echo "skip publish: tag ${TAG} != v${version}"
+            exit 0
+          fi
+          if cargo publish -p plugin-loader; then
+            exit 0
+          fi
+          if cargo info plugin-loader --registry crates-io | grep -q "version: ${version}"; then
+            echo "already published"
+            exit 0
+          fi
+          exit 1
 
   publish:
     needs: [publish-plugin-loader]
@@ -231,35 +239,39 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Check wacli version matches tag
-        id: wacli
+      - name: Publish to crates.io
         env:
           TAG: ${{ github.ref_name }}
-        run: |
-          python - <<'PY'
-          import os, tomllib
-          with open("Cargo.toml", "rb") as f:
-              root = tomllib.load(f)
-          ws_version = root["workspace"]["package"]["version"]
-          with open("crates/cli/Cargo.toml", "rb") as f:
-              data = tomllib.load(f)
-          version = data["package"].get("version")
-          if isinstance(version, dict) and version.get("workspace"):
-              version = ws_version
-          tag = os.environ["TAG"]
-          publish = "true" if version and tag == f"v{version}" else "false"
-          print(f"publish={publish}")
-          print(f"version={version}")
-          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
-              out.write(f"publish={publish}\\n")
-              out.write(f"version={version}\\n")
-          PY
-
-      - name: Publish to crates.io
-        if: steps.wacli.outputs.publish == 'true'
-        run: cargo publish -p wacli
-        env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          set -euo pipefail
+          version="$(
+            python - <<'PY'
+            import tomllib
+            def pkg_version(path):
+                with open(path, "rb") as f:
+                    data = tomllib.load(f)
+                v = data["package"].get("version")
+                if isinstance(v, dict) and v.get("workspace"):
+                    with open("Cargo.toml", "rb") as f:
+                        root = tomllib.load(f)
+                    v = root["workspace"]["package"]["version"]
+                return v
+            print(pkg_version("crates/cli/Cargo.toml"))
+            PY
+          )"
+          if [ "v${version}" != "${TAG}" ]; then
+            echo "skip publish: tag ${TAG} != v${version}"
+            exit 0
+          fi
+          if cargo publish -p wacli; then
+            exit 0
+          fi
+          if cargo info wacli --registry crates-io | grep -q "version: ${version}"; then
+            echo "already published"
+            exit 0
+          fi
+          exit 1
 
   release:
     needs: [build, components, publish-cdk, publish-plugin-loader, publish]
