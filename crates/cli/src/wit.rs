@@ -38,12 +38,9 @@ interface host {
   stdout-flush: func();
   stderr-flush: func();
 
-  stdin-read: func(max-bytes: u32) -> list<u8>;
-
-  is-tty-stdout: func() -> bool;
-  is-tty-stderr: func() -> bool;
-
-  terminal-size: func() -> option<tuple<u32, u32>>;
+  read-file: func(path: string) -> result<list<u8>, string>;
+  write-file: func(path: string, contents: list<u8>) -> result<_, string>;
+  list-dir: func(path: string) -> result<list<string>, string>;
 
   exit: func(code: exit-code);
 }

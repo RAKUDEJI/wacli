@@ -2,26 +2,18 @@ package wacli:cli@1.0.0;
 
 use wasi:cli/environment@0.2.9 as wasi-cli-environment;
 use wasi:cli/exit@0.2.9 as wasi-cli-exit;
-use wasi:cli/stdin@0.2.9 as wasi-cli-stdin;
 use wasi:cli/stdout@0.2.9 as wasi-cli-stdout;
 use wasi:cli/stderr@0.2.9 as wasi-cli-stderr;
-use wasi:cli/terminal-input@0.2.9 as wasi-cli-terminal-input;
-use wasi:cli/terminal-output@0.2.9 as wasi-cli-terminal-output;
-use wasi:cli/terminal-stdin@0.2.9 as wasi-cli-terminal-stdin;
-use wasi:cli/terminal-stdout@0.2.9 as wasi-cli-terminal-stdout;
-use wasi:cli/terminal-stderr@0.2.9 as wasi-cli-terminal-stderr;
+use wasi:filesystem/types@0.2.9 as wasi-filesystem-types;
+use wasi:filesystem/preopens@0.2.9 as wasi-filesystem-preopens;
 
 world wasi-cli-capabilities {
   import wasi-cli-environment;
   import wasi-cli-exit;
-  import wasi-cli-stdin;
   import wasi-cli-stdout;
   import wasi-cli-stderr;
-  import wasi-cli-terminal-input;
-  import wasi-cli-terminal-output;
-  import wasi-cli-terminal-stdin;
-  import wasi-cli-terminal-stdout;
-  import wasi-cli-terminal-stderr;
+  import wasi-filesystem-types;
+  import wasi-filesystem-preopens;
 }
 
 world host-provider {

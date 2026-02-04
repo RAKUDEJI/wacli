@@ -170,7 +170,7 @@ Download from [Releases](https://github.com/RAKUDEJI/wacli/releases).
 | Interface | Description |
 |-----------|-------------|
 | `wacli:cli/types` | Shared types (`exit-code`, `command-meta`, `command-error`) |
-| `wacli:cli/host` | Host API for plugins (`args`, `stdout-write`, `exit`, etc.) |
+| `wacli:cli/host` | Host API for plugins (`args`, `stdout-write`, `exit`, filesystem I/O) |
 | `wacli:cli/command` | Plugin export interface (`meta`, `run`) |
 | `wacli:cli/registry` | Command management (`list-commands`, `run`) |
 

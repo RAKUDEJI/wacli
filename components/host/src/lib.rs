@@ -5,6 +5,7 @@ mod bindings;
 use bindings::export;
 use bindings::exports::wacli::cli::host;
 use bindings::wasi;
+use wasi::filesystem::types::{Descriptor, DescriptorFlags, ErrorCode, OpenFlags, PathFlags};
 
 struct HostProvider;
 
@@ -33,20 +34,81 @@ impl host::Guest for HostProvider {
         flush_output(StreamTarget::Stderr);
     }
 
-    fn stdin_read(max_bytes: u32) -> Vec<u8> {
-        read_from_stdin(max_bytes)
+    fn read_file(path: String) -> Result<Vec<u8>, String> {
+        if path.is_empty() {
+            return Err("path is empty".to_string());
+        }
+        let dir = pick_preopen()?;
+        let file = dir
+            .open_at(PathFlags::SYMLINK_FOLLOW, &path, OpenFlags::empty(), DescriptorFlags::READ)
+            .map_err(fs_error)?;
+        let mut out = Vec::new();
+        let mut offset = 0u64;
+        loop {
+            let (chunk, eof) = file
+                .read(64 * 1024, offset)
+                .map_err(fs_error)?;
+            if chunk.is_empty() {
+                break;
+            }
+            offset += chunk.len() as u64;
+            out.extend_from_slice(&chunk);
+            if eof {
+                break;
+            }
+        }
+        Ok(out)
     }
 
-    fn is_tty_stdout() -> bool {
-        wasi::cli::terminal_stdout::get_terminal_stdout().is_some()
+    fn write_file(path: String, contents: Vec<u8>) -> Result<(), String> {
+        if path.is_empty() {
+            return Err("path is empty".to_string());
+        }
+        let dir = pick_preopen()?;
+        let file = dir
+            .open_at(
+                PathFlags::SYMLINK_FOLLOW,
+                &path,
+                OpenFlags::CREATE | OpenFlags::TRUNCATE,
+                DescriptorFlags::WRITE,
+            )
+            .map_err(fs_error)?;
+        let mut offset = 0u64;
+        while offset < contents.len() as u64 {
+            let written = file
+                .write(&contents[offset as usize..], offset)
+                .map_err(fs_error)?;
+            if written == 0 {
+                return Err("write returned 0 bytes".to_string());
+            }
+            offset += written;
+        }
+        Ok(())
     }
 
-    fn is_tty_stderr() -> bool {
-        wasi::cli::terminal_stderr::get_terminal_stderr().is_some()
-    }
-
-    fn terminal_size() -> Option<(u32, u32)> {
-        None
+    fn list_dir(path: String) -> Result<Vec<String>, String> {
+        let dir = pick_preopen()?;
+        let target = if path.is_empty() || path == "." {
+            dir
+        } else {
+            dir.open_at(
+                PathFlags::SYMLINK_FOLLOW,
+                &path,
+                OpenFlags::DIRECTORY,
+                DescriptorFlags::READ,
+            )
+            .map_err(fs_error)?
+        };
+        let stream = target.read_directory().map_err(fs_error)?;
+        let mut out = Vec::new();
+        loop {
+            let entry = stream.read_directory_entry().map_err(fs_error)?;
+            match entry {
+                Some(entry) => out.push(entry.name),
+                None => break,
+            }
+        }
+        Ok(out)
     }
 
     fn exit(code: u32) {
@@ -95,19 +157,19 @@ fn flush_output(target: StreamTarget) {
     }
 }
 
-fn read_from_stdin(max_bytes: u32) -> Vec<u8> {
-    if max_bytes == 0 {
-        return Vec::new();
+fn pick_preopen() -> Result<Descriptor, String> {
+    let mut dirs = wasi::filesystem::preopens::get_directories();
+    if dirs.is_empty() {
+        return Err("no preopened directories available".to_string());
     }
+    let idx = dirs
+        .iter()
+        .position(|(_, name)| name == ".")
+        .unwrap_or(0);
+    let (dir, _) = dirs.swap_remove(idx);
+    Ok(dir)
+}
 
-    let stream = wasi::cli::stdin::get_stdin();
-    match stream.blocking_read(max_bytes as u64) {
-        Ok(mut bytes) => {
-            if bytes.len() > max_bytes as usize {
-                bytes.truncate(max_bytes as usize);
-            }
-            bytes
-        }
-        Err(_) => Vec::new(),
-    }
+fn fs_error(err: ErrorCode) -> String {
+    format!("filesystem error: {err:?}")
 }

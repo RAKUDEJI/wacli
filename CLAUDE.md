@@ -116,7 +116,7 @@ WASI 0.2.9 を使用。WASI は host/core 側で利用し、プラグインは�
 共有型定義: `exit-code`, `command-meta`, `command-error`, `command-result`
 
 ### wacli/host
-プラグイン向けホストAPI: `args`, `stdout-write`, `stderr-write`, `exit` など
+プラグイン向けホストAPI: `args`, `stdout-write`, `stderr-write`, `exit`, ファイルI/O など
 
 ### wacli/command
 プラグインがエクスポート: `meta() -> command-meta`, `run(argv) -> command-result`
@@ -165,7 +165,7 @@ wasm-tools component new components/core/core.wasm \
 
 ### 特徴
 - `Command` trait + `export!` マクロ
-- `host` モジュール（stdout, stderr, args, env）
+- `host` モジュール（stdout, stderr, args, env, ファイルI/O）
 - `args` モジュール（引数パース）
 - `io` モジュール（print, println, eprint, eprintln）
 

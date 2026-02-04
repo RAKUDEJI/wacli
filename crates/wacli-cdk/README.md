@@ -16,6 +16,7 @@ Command Development Kit for building [wacli](https://github.com/RAKUDEJI/wacli) 
 - **`Context`** - Access arguments and environment variables
 - **`args` module** - Lightweight argument parsing helpers
 - **`io` module** - stdout/stderr utilities
+- **`fs` module** - File read/write/list helpers via the host
 
 ## Installation
 
@@ -31,7 +32,7 @@ edition = "2024"
 crate-type = ["cdylib"]
 
 [dependencies]
-wacli-cdk = "0.0.21"
+wacli-cdk = "0.0.22"
 ```
 
 ## Quick Start
@@ -156,6 +157,24 @@ io::eprint("error: ");
 io::eprintln("something went wrong");
 ```
 
+### File System Helpers
+
+```rust
+use wacli_cdk::fs;
+
+fn run(argv: Vec<String>) -> CommandResult {
+    let entries = fs::list_dir(".")?;
+    for name in entries {
+        wacli_cdk::io::println(name);
+    }
+
+    let bytes = fs::read("input.txt")?;
+    fs::write("copy.txt", &bytes)?;
+
+    Ok(0)
+}
+```
+
 ### Metadata Builder
 
 ```rust
@@ -204,7 +223,7 @@ Import common types with a single statement:
 
 ```rust
 use wacli_cdk::prelude::*;
-// Imports: Command, CommandMeta, CommandResult, CommandError, Context, meta, args, io
+// Imports: Command, CommandMeta, CommandResult, CommandError, Context, meta, args, io, fs
 ```
 
 ## Integration with wacli

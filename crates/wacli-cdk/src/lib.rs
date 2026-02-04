@@ -29,7 +29,9 @@ pub use bindings::wacli::cli::types::{CommandError, CommandMeta, CommandResult};
 
 /// Common imports for wacli command implementations.
 pub mod prelude {
-    pub use super::{args, io, meta, Command, CommandError, CommandMeta, CommandResult, Context};
+    pub use super::{
+        args, fs, io, meta, Command, CommandError, CommandMeta, CommandResult, Context,
+    };
 }
 
 /// Exit code type for commands.
@@ -425,5 +427,25 @@ pub mod io {
     /// Flush stdout.
     pub fn flush() {
         host::stdout_flush();
+    }
+}
+
+/// File system helpers via the host interface.
+pub mod fs {
+    use super::host;
+
+    /// Read an entire file into memory.
+    pub fn read(path: impl AsRef<str>) -> Result<Vec<u8>, String> {
+        host::read_file(path.as_ref())
+    }
+
+    /// Write a file, creating or truncating it.
+    pub fn write(path: impl AsRef<str>, contents: impl AsRef<[u8]>) -> Result<(), String> {
+        host::write_file(path.as_ref(), contents.as_ref())
+    }
+
+    /// List entries in a directory.
+    pub fn list_dir(path: impl AsRef<str>) -> Result<Vec<String>, String> {
+        host::list_dir(path.as_ref())
     }
 }

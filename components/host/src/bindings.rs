@@ -187,36 +187,6 @@ pub mod wasi {
 
 
     #[allow(dead_code, async_fn_in_trait, unused_imports, clippy::all)]
-    pub mod stdin {
-      #[used]
-      #[doc(hidden)]
-      static __FORCE_SECTION_REF: fn() =
-      super::super::super::__link_custom_section_describing_imports;
-      
-      pub type InputStream = super::super::super::wasi::io::streams::InputStream;
-      #[allow(unused_unsafe, clippy::all)]
-      #[allow(async_fn_in_trait)]
-      pub fn get_stdin() -> InputStream{
-        unsafe {
-
-          #[cfg(target_arch = "wasm32")]
-          #[link(wasm_import_module = "wasi:cli/stdin@0.2.9")]
-          unsafe extern "C" {
-            #[link_name = "get-stdin"]
-            fn wit_import0() -> i32;
-          }
-
-          #[cfg(not(target_arch = "wasm32"))]
-          unsafe extern "C" fn wit_import0() -> i32 { unreachable!() }
-          let ret = wit_import0();
-          super::super::super::wasi::io::streams::InputStream::from_handle(ret as u32)
-        }
-      }
-
-    }
-
-
-    #[allow(dead_code, async_fn_in_trait, unused_imports, clippy::all)]
     pub mod stdout {
       #[used]
       #[doc(hidden)]
@@ -275,28 +245,507 @@ pub mod wasi {
 
     }
 
-    /// Terminal input.
-    ///
-    /// In the future, this may include functions for disabling echoing,
-    /// disabling input buffering so that keyboard events are sent through
-    /// immediately, querying supported features, and so on.
+  }
+  pub mod clocks {
+
     #[allow(dead_code, async_fn_in_trait, unused_imports, clippy::all)]
-    pub mod terminal_input {
+    pub mod wall_clock {
+      #[used]
+      #[doc(hidden)]
+      static __FORCE_SECTION_REF: fn() =
+      super::super::super::__link_custom_section_describing_imports;
+      
+      #[repr(C)]
+      #[derive(Clone, Copy)]
+      pub struct Datetime {
+        pub seconds: u64,
+        pub nanoseconds: u32,
+      }
+      impl ::core::fmt::Debug for Datetime {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+          f.debug_struct("Datetime").field("seconds", &self.seconds).field("nanoseconds", &self.nanoseconds).finish()
+        }
+      }
+      #[allow(unused_unsafe, clippy::all)]
+      #[allow(async_fn_in_trait)]
+      pub fn now() -> Datetime{
+        unsafe {
+
+          #[repr(align(8))]
+          struct RetArea([::core::mem::MaybeUninit::<u8>; 16]);
+          let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 16]);
+          let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+          #[cfg(target_arch = "wasm32")]
+          #[link(wasm_import_module = "wasi:clocks/wall-clock@0.2.9")]
+          unsafe extern "C" {
+            #[link_name = "now"]
+            fn wit_import1(_: *mut u8, );
+          }
+
+          #[cfg(not(target_arch = "wasm32"))]
+          unsafe extern "C" fn wit_import1(_: *mut u8, ) { unreachable!() }
+          wit_import1(ptr0);
+          let l2 = *ptr0.add(0).cast::<i64>();
+          let l3 = *ptr0.add(8).cast::<i32>();
+          let result4 = Datetime{
+            seconds: l2 as u64,
+            nanoseconds: l3 as u32,
+          };
+          result4
+        }
+      }
+      #[allow(unused_unsafe, clippy::all)]
+      #[allow(async_fn_in_trait)]
+      pub fn resolution() -> Datetime{
+        unsafe {
+
+          #[repr(align(8))]
+          struct RetArea([::core::mem::MaybeUninit::<u8>; 16]);
+          let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 16]);
+          let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+          #[cfg(target_arch = "wasm32")]
+          #[link(wasm_import_module = "wasi:clocks/wall-clock@0.2.9")]
+          unsafe extern "C" {
+            #[link_name = "resolution"]
+            fn wit_import1(_: *mut u8, );
+          }
+
+          #[cfg(not(target_arch = "wasm32"))]
+          unsafe extern "C" fn wit_import1(_: *mut u8, ) { unreachable!() }
+          wit_import1(ptr0);
+          let l2 = *ptr0.add(0).cast::<i64>();
+          let l3 = *ptr0.add(8).cast::<i32>();
+          let result4 = Datetime{
+            seconds: l2 as u64,
+            nanoseconds: l3 as u32,
+          };
+          result4
+        }
+      }
+
+    }
+
+  }
+  pub mod filesystem {
+
+    #[allow(dead_code, async_fn_in_trait, unused_imports, clippy::all)]
+    pub mod types {
       #[used]
       #[doc(hidden)]
       static __FORCE_SECTION_REF: fn() =
       super::super::super::__link_custom_section_describing_imports;
       
       use super::super::super::_rt;
-      /// The input side of a terminal.
+      pub type InputStream = super::super::super::wasi::io::streams::InputStream;
+      pub type OutputStream = super::super::super::wasi::io::streams::OutputStream;
+      pub type Error = super::super::super::wasi::io::streams::Error;
+      pub type Datetime = super::super::super::wasi::clocks::wall_clock::Datetime;
+      pub type Filesize = u64;
+      #[repr(u8)]
+      #[derive(Clone, Copy, Eq, Ord, PartialEq, PartialOrd)]
+      pub enum DescriptorType {
+        Unknown,
+        BlockDevice,
+        CharacterDevice,
+        Directory,
+        Fifo,
+        SymbolicLink,
+        RegularFile,
+        Socket,
+      }
+      impl ::core::fmt::Debug for DescriptorType {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+          match self {
+            DescriptorType::Unknown => {
+              f.debug_tuple("DescriptorType::Unknown").finish()
+            }
+            DescriptorType::BlockDevice => {
+              f.debug_tuple("DescriptorType::BlockDevice").finish()
+            }
+            DescriptorType::CharacterDevice => {
+              f.debug_tuple("DescriptorType::CharacterDevice").finish()
+            }
+            DescriptorType::Directory => {
+              f.debug_tuple("DescriptorType::Directory").finish()
+            }
+            DescriptorType::Fifo => {
+              f.debug_tuple("DescriptorType::Fifo").finish()
+            }
+            DescriptorType::SymbolicLink => {
+              f.debug_tuple("DescriptorType::SymbolicLink").finish()
+            }
+            DescriptorType::RegularFile => {
+              f.debug_tuple("DescriptorType::RegularFile").finish()
+            }
+            DescriptorType::Socket => {
+              f.debug_tuple("DescriptorType::Socket").finish()
+            }
+          }
+        }
+      }
+
+      impl DescriptorType{
+        #[doc(hidden)]
+        pub unsafe fn _lift(val: u8) -> DescriptorType{
+          if !cfg!(debug_assertions) {
+            return unsafe { ::core::mem::transmute(val) };
+          }
+
+          match val {
+            0 => DescriptorType::Unknown,
+            1 => DescriptorType::BlockDevice,
+            2 => DescriptorType::CharacterDevice,
+            3 => DescriptorType::Directory,
+            4 => DescriptorType::Fifo,
+            5 => DescriptorType::SymbolicLink,
+            6 => DescriptorType::RegularFile,
+            7 => DescriptorType::Socket,
+
+            _ => panic!("invalid enum discriminant"),
+          }
+        }
+      }
+
+      wit_bindgen::rt::bitflags::bitflags! {
+        #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
+        pub struct DescriptorFlags: u8 {
+          const READ = 1 << 0;
+          const WRITE = 1 << 1;
+          const FILE_INTEGRITY_SYNC = 1 << 2;
+          const DATA_INTEGRITY_SYNC = 1 << 3;
+          const REQUESTED_WRITE_SYNC = 1 << 4;
+          const MUTATE_DIRECTORY = 1 << 5;
+        }
+      }
+      wit_bindgen::rt::bitflags::bitflags! {
+        #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
+        pub struct PathFlags: u8 {
+          const SYMLINK_FOLLOW = 1 << 0;
+        }
+      }
+      wit_bindgen::rt::bitflags::bitflags! {
+        #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
+        pub struct OpenFlags: u8 {
+          const CREATE = 1 << 0;
+          const DIRECTORY = 1 << 1;
+          const EXCLUSIVE = 1 << 2;
+          const TRUNCATE = 1 << 3;
+        }
+      }
+      pub type LinkCount = u64;
+      #[repr(C)]
+      #[derive(Clone, Copy)]
+      pub struct DescriptorStat {
+        pub type_: DescriptorType,
+        pub link_count: LinkCount,
+        pub size: Filesize,
+        pub data_access_timestamp: Option<Datetime>,
+        pub data_modification_timestamp: Option<Datetime>,
+        pub status_change_timestamp: Option<Datetime>,
+      }
+      impl ::core::fmt::Debug for DescriptorStat {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+          f.debug_struct("DescriptorStat").field("type", &self.type_).field("link-count", &self.link_count).field("size", &self.size).field("data-access-timestamp", &self.data_access_timestamp).field("data-modification-timestamp", &self.data_modification_timestamp).field("status-change-timestamp", &self.status_change_timestamp).finish()
+        }
+      }
+      #[derive(Clone, Copy)]
+      pub enum NewTimestamp {
+        NoChange,
+        Now,
+        Timestamp(Datetime),
+      }
+      impl ::core::fmt::Debug for NewTimestamp {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+          match self {
+            NewTimestamp::NoChange => {
+              f.debug_tuple("NewTimestamp::NoChange").finish()
+            }
+            NewTimestamp::Now => {
+              f.debug_tuple("NewTimestamp::Now").finish()
+            }
+            NewTimestamp::Timestamp(e) => {
+              f.debug_tuple("NewTimestamp::Timestamp").field(e).finish()
+            }
+          }
+        }
+      }
+      #[derive(Clone)]
+      pub struct DirectoryEntry {
+        pub type_: DescriptorType,
+        pub name: _rt::String,
+      }
+      impl ::core::fmt::Debug for DirectoryEntry {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+          f.debug_struct("DirectoryEntry").field("type", &self.type_).field("name", &self.name).finish()
+        }
+      }
+      #[repr(u8)]
+      #[derive(Clone, Copy, Eq, Ord, PartialEq, PartialOrd)]
+      pub enum ErrorCode {
+        Access,
+        WouldBlock,
+        Already,
+        BadDescriptor,
+        Busy,
+        Deadlock,
+        Quota,
+        Exist,
+        FileTooLarge,
+        IllegalByteSequence,
+        InProgress,
+        Interrupted,
+        Invalid,
+        Io,
+        IsDirectory,
+        Loop,
+        TooManyLinks,
+        MessageSize,
+        NameTooLong,
+        NoDevice,
+        NoEntry,
+        NoLock,
+        InsufficientMemory,
+        InsufficientSpace,
+        NotDirectory,
+        NotEmpty,
+        NotRecoverable,
+        Unsupported,
+        NoTty,
+        NoSuchDevice,
+        Overflow,
+        NotPermitted,
+        Pipe,
+        ReadOnly,
+        InvalidSeek,
+        TextFileBusy,
+        CrossDevice,
+      }
+      impl ErrorCode{
+        pub fn name(&self) -> &'static str {
+          match self {
+            ErrorCode::Access => "access",
+            ErrorCode::WouldBlock => "would-block",
+            ErrorCode::Already => "already",
+            ErrorCode::BadDescriptor => "bad-descriptor",
+            ErrorCode::Busy => "busy",
+            ErrorCode::Deadlock => "deadlock",
+            ErrorCode::Quota => "quota",
+            ErrorCode::Exist => "exist",
+            ErrorCode::FileTooLarge => "file-too-large",
+            ErrorCode::IllegalByteSequence => "illegal-byte-sequence",
+            ErrorCode::InProgress => "in-progress",
+            ErrorCode::Interrupted => "interrupted",
+            ErrorCode::Invalid => "invalid",
+            ErrorCode::Io => "io",
+            ErrorCode::IsDirectory => "is-directory",
+            ErrorCode::Loop => "loop",
+            ErrorCode::TooManyLinks => "too-many-links",
+            ErrorCode::MessageSize => "message-size",
+            ErrorCode::NameTooLong => "name-too-long",
+            ErrorCode::NoDevice => "no-device",
+            ErrorCode::NoEntry => "no-entry",
+            ErrorCode::NoLock => "no-lock",
+            ErrorCode::InsufficientMemory => "insufficient-memory",
+            ErrorCode::InsufficientSpace => "insufficient-space",
+            ErrorCode::NotDirectory => "not-directory",
+            ErrorCode::NotEmpty => "not-empty",
+            ErrorCode::NotRecoverable => "not-recoverable",
+            ErrorCode::Unsupported => "unsupported",
+            ErrorCode::NoTty => "no-tty",
+            ErrorCode::NoSuchDevice => "no-such-device",
+            ErrorCode::Overflow => "overflow",
+            ErrorCode::NotPermitted => "not-permitted",
+            ErrorCode::Pipe => "pipe",
+            ErrorCode::ReadOnly => "read-only",
+            ErrorCode::InvalidSeek => "invalid-seek",
+            ErrorCode::TextFileBusy => "text-file-busy",
+            ErrorCode::CrossDevice => "cross-device",
+          }
+        }
+        pub fn message(&self) -> &'static str {
+          match self {
+            ErrorCode::Access => "",
+            ErrorCode::WouldBlock => "",
+            ErrorCode::Already => "",
+            ErrorCode::BadDescriptor => "",
+            ErrorCode::Busy => "",
+            ErrorCode::Deadlock => "",
+            ErrorCode::Quota => "",
+            ErrorCode::Exist => "",
+            ErrorCode::FileTooLarge => "",
+            ErrorCode::IllegalByteSequence => "",
+            ErrorCode::InProgress => "",
+            ErrorCode::Interrupted => "",
+            ErrorCode::Invalid => "",
+            ErrorCode::Io => "",
+            ErrorCode::IsDirectory => "",
+            ErrorCode::Loop => "",
+            ErrorCode::TooManyLinks => "",
+            ErrorCode::MessageSize => "",
+            ErrorCode::NameTooLong => "",
+            ErrorCode::NoDevice => "",
+            ErrorCode::NoEntry => "",
+            ErrorCode::NoLock => "",
+            ErrorCode::InsufficientMemory => "",
+            ErrorCode::InsufficientSpace => "",
+            ErrorCode::NotDirectory => "",
+            ErrorCode::NotEmpty => "",
+            ErrorCode::NotRecoverable => "",
+            ErrorCode::Unsupported => "",
+            ErrorCode::NoTty => "",
+            ErrorCode::NoSuchDevice => "",
+            ErrorCode::Overflow => "",
+            ErrorCode::NotPermitted => "",
+            ErrorCode::Pipe => "",
+            ErrorCode::ReadOnly => "",
+            ErrorCode::InvalidSeek => "",
+            ErrorCode::TextFileBusy => "",
+            ErrorCode::CrossDevice => "",
+          }
+        }
+      }
+      impl ::core::fmt::Debug for ErrorCode{
+        fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+          f.debug_struct("ErrorCode")
+          .field("code", &(*self as i32))
+          .field("name", &self.name())
+          .field("message", &self.message())
+          .finish()
+        }
+      }
+      impl ::core::fmt::Display for ErrorCode{
+        fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+          write!(f, "{} (error {})", self.name(), *self as i32)
+        }
+      }
+
+      impl ::core::error::Error for ErrorCode {}
+
+      impl ErrorCode{
+        #[doc(hidden)]
+        pub unsafe fn _lift(val: u8) -> ErrorCode{
+          if !cfg!(debug_assertions) {
+            return unsafe { ::core::mem::transmute(val) };
+          }
+
+          match val {
+            0 => ErrorCode::Access,
+            1 => ErrorCode::WouldBlock,
+            2 => ErrorCode::Already,
+            3 => ErrorCode::BadDescriptor,
+            4 => ErrorCode::Busy,
+            5 => ErrorCode::Deadlock,
+            6 => ErrorCode::Quota,
+            7 => ErrorCode::Exist,
+            8 => ErrorCode::FileTooLarge,
+            9 => ErrorCode::IllegalByteSequence,
+            10 => ErrorCode::InProgress,
+            11 => ErrorCode::Interrupted,
+            12 => ErrorCode::Invalid,
+            13 => ErrorCode::Io,
+            14 => ErrorCode::IsDirectory,
+            15 => ErrorCode::Loop,
+            16 => ErrorCode::TooManyLinks,
+            17 => ErrorCode::MessageSize,
+            18 => ErrorCode::NameTooLong,
+            19 => ErrorCode::NoDevice,
+            20 => ErrorCode::NoEntry,
+            21 => ErrorCode::NoLock,
+            22 => ErrorCode::InsufficientMemory,
+            23 => ErrorCode::InsufficientSpace,
+            24 => ErrorCode::NotDirectory,
+            25 => ErrorCode::NotEmpty,
+            26 => ErrorCode::NotRecoverable,
+            27 => ErrorCode::Unsupported,
+            28 => ErrorCode::NoTty,
+            29 => ErrorCode::NoSuchDevice,
+            30 => ErrorCode::Overflow,
+            31 => ErrorCode::NotPermitted,
+            32 => ErrorCode::Pipe,
+            33 => ErrorCode::ReadOnly,
+            34 => ErrorCode::InvalidSeek,
+            35 => ErrorCode::TextFileBusy,
+            36 => ErrorCode::CrossDevice,
+
+            _ => panic!("invalid enum discriminant"),
+          }
+        }
+      }
+
+      #[repr(u8)]
+      #[derive(Clone, Copy, Eq, Ord, PartialEq, PartialOrd)]
+      pub enum Advice {
+        Normal,
+        Sequential,
+        Random,
+        WillNeed,
+        DontNeed,
+        NoReuse,
+      }
+      impl ::core::fmt::Debug for Advice {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+          match self {
+            Advice::Normal => {
+              f.debug_tuple("Advice::Normal").finish()
+            }
+            Advice::Sequential => {
+              f.debug_tuple("Advice::Sequential").finish()
+            }
+            Advice::Random => {
+              f.debug_tuple("Advice::Random").finish()
+            }
+            Advice::WillNeed => {
+              f.debug_tuple("Advice::WillNeed").finish()
+            }
+            Advice::DontNeed => {
+              f.debug_tuple("Advice::DontNeed").finish()
+            }
+            Advice::NoReuse => {
+              f.debug_tuple("Advice::NoReuse").finish()
+            }
+          }
+        }
+      }
+
+      impl Advice{
+        #[doc(hidden)]
+        pub unsafe fn _lift(val: u8) -> Advice{
+          if !cfg!(debug_assertions) {
+            return unsafe { ::core::mem::transmute(val) };
+          }
+
+          match val {
+            0 => Advice::Normal,
+            1 => Advice::Sequential,
+            2 => Advice::Random,
+            3 => Advice::WillNeed,
+            4 => Advice::DontNeed,
+            5 => Advice::NoReuse,
+
+            _ => panic!("invalid enum discriminant"),
+          }
+        }
+      }
+
+      #[repr(C)]
+      #[derive(Clone, Copy)]
+      pub struct MetadataHashValue {
+        pub lower: u64,
+        pub upper: u64,
+      }
+      impl ::core::fmt::Debug for MetadataHashValue {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+          f.debug_struct("MetadataHashValue").field("lower", &self.lower).field("upper", &self.upper).finish()
+        }
+      }
 
       #[derive(Debug)]
       #[repr(transparent)]
-      pub struct TerminalInput{
-        handle: _rt::Resource<TerminalInput>,
+      pub struct Descriptor{
+        handle: _rt::Resource<Descriptor>,
       }
 
-      impl TerminalInput{
+      impl Descriptor{
         #[doc(hidden)]
         pub unsafe fn from_handle(handle: u32) -> Self {
           Self {
@@ -316,14 +765,14 @@ pub mod wasi {
       }
       
 
-      unsafe impl _rt::WasmResource for TerminalInput{
+      unsafe impl _rt::WasmResource for Descriptor{
         #[inline]
         unsafe fn drop(_handle: u32) {
           
           #[cfg(target_arch = "wasm32")]
-          #[link(wasm_import_module = "wasi:cli/terminal-input@0.2.9")]
+          #[link(wasm_import_module = "wasi:filesystem/types@0.2.9")]
           unsafe extern "C" {
-            #[link_name = "[resource-drop]terminal-input"]
+            #[link_name = "[resource-drop]descriptor"]
             fn drop(_: i32, );
           }
 
@@ -335,30 +784,13 @@ pub mod wasi {
       }
       
 
-    }
-
-    /// Terminal output.
-    ///
-    /// In the future, this may include functions for querying the terminal
-    /// size, being notified of terminal size changes, querying supported
-    /// features, and so on.
-    #[allow(dead_code, async_fn_in_trait, unused_imports, clippy::all)]
-    pub mod terminal_output {
-      #[used]
-      #[doc(hidden)]
-      static __FORCE_SECTION_REF: fn() =
-      super::super::super::__link_custom_section_describing_imports;
-      
-      use super::super::super::_rt;
-      /// The output side of a terminal.
-
       #[derive(Debug)]
       #[repr(transparent)]
-      pub struct TerminalOutput{
-        handle: _rt::Resource<TerminalOutput>,
+      pub struct DirectoryEntryStream{
+        handle: _rt::Resource<DirectoryEntryStream>,
       }
 
-      impl TerminalOutput{
+      impl DirectoryEntryStream{
         #[doc(hidden)]
         pub unsafe fn from_handle(handle: u32) -> Self {
           Self {
@@ -378,14 +810,14 @@ pub mod wasi {
       }
       
 
-      unsafe impl _rt::WasmResource for TerminalOutput{
+      unsafe impl _rt::WasmResource for DirectoryEntryStream{
         #[inline]
         unsafe fn drop(_handle: u32) {
           
           #[cfg(target_arch = "wasm32")]
-          #[link(wasm_import_module = "wasi:cli/terminal-output@0.2.9")]
+          #[link(wasm_import_module = "wasi:filesystem/types@0.2.9")]
           unsafe extern "C" {
-            #[link_name = "[resource-drop]terminal-output"]
+            #[link_name = "[resource-drop]directory-entry-stream"]
             fn drop(_: i32, );
           }
 
@@ -396,49 +828,1446 @@ pub mod wasi {
         }
       }
       
+      impl Descriptor {
+        #[allow(unused_unsafe, clippy::all)]
+        #[allow(async_fn_in_trait)]
+        pub fn read_via_stream(&self,offset: Filesize,) -> Result<InputStream,ErrorCode>{
+          unsafe {
 
-    }
+            #[repr(align(4))]
+            struct RetArea([::core::mem::MaybeUninit::<u8>; 8]);
+            let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+            let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+            #[cfg(target_arch = "wasm32")]
+            #[link(wasm_import_module = "wasi:filesystem/types@0.2.9")]
+            unsafe extern "C" {
+              #[link_name = "[method]descriptor.read-via-stream"]
+              fn wit_import1(_: i32, _: i64, _: *mut u8, );
+            }
 
-    /// An interface providing an optional `terminal-input` for stdin as a
-    /// link-time authority.
-    #[allow(dead_code, async_fn_in_trait, unused_imports, clippy::all)]
-    pub mod terminal_stdin {
-      #[used]
-      #[doc(hidden)]
-      static __FORCE_SECTION_REF: fn() =
-      super::super::super::__link_custom_section_describing_imports;
-      
-      use super::super::super::_rt;
-      pub type TerminalInput = super::super::super::wasi::cli::terminal_input::TerminalInput;
+            #[cfg(not(target_arch = "wasm32"))]
+            unsafe extern "C" fn wit_import1(_: i32, _: i64, _: *mut u8, ) { unreachable!() }
+            wit_import1((self).handle() as i32, _rt::as_i64(offset), ptr0);
+            let l2 = i32::from(*ptr0.add(0).cast::<u8>());
+            let result5 = match l2 {
+              0 => {
+                let e = {
+                  let l3 = *ptr0.add(4).cast::<i32>();
+
+                  super::super::super::wasi::io::streams::InputStream::from_handle(l3 as u32)
+                };
+                Ok(e)
+              }
+              1 => {
+                let e = {
+                  let l4 = i32::from(*ptr0.add(4).cast::<u8>());
+
+                  ErrorCode::_lift(l4 as u8)
+                };
+                Err(e)
+              }
+              _ => _rt::invalid_enum_discriminant(),
+            };
+            result5
+          }
+        }
+      }
+      impl Descriptor {
+        #[allow(unused_unsafe, clippy::all)]
+        #[allow(async_fn_in_trait)]
+        pub fn write_via_stream(&self,offset: Filesize,) -> Result<OutputStream,ErrorCode>{
+          unsafe {
+
+            #[repr(align(4))]
+            struct RetArea([::core::mem::MaybeUninit::<u8>; 8]);
+            let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+            let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+            #[cfg(target_arch = "wasm32")]
+            #[link(wasm_import_module = "wasi:filesystem/types@0.2.9")]
+            unsafe extern "C" {
+              #[link_name = "[method]descriptor.write-via-stream"]
+              fn wit_import1(_: i32, _: i64, _: *mut u8, );
+            }
+
+            #[cfg(not(target_arch = "wasm32"))]
+            unsafe extern "C" fn wit_import1(_: i32, _: i64, _: *mut u8, ) { unreachable!() }
+            wit_import1((self).handle() as i32, _rt::as_i64(offset), ptr0);
+            let l2 = i32::from(*ptr0.add(0).cast::<u8>());
+            let result5 = match l2 {
+              0 => {
+                let e = {
+                  let l3 = *ptr0.add(4).cast::<i32>();
+
+                  super::super::super::wasi::io::streams::OutputStream::from_handle(l3 as u32)
+                };
+                Ok(e)
+              }
+              1 => {
+                let e = {
+                  let l4 = i32::from(*ptr0.add(4).cast::<u8>());
+
+                  ErrorCode::_lift(l4 as u8)
+                };
+                Err(e)
+              }
+              _ => _rt::invalid_enum_discriminant(),
+            };
+            result5
+          }
+        }
+      }
+      impl Descriptor {
+        #[allow(unused_unsafe, clippy::all)]
+        #[allow(async_fn_in_trait)]
+        pub fn append_via_stream(&self,) -> Result<OutputStream,ErrorCode>{
+          unsafe {
+
+            #[repr(align(4))]
+            struct RetArea([::core::mem::MaybeUninit::<u8>; 8]);
+            let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+            let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+            #[cfg(target_arch = "wasm32")]
+            #[link(wasm_import_module = "wasi:filesystem/types@0.2.9")]
+            unsafe extern "C" {
+              #[link_name = "[method]descriptor.append-via-stream"]
+              fn wit_import1(_: i32, _: *mut u8, );
+            }
+
+            #[cfg(not(target_arch = "wasm32"))]
+            unsafe extern "C" fn wit_import1(_: i32, _: *mut u8, ) { unreachable!() }
+            wit_import1((self).handle() as i32, ptr0);
+            let l2 = i32::from(*ptr0.add(0).cast::<u8>());
+            let result5 = match l2 {
+              0 => {
+                let e = {
+                  let l3 = *ptr0.add(4).cast::<i32>();
+
+                  super::super::super::wasi::io::streams::OutputStream::from_handle(l3 as u32)
+                };
+                Ok(e)
+              }
+              1 => {
+                let e = {
+                  let l4 = i32::from(*ptr0.add(4).cast::<u8>());
+
+                  ErrorCode::_lift(l4 as u8)
+                };
+                Err(e)
+              }
+              _ => _rt::invalid_enum_discriminant(),
+            };
+            result5
+          }
+        }
+      }
+      impl Descriptor {
+        #[allow(unused_unsafe, clippy::all)]
+        #[allow(async_fn_in_trait)]
+        pub fn advise(&self,offset: Filesize,length: Filesize,advice: Advice,) -> Result<(),ErrorCode>{
+          unsafe {
+
+            #[repr(align(1))]
+            struct RetArea([::core::mem::MaybeUninit::<u8>; 2]);
+            let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2]);
+            let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+            #[cfg(target_arch = "wasm32")]
+            #[link(wasm_import_module = "wasi:filesystem/types@0.2.9")]
+            unsafe extern "C" {
+              #[link_name = "[method]descriptor.advise"]
+              fn wit_import1(_: i32, _: i64, _: i64, _: i32, _: *mut u8, );
+            }
+
+            #[cfg(not(target_arch = "wasm32"))]
+            unsafe extern "C" fn wit_import1(_: i32, _: i64, _: i64, _: i32, _: *mut u8, ) { unreachable!() }
+            wit_import1((self).handle() as i32, _rt::as_i64(offset), _rt::as_i64(length), advice.clone() as i32, ptr0);
+            let l2 = i32::from(*ptr0.add(0).cast::<u8>());
+            let result4 = match l2 {
+              0 => {
+                let e = ();
+                Ok(e)
+              }
+              1 => {
+                let e = {
+                  let l3 = i32::from(*ptr0.add(1).cast::<u8>());
+
+                  ErrorCode::_lift(l3 as u8)
+                };
+                Err(e)
+              }
+              _ => _rt::invalid_enum_discriminant(),
+            };
+            result4
+          }
+        }
+      }
+      impl Descriptor {
+        #[allow(unused_unsafe, clippy::all)]
+        #[allow(async_fn_in_trait)]
+        pub fn sync_data(&self,) -> Result<(),ErrorCode>{
+          unsafe {
+
+            #[repr(align(1))]
+            struct RetArea([::core::mem::MaybeUninit::<u8>; 2]);
+            let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2]);
+            let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+            #[cfg(target_arch = "wasm32")]
+            #[link(wasm_import_module = "wasi:filesystem/types@0.2.9")]
+            unsafe extern "C" {
+              #[link_name = "[method]descriptor.sync-data"]
+              fn wit_import1(_: i32, _: *mut u8, );
+            }
+
+            #[cfg(not(target_arch = "wasm32"))]
+            unsafe extern "C" fn wit_import1(_: i32, _: *mut u8, ) { unreachable!() }
+            wit_import1((self).handle() as i32, ptr0);
+            let l2 = i32::from(*ptr0.add(0).cast::<u8>());
+            let result4 = match l2 {
+              0 => {
+                let e = ();
+                Ok(e)
+              }
+              1 => {
+                let e = {
+                  let l3 = i32::from(*ptr0.add(1).cast::<u8>());
+
+                  ErrorCode::_lift(l3 as u8)
+                };
+                Err(e)
+              }
+              _ => _rt::invalid_enum_discriminant(),
+            };
+            result4
+          }
+        }
+      }
+      impl Descriptor {
+        #[allow(unused_unsafe, clippy::all)]
+        #[allow(async_fn_in_trait)]
+        pub fn get_flags(&self,) -> Result<DescriptorFlags,ErrorCode>{
+          unsafe {
+
+            #[repr(align(1))]
+            struct RetArea([::core::mem::MaybeUninit::<u8>; 2]);
+            let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2]);
+            let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+            #[cfg(target_arch = "wasm32")]
+            #[link(wasm_import_module = "wasi:filesystem/types@0.2.9")]
+            unsafe extern "C" {
+              #[link_name = "[method]descriptor.get-flags"]
+              fn wit_import1(_: i32, _: *mut u8, );
+            }
+
+            #[cfg(not(target_arch = "wasm32"))]
+            unsafe extern "C" fn wit_import1(_: i32, _: *mut u8, ) { unreachable!() }
+            wit_import1((self).handle() as i32, ptr0);
+            let l2 = i32::from(*ptr0.add(0).cast::<u8>());
+            let result5 = match l2 {
+              0 => {
+                let e = {
+                  let l3 = i32::from(*ptr0.add(1).cast::<u8>());
+
+                  DescriptorFlags::empty() | DescriptorFlags::from_bits_retain(((l3 as u8) << 0) as _)
+                };
+                Ok(e)
+              }
+              1 => {
+                let e = {
+                  let l4 = i32::from(*ptr0.add(1).cast::<u8>());
+
+                  ErrorCode::_lift(l4 as u8)
+                };
+                Err(e)
+              }
+              _ => _rt::invalid_enum_discriminant(),
+            };
+            result5
+          }
+        }
+      }
+      impl Descriptor {
+        #[allow(unused_unsafe, clippy::all)]
+        #[allow(async_fn_in_trait)]
+        pub fn get_type(&self,) -> Result<DescriptorType,ErrorCode>{
+          unsafe {
+
+            #[repr(align(1))]
+            struct RetArea([::core::mem::MaybeUninit::<u8>; 2]);
+            let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2]);
+            let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+            #[cfg(target_arch = "wasm32")]
+            #[link(wasm_import_module = "wasi:filesystem/types@0.2.9")]
+            unsafe extern "C" {
+              #[link_name = "[method]descriptor.get-type"]
+              fn wit_import1(_: i32, _: *mut u8, );
+            }
+
+            #[cfg(not(target_arch = "wasm32"))]
+            unsafe extern "C" fn wit_import1(_: i32, _: *mut u8, ) { unreachable!() }
+            wit_import1((self).handle() as i32, ptr0);
+            let l2 = i32::from(*ptr0.add(0).cast::<u8>());
+            let result5 = match l2 {
+              0 => {
+                let e = {
+                  let l3 = i32::from(*ptr0.add(1).cast::<u8>());
+
+                  DescriptorType::_lift(l3 as u8)
+                };
+                Ok(e)
+              }
+              1 => {
+                let e = {
+                  let l4 = i32::from(*ptr0.add(1).cast::<u8>());
+
+                  ErrorCode::_lift(l4 as u8)
+                };
+                Err(e)
+              }
+              _ => _rt::invalid_enum_discriminant(),
+            };
+            result5
+          }
+        }
+      }
+      impl Descriptor {
+        #[allow(unused_unsafe, clippy::all)]
+        #[allow(async_fn_in_trait)]
+        pub fn set_size(&self,size: Filesize,) -> Result<(),ErrorCode>{
+          unsafe {
+
+            #[repr(align(1))]
+            struct RetArea([::core::mem::MaybeUninit::<u8>; 2]);
+            let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2]);
+            let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+            #[cfg(target_arch = "wasm32")]
+            #[link(wasm_import_module = "wasi:filesystem/types@0.2.9")]
+            unsafe extern "C" {
+              #[link_name = "[method]descriptor.set-size"]
+              fn wit_import1(_: i32, _: i64, _: *mut u8, );
+            }
+
+            #[cfg(not(target_arch = "wasm32"))]
+            unsafe extern "C" fn wit_import1(_: i32, _: i64, _: *mut u8, ) { unreachable!() }
+            wit_import1((self).handle() as i32, _rt::as_i64(size), ptr0);
+            let l2 = i32::from(*ptr0.add(0).cast::<u8>());
+            let result4 = match l2 {
+              0 => {
+                let e = ();
+                Ok(e)
+              }
+              1 => {
+                let e = {
+                  let l3 = i32::from(*ptr0.add(1).cast::<u8>());
+
+                  ErrorCode::_lift(l3 as u8)
+                };
+                Err(e)
+              }
+              _ => _rt::invalid_enum_discriminant(),
+            };
+            result4
+          }
+        }
+      }
+      impl Descriptor {
+        #[allow(unused_unsafe, clippy::all)]
+        #[allow(async_fn_in_trait)]
+        pub fn set_times(&self,data_access_timestamp: NewTimestamp,data_modification_timestamp: NewTimestamp,) -> Result<(),ErrorCode>{
+          unsafe {
+
+            #[repr(align(1))]
+            struct RetArea([::core::mem::MaybeUninit::<u8>; 2]);
+            let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2]);
+            let (result1_0,result1_1,result1_2,) = match data_access_timestamp {
+              NewTimestamp::NoChange=> {
+                (0i32, 0i64, 0i32)
+              }
+              NewTimestamp::Now=> {
+                (1i32, 0i64, 0i32)
+              }
+              NewTimestamp::Timestamp(e) => {
+                let super::super::super::wasi::clocks::wall_clock::Datetime{ seconds:seconds0, nanoseconds:nanoseconds0, } = e;
+
+                (2i32, _rt::as_i64(seconds0), _rt::as_i32(nanoseconds0))
+              },
+            };
+            let (result3_0,result3_1,result3_2,) = match data_modification_timestamp {
+              NewTimestamp::NoChange=> {
+                (0i32, 0i64, 0i32)
+              }
+              NewTimestamp::Now=> {
+                (1i32, 0i64, 0i32)
+              }
+              NewTimestamp::Timestamp(e) => {
+                let super::super::super::wasi::clocks::wall_clock::Datetime{ seconds:seconds2, nanoseconds:nanoseconds2, } = e;
+
+                (2i32, _rt::as_i64(seconds2), _rt::as_i32(nanoseconds2))
+              },
+            };
+            let ptr4 = ret_area.0.as_mut_ptr().cast::<u8>();
+            #[cfg(target_arch = "wasm32")]
+            #[link(wasm_import_module = "wasi:filesystem/types@0.2.9")]
+            unsafe extern "C" {
+              #[link_name = "[method]descriptor.set-times"]
+              fn wit_import5(_: i32, _: i32, _: i64, _: i32, _: i32, _: i64, _: i32, _: *mut u8, );
+            }
+
+            #[cfg(not(target_arch = "wasm32"))]
+            unsafe extern "C" fn wit_import5(_: i32, _: i32, _: i64, _: i32, _: i32, _: i64, _: i32, _: *mut u8, ) { unreachable!() }
+            wit_import5((self).handle() as i32, result1_0, result1_1, result1_2, result3_0, result3_1, result3_2, ptr4);
+            let l6 = i32::from(*ptr4.add(0).cast::<u8>());
+            let result8 = match l6 {
+              0 => {
+                let e = ();
+                Ok(e)
+              }
+              1 => {
+                let e = {
+                  let l7 = i32::from(*ptr4.add(1).cast::<u8>());
+
+                  ErrorCode::_lift(l7 as u8)
+                };
+                Err(e)
+              }
+              _ => _rt::invalid_enum_discriminant(),
+            };
+            result8
+          }
+        }
+      }
+      impl Descriptor {
+        #[allow(unused_unsafe, clippy::all)]
+        #[allow(async_fn_in_trait)]
+        pub fn read(&self,length: Filesize,offset: Filesize,) -> Result<(_rt::Vec::<u8>,bool,),ErrorCode>{
+          unsafe {
+
+            #[cfg_attr(target_pointer_width="64", repr(align(8)))]
+            #[cfg_attr(target_pointer_width="32", repr(align(4)))]
+            struct RetArea([::core::mem::MaybeUninit::<u8>; 4*::core::mem::size_of::<*const u8>()]);
+            let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 4*::core::mem::size_of::<*const u8>()]);
+            let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+            #[cfg(target_arch = "wasm32")]
+            #[link(wasm_import_module = "wasi:filesystem/types@0.2.9")]
+            unsafe extern "C" {
+              #[link_name = "[method]descriptor.read"]
+              fn wit_import1(_: i32, _: i64, _: i64, _: *mut u8, );
+            }
+
+            #[cfg(not(target_arch = "wasm32"))]
+            unsafe extern "C" fn wit_import1(_: i32, _: i64, _: i64, _: *mut u8, ) { unreachable!() }
+            wit_import1((self).handle() as i32, _rt::as_i64(length), _rt::as_i64(offset), ptr0);
+            let l2 = i32::from(*ptr0.add(0).cast::<u8>());
+            let result8 = match l2 {
+              0 => {
+                let e = {
+                  let l3 = *ptr0.add(::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+                  let l4 = *ptr0.add(2*::core::mem::size_of::<*const u8>()).cast::<usize>();
+                  let len5 = l4;
+                  let l6 = i32::from(*ptr0.add(3*::core::mem::size_of::<*const u8>()).cast::<u8>());
+
+                  (<_ as From<_rt::Vec<_>>>::from(_rt::Vec::from_raw_parts(l3.cast(), len5, len5)), _rt::bool_lift(l6 as u8))
+                };
+                Ok(e)
+              }
+              1 => {
+                let e = {
+                  let l7 = i32::from(*ptr0.add(::core::mem::size_of::<*const u8>()).cast::<u8>());
+
+                  ErrorCode::_lift(l7 as u8)
+                };
+                Err(e)
+              }
+              _ => _rt::invalid_enum_discriminant(),
+            };
+            result8
+          }
+        }
+      }
+      impl Descriptor {
+        #[allow(unused_unsafe, clippy::all)]
+        #[allow(async_fn_in_trait)]
+        pub fn write(&self,buffer: &[u8],offset: Filesize,) -> Result<Filesize,ErrorCode>{
+          unsafe {
+
+            #[repr(align(8))]
+            struct RetArea([::core::mem::MaybeUninit::<u8>; 16]);
+            let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 16]);
+            let vec0 = buffer;
+            let ptr0 = vec0.as_ptr().cast::<u8>();
+            let len0 = vec0.len();
+            let ptr1 = ret_area.0.as_mut_ptr().cast::<u8>();
+            #[cfg(target_arch = "wasm32")]
+            #[link(wasm_import_module = "wasi:filesystem/types@0.2.9")]
+            unsafe extern "C" {
+              #[link_name = "[method]descriptor.write"]
+              fn wit_import2(_: i32, _: *mut u8, _: usize, _: i64, _: *mut u8, );
+            }
+
+            #[cfg(not(target_arch = "wasm32"))]
+            unsafe extern "C" fn wit_import2(_: i32, _: *mut u8, _: usize, _: i64, _: *mut u8, ) { unreachable!() }
+            wit_import2((self).handle() as i32, ptr0.cast_mut(), len0, _rt::as_i64(offset), ptr1);
+            let l3 = i32::from(*ptr1.add(0).cast::<u8>());
+            let result6 = match l3 {
+              0 => {
+                let e = {
+                  let l4 = *ptr1.add(8).cast::<i64>();
+
+                  l4 as u64
+                };
+                Ok(e)
+              }
+              1 => {
+                let e = {
+                  let l5 = i32::from(*ptr1.add(8).cast::<u8>());
+
+                  ErrorCode::_lift(l5 as u8)
+                };
+                Err(e)
+              }
+              _ => _rt::invalid_enum_discriminant(),
+            };
+            result6
+          }
+        }
+      }
+      impl Descriptor {
+        #[allow(unused_unsafe, clippy::all)]
+        #[allow(async_fn_in_trait)]
+        pub fn read_directory(&self,) -> Result<DirectoryEntryStream,ErrorCode>{
+          unsafe {
+
+            #[repr(align(4))]
+            struct RetArea([::core::mem::MaybeUninit::<u8>; 8]);
+            let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+            let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+            #[cfg(target_arch = "wasm32")]
+            #[link(wasm_import_module = "wasi:filesystem/types@0.2.9")]
+            unsafe extern "C" {
+              #[link_name = "[method]descriptor.read-directory"]
+              fn wit_import1(_: i32, _: *mut u8, );
+            }
+
+            #[cfg(not(target_arch = "wasm32"))]
+            unsafe extern "C" fn wit_import1(_: i32, _: *mut u8, ) { unreachable!() }
+            wit_import1((self).handle() as i32, ptr0);
+            let l2 = i32::from(*ptr0.add(0).cast::<u8>());
+            let result5 = match l2 {
+              0 => {
+                let e = {
+                  let l3 = *ptr0.add(4).cast::<i32>();
+
+                  DirectoryEntryStream::from_handle(l3 as u32)
+                };
+                Ok(e)
+              }
+              1 => {
+                let e = {
+                  let l4 = i32::from(*ptr0.add(4).cast::<u8>());
+
+                  ErrorCode::_lift(l4 as u8)
+                };
+                Err(e)
+              }
+              _ => _rt::invalid_enum_discriminant(),
+            };
+            result5
+          }
+        }
+      }
+      impl Descriptor {
+        #[allow(unused_unsafe, clippy::all)]
+        #[allow(async_fn_in_trait)]
+        pub fn sync(&self,) -> Result<(),ErrorCode>{
+          unsafe {
+
+            #[repr(align(1))]
+            struct RetArea([::core::mem::MaybeUninit::<u8>; 2]);
+            let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2]);
+            let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+            #[cfg(target_arch = "wasm32")]
+            #[link(wasm_import_module = "wasi:filesystem/types@0.2.9")]
+            unsafe extern "C" {
+              #[link_name = "[method]descriptor.sync"]
+              fn wit_import1(_: i32, _: *mut u8, );
+            }
+
+            #[cfg(not(target_arch = "wasm32"))]
+            unsafe extern "C" fn wit_import1(_: i32, _: *mut u8, ) { unreachable!() }
+            wit_import1((self).handle() as i32, ptr0);
+            let l2 = i32::from(*ptr0.add(0).cast::<u8>());
+            let result4 = match l2 {
+              0 => {
+                let e = ();
+                Ok(e)
+              }
+              1 => {
+                let e = {
+                  let l3 = i32::from(*ptr0.add(1).cast::<u8>());
+
+                  ErrorCode::_lift(l3 as u8)
+                };
+                Err(e)
+              }
+              _ => _rt::invalid_enum_discriminant(),
+            };
+            result4
+          }
+        }
+      }
+      impl Descriptor {
+        #[allow(unused_unsafe, clippy::all)]
+        #[allow(async_fn_in_trait)]
+        pub fn create_directory_at(&self,path: &str,) -> Result<(),ErrorCode>{
+          unsafe {
+
+            #[repr(align(1))]
+            struct RetArea([::core::mem::MaybeUninit::<u8>; 2]);
+            let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2]);
+            let vec0 = path;
+            let ptr0 = vec0.as_ptr().cast::<u8>();
+            let len0 = vec0.len();
+            let ptr1 = ret_area.0.as_mut_ptr().cast::<u8>();
+            #[cfg(target_arch = "wasm32")]
+            #[link(wasm_import_module = "wasi:filesystem/types@0.2.9")]
+            unsafe extern "C" {
+              #[link_name = "[method]descriptor.create-directory-at"]
+              fn wit_import2(_: i32, _: *mut u8, _: usize, _: *mut u8, );
+            }
+
+            #[cfg(not(target_arch = "wasm32"))]
+            unsafe extern "C" fn wit_import2(_: i32, _: *mut u8, _: usize, _: *mut u8, ) { unreachable!() }
+            wit_import2((self).handle() as i32, ptr0.cast_mut(), len0, ptr1);
+            let l3 = i32::from(*ptr1.add(0).cast::<u8>());
+            let result5 = match l3 {
+              0 => {
+                let e = ();
+                Ok(e)
+              }
+              1 => {
+                let e = {
+                  let l4 = i32::from(*ptr1.add(1).cast::<u8>());
+
+                  ErrorCode::_lift(l4 as u8)
+                };
+                Err(e)
+              }
+              _ => _rt::invalid_enum_discriminant(),
+            };
+            result5
+          }
+        }
+      }
+      impl Descriptor {
+        #[allow(unused_unsafe, clippy::all)]
+        #[allow(async_fn_in_trait)]
+        pub fn stat(&self,) -> Result<DescriptorStat,ErrorCode>{
+          unsafe {
+
+            #[repr(align(8))]
+            struct RetArea([::core::mem::MaybeUninit::<u8>; 104]);
+            let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 104]);
+            let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+            #[cfg(target_arch = "wasm32")]
+            #[link(wasm_import_module = "wasi:filesystem/types@0.2.9")]
+            unsafe extern "C" {
+              #[link_name = "[method]descriptor.stat"]
+              fn wit_import1(_: i32, _: *mut u8, );
+            }
+
+            #[cfg(not(target_arch = "wasm32"))]
+            unsafe extern "C" fn wit_import1(_: i32, _: *mut u8, ) { unreachable!() }
+            wit_import1((self).handle() as i32, ptr0);
+            let l2 = i32::from(*ptr0.add(0).cast::<u8>());
+            let result16 = match l2 {
+              0 => {
+                let e = {
+                  let l3 = i32::from(*ptr0.add(8).cast::<u8>());
+                  let l4 = *ptr0.add(16).cast::<i64>();
+                  let l5 = *ptr0.add(24).cast::<i64>();
+                  let l6 = i32::from(*ptr0.add(32).cast::<u8>());
+                  let l9 = i32::from(*ptr0.add(56).cast::<u8>());
+                  let l12 = i32::from(*ptr0.add(80).cast::<u8>());
+
+                  DescriptorStat{
+                    type_: DescriptorType::_lift(l3 as u8),
+                    link_count: l4 as u64,
+                    size: l5 as u64,
+                    data_access_timestamp: match l6 {
+                      0 => None,
+                      1 => {
+                        let e = {
+                          let l7 = *ptr0.add(40).cast::<i64>();
+                          let l8 = *ptr0.add(48).cast::<i32>();
+
+                          super::super::super::wasi::clocks::wall_clock::Datetime{
+                            seconds: l7 as u64,
+                            nanoseconds: l8 as u32,
+                          }
+                        };
+                        Some(e)
+                      }
+                      _ => _rt::invalid_enum_discriminant(),
+                    },
+                    data_modification_timestamp: match l9 {
+                      0 => None,
+                      1 => {
+                        let e = {
+                          let l10 = *ptr0.add(64).cast::<i64>();
+                          let l11 = *ptr0.add(72).cast::<i32>();
+
+                          super::super::super::wasi::clocks::wall_clock::Datetime{
+                            seconds: l10 as u64,
+                            nanoseconds: l11 as u32,
+                          }
+                        };
+                        Some(e)
+                      }
+                      _ => _rt::invalid_enum_discriminant(),
+                    },
+                    status_change_timestamp: match l12 {
+                      0 => None,
+                      1 => {
+                        let e = {
+                          let l13 = *ptr0.add(88).cast::<i64>();
+                          let l14 = *ptr0.add(96).cast::<i32>();
+
+                          super::super::super::wasi::clocks::wall_clock::Datetime{
+                            seconds: l13 as u64,
+                            nanoseconds: l14 as u32,
+                          }
+                        };
+                        Some(e)
+                      }
+                      _ => _rt::invalid_enum_discriminant(),
+                    },
+                  }
+                };
+                Ok(e)
+              }
+              1 => {
+                let e = {
+                  let l15 = i32::from(*ptr0.add(8).cast::<u8>());
+
+                  ErrorCode::_lift(l15 as u8)
+                };
+                Err(e)
+              }
+              _ => _rt::invalid_enum_discriminant(),
+            };
+            result16
+          }
+        }
+      }
+      impl Descriptor {
+        #[allow(unused_unsafe, clippy::all)]
+        #[allow(async_fn_in_trait)]
+        pub fn stat_at(&self,path_flags: PathFlags,path: &str,) -> Result<DescriptorStat,ErrorCode>{
+          unsafe {
+
+            #[repr(align(8))]
+            struct RetArea([::core::mem::MaybeUninit::<u8>; 104]);
+            let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 104]);
+            let flags0 = path_flags;
+            let vec1 = path;
+            let ptr1 = vec1.as_ptr().cast::<u8>();
+            let len1 = vec1.len();
+            let ptr2 = ret_area.0.as_mut_ptr().cast::<u8>();
+            #[cfg(target_arch = "wasm32")]
+            #[link(wasm_import_module = "wasi:filesystem/types@0.2.9")]
+            unsafe extern "C" {
+              #[link_name = "[method]descriptor.stat-at"]
+              fn wit_import3(_: i32, _: i32, _: *mut u8, _: usize, _: *mut u8, );
+            }
+
+            #[cfg(not(target_arch = "wasm32"))]
+            unsafe extern "C" fn wit_import3(_: i32, _: i32, _: *mut u8, _: usize, _: *mut u8, ) { unreachable!() }
+            wit_import3((self).handle() as i32, (flags0.bits() >> 0) as i32, ptr1.cast_mut(), len1, ptr2);
+            let l4 = i32::from(*ptr2.add(0).cast::<u8>());
+            let result18 = match l4 {
+              0 => {
+                let e = {
+                  let l5 = i32::from(*ptr2.add(8).cast::<u8>());
+                  let l6 = *ptr2.add(16).cast::<i64>();
+                  let l7 = *ptr2.add(24).cast::<i64>();
+                  let l8 = i32::from(*ptr2.add(32).cast::<u8>());
+                  let l11 = i32::from(*ptr2.add(56).cast::<u8>());
+                  let l14 = i32::from(*ptr2.add(80).cast::<u8>());
+
+                  DescriptorStat{
+                    type_: DescriptorType::_lift(l5 as u8),
+                    link_count: l6 as u64,
+                    size: l7 as u64,
+                    data_access_timestamp: match l8 {
+                      0 => None,
+                      1 => {
+                        let e = {
+                          let l9 = *ptr2.add(40).cast::<i64>();
+                          let l10 = *ptr2.add(48).cast::<i32>();
+
+                          super::super::super::wasi::clocks::wall_clock::Datetime{
+                            seconds: l9 as u64,
+                            nanoseconds: l10 as u32,
+                          }
+                        };
+                        Some(e)
+                      }
+                      _ => _rt::invalid_enum_discriminant(),
+                    },
+                    data_modification_timestamp: match l11 {
+                      0 => None,
+                      1 => {
+                        let e = {
+                          let l12 = *ptr2.add(64).cast::<i64>();
+                          let l13 = *ptr2.add(72).cast::<i32>();
+
+                          super::super::super::wasi::clocks::wall_clock::Datetime{
+                            seconds: l12 as u64,
+                            nanoseconds: l13 as u32,
+                          }
+                        };
+                        Some(e)
+                      }
+                      _ => _rt::invalid_enum_discriminant(),
+                    },
+                    status_change_timestamp: match l14 {
+                      0 => None,
+                      1 => {
+                        let e = {
+                          let l15 = *ptr2.add(88).cast::<i64>();
+                          let l16 = *ptr2.add(96).cast::<i32>();
+
+                          super::super::super::wasi::clocks::wall_clock::Datetime{
+                            seconds: l15 as u64,
+                            nanoseconds: l16 as u32,
+                          }
+                        };
+                        Some(e)
+                      }
+                      _ => _rt::invalid_enum_discriminant(),
+                    },
+                  }
+                };
+                Ok(e)
+              }
+              1 => {
+                let e = {
+                  let l17 = i32::from(*ptr2.add(8).cast::<u8>());
+
+                  ErrorCode::_lift(l17 as u8)
+                };
+                Err(e)
+              }
+              _ => _rt::invalid_enum_discriminant(),
+            };
+            result18
+          }
+        }
+      }
+      impl Descriptor {
+        #[allow(unused_unsafe, clippy::all)]
+        #[allow(async_fn_in_trait)]
+        pub fn set_times_at(&self,path_flags: PathFlags,path: &str,data_access_timestamp: NewTimestamp,data_modification_timestamp: NewTimestamp,) -> Result<(),ErrorCode>{
+          unsafe {
+
+            #[repr(align(1))]
+            struct RetArea([::core::mem::MaybeUninit::<u8>; 2]);
+            let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2]);
+            let flags0 = path_flags;
+            let vec1 = path;
+            let ptr1 = vec1.as_ptr().cast::<u8>();
+            let len1 = vec1.len();
+            let (result3_0,result3_1,result3_2,) = match data_access_timestamp {
+              NewTimestamp::NoChange=> {
+                (0i32, 0i64, 0i32)
+              }
+              NewTimestamp::Now=> {
+                (1i32, 0i64, 0i32)
+              }
+              NewTimestamp::Timestamp(e) => {
+                let super::super::super::wasi::clocks::wall_clock::Datetime{ seconds:seconds2, nanoseconds:nanoseconds2, } = e;
+
+                (2i32, _rt::as_i64(seconds2), _rt::as_i32(nanoseconds2))
+              },
+            };
+            let (result5_0,result5_1,result5_2,) = match data_modification_timestamp {
+              NewTimestamp::NoChange=> {
+                (0i32, 0i64, 0i32)
+              }
+              NewTimestamp::Now=> {
+                (1i32, 0i64, 0i32)
+              }
+              NewTimestamp::Timestamp(e) => {
+                let super::super::super::wasi::clocks::wall_clock::Datetime{ seconds:seconds4, nanoseconds:nanoseconds4, } = e;
+
+                (2i32, _rt::as_i64(seconds4), _rt::as_i32(nanoseconds4))
+              },
+            };
+            let ptr6 = ret_area.0.as_mut_ptr().cast::<u8>();
+            #[cfg(target_arch = "wasm32")]
+            #[link(wasm_import_module = "wasi:filesystem/types@0.2.9")]
+            unsafe extern "C" {
+              #[link_name = "[method]descriptor.set-times-at"]
+              fn wit_import7(_: i32, _: i32, _: *mut u8, _: usize, _: i32, _: i64, _: i32, _: i32, _: i64, _: i32, _: *mut u8, );
+            }
+
+            #[cfg(not(target_arch = "wasm32"))]
+            unsafe extern "C" fn wit_import7(_: i32, _: i32, _: *mut u8, _: usize, _: i32, _: i64, _: i32, _: i32, _: i64, _: i32, _: *mut u8, ) { unreachable!() }
+            wit_import7((self).handle() as i32, (flags0.bits() >> 0) as i32, ptr1.cast_mut(), len1, result3_0, result3_1, result3_2, result5_0, result5_1, result5_2, ptr6);
+            let l8 = i32::from(*ptr6.add(0).cast::<u8>());
+            let result10 = match l8 {
+              0 => {
+                let e = ();
+                Ok(e)
+              }
+              1 => {
+                let e = {
+                  let l9 = i32::from(*ptr6.add(1).cast::<u8>());
+
+                  ErrorCode::_lift(l9 as u8)
+                };
+                Err(e)
+              }
+              _ => _rt::invalid_enum_discriminant(),
+            };
+            result10
+          }
+        }
+      }
+      impl Descriptor {
+        #[allow(unused_unsafe, clippy::all)]
+        #[allow(async_fn_in_trait)]
+        pub fn link_at(&self,old_path_flags: PathFlags,old_path: &str,new_descriptor: &Descriptor,new_path: &str,) -> Result<(),ErrorCode>{
+          unsafe {
+
+            #[repr(align(1))]
+            struct RetArea([::core::mem::MaybeUninit::<u8>; 2]);
+            let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2]);
+            let flags0 = old_path_flags;
+            let vec1 = old_path;
+            let ptr1 = vec1.as_ptr().cast::<u8>();
+            let len1 = vec1.len();
+            let vec2 = new_path;
+            let ptr2 = vec2.as_ptr().cast::<u8>();
+            let len2 = vec2.len();
+            let ptr3 = ret_area.0.as_mut_ptr().cast::<u8>();
+            #[cfg(target_arch = "wasm32")]
+            #[link(wasm_import_module = "wasi:filesystem/types@0.2.9")]
+            unsafe extern "C" {
+              #[link_name = "[method]descriptor.link-at"]
+              fn wit_import4(_: i32, _: i32, _: *mut u8, _: usize, _: i32, _: *mut u8, _: usize, _: *mut u8, );
+            }
+
+            #[cfg(not(target_arch = "wasm32"))]
+            unsafe extern "C" fn wit_import4(_: i32, _: i32, _: *mut u8, _: usize, _: i32, _: *mut u8, _: usize, _: *mut u8, ) { unreachable!() }
+            wit_import4((self).handle() as i32, (flags0.bits() >> 0) as i32, ptr1.cast_mut(), len1, (new_descriptor).handle() as i32, ptr2.cast_mut(), len2, ptr3);
+            let l5 = i32::from(*ptr3.add(0).cast::<u8>());
+            let result7 = match l5 {
+              0 => {
+                let e = ();
+                Ok(e)
+              }
+              1 => {
+                let e = {
+                  let l6 = i32::from(*ptr3.add(1).cast::<u8>());
+
+                  ErrorCode::_lift(l6 as u8)
+                };
+                Err(e)
+              }
+              _ => _rt::invalid_enum_discriminant(),
+            };
+            result7
+          }
+        }
+      }
+      impl Descriptor {
+        #[allow(unused_unsafe, clippy::all)]
+        #[allow(async_fn_in_trait)]
+        pub fn open_at(&self,path_flags: PathFlags,path: &str,open_flags: OpenFlags,flags: DescriptorFlags,) -> Result<Descriptor,ErrorCode>{
+          unsafe {
+
+            #[repr(align(4))]
+            struct RetArea([::core::mem::MaybeUninit::<u8>; 8]);
+            let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+            let flags0 = path_flags;
+            let vec1 = path;
+            let ptr1 = vec1.as_ptr().cast::<u8>();
+            let len1 = vec1.len();
+            let flags2 = open_flags;
+            let flags3 = flags;
+            let ptr4 = ret_area.0.as_mut_ptr().cast::<u8>();
+            #[cfg(target_arch = "wasm32")]
+            #[link(wasm_import_module = "wasi:filesystem/types@0.2.9")]
+            unsafe extern "C" {
+              #[link_name = "[method]descriptor.open-at"]
+              fn wit_import5(_: i32, _: i32, _: *mut u8, _: usize, _: i32, _: i32, _: *mut u8, );
+            }
+
+            #[cfg(not(target_arch = "wasm32"))]
+            unsafe extern "C" fn wit_import5(_: i32, _: i32, _: *mut u8, _: usize, _: i32, _: i32, _: *mut u8, ) { unreachable!() }
+            wit_import5((self).handle() as i32, (flags0.bits() >> 0) as i32, ptr1.cast_mut(), len1, (flags2.bits() >> 0) as i32, (flags3.bits() >> 0) as i32, ptr4);
+            let l6 = i32::from(*ptr4.add(0).cast::<u8>());
+            let result9 = match l6 {
+              0 => {
+                let e = {
+                  let l7 = *ptr4.add(4).cast::<i32>();
+
+                  Descriptor::from_handle(l7 as u32)
+                };
+                Ok(e)
+              }
+              1 => {
+                let e = {
+                  let l8 = i32::from(*ptr4.add(4).cast::<u8>());
+
+                  ErrorCode::_lift(l8 as u8)
+                };
+                Err(e)
+              }
+              _ => _rt::invalid_enum_discriminant(),
+            };
+            result9
+          }
+        }
+      }
+      impl Descriptor {
+        #[allow(unused_unsafe, clippy::all)]
+        #[allow(async_fn_in_trait)]
+        pub fn readlink_at(&self,path: &str,) -> Result<_rt::String,ErrorCode>{
+          unsafe {
+
+            #[cfg_attr(target_pointer_width="64", repr(align(8)))]
+            #[cfg_attr(target_pointer_width="32", repr(align(4)))]
+            struct RetArea([::core::mem::MaybeUninit::<u8>; 3*::core::mem::size_of::<*const u8>()]);
+            let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 3*::core::mem::size_of::<*const u8>()]);
+            let vec0 = path;
+            let ptr0 = vec0.as_ptr().cast::<u8>();
+            let len0 = vec0.len();
+            let ptr1 = ret_area.0.as_mut_ptr().cast::<u8>();
+            #[cfg(target_arch = "wasm32")]
+            #[link(wasm_import_module = "wasi:filesystem/types@0.2.9")]
+            unsafe extern "C" {
+              #[link_name = "[method]descriptor.readlink-at"]
+              fn wit_import2(_: i32, _: *mut u8, _: usize, _: *mut u8, );
+            }
+
+            #[cfg(not(target_arch = "wasm32"))]
+            unsafe extern "C" fn wit_import2(_: i32, _: *mut u8, _: usize, _: *mut u8, ) { unreachable!() }
+            wit_import2((self).handle() as i32, ptr0.cast_mut(), len0, ptr1);
+            let l3 = i32::from(*ptr1.add(0).cast::<u8>());
+            let result8 = match l3 {
+              0 => {
+                let e = {
+                  let l4 = *ptr1.add(::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+                  let l5 = *ptr1.add(2*::core::mem::size_of::<*const u8>()).cast::<usize>();
+                  let len6 = l5;
+                  let bytes6 = _rt::Vec::from_raw_parts(l4.cast(), len6, len6);
+
+                  _rt::string_lift(bytes6)
+                };
+                Ok(e)
+              }
+              1 => {
+                let e = {
+                  let l7 = i32::from(*ptr1.add(::core::mem::size_of::<*const u8>()).cast::<u8>());
+
+                  ErrorCode::_lift(l7 as u8)
+                };
+                Err(e)
+              }
+              _ => _rt::invalid_enum_discriminant(),
+            };
+            result8
+          }
+        }
+      }
+      impl Descriptor {
+        #[allow(unused_unsafe, clippy::all)]
+        #[allow(async_fn_in_trait)]
+        pub fn remove_directory_at(&self,path: &str,) -> Result<(),ErrorCode>{
+          unsafe {
+
+            #[repr(align(1))]
+            struct RetArea([::core::mem::MaybeUninit::<u8>; 2]);
+            let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2]);
+            let vec0 = path;
+            let ptr0 = vec0.as_ptr().cast::<u8>();
+            let len0 = vec0.len();
+            let ptr1 = ret_area.0.as_mut_ptr().cast::<u8>();
+            #[cfg(target_arch = "wasm32")]
+            #[link(wasm_import_module = "wasi:filesystem/types@0.2.9")]
+            unsafe extern "C" {
+              #[link_name = "[method]descriptor.remove-directory-at"]
+              fn wit_import2(_: i32, _: *mut u8, _: usize, _: *mut u8, );
+            }
+
+            #[cfg(not(target_arch = "wasm32"))]
+            unsafe extern "C" fn wit_import2(_: i32, _: *mut u8, _: usize, _: *mut u8, ) { unreachable!() }
+            wit_import2((self).handle() as i32, ptr0.cast_mut(), len0, ptr1);
+            let l3 = i32::from(*ptr1.add(0).cast::<u8>());
+            let result5 = match l3 {
+              0 => {
+                let e = ();
+                Ok(e)
+              }
+              1 => {
+                let e = {
+                  let l4 = i32::from(*ptr1.add(1).cast::<u8>());
+
+                  ErrorCode::_lift(l4 as u8)
+                };
+                Err(e)
+              }
+              _ => _rt::invalid_enum_discriminant(),
+            };
+            result5
+          }
+        }
+      }
+      impl Descriptor {
+        #[allow(unused_unsafe, clippy::all)]
+        #[allow(async_fn_in_trait)]
+        pub fn rename_at(&self,old_path: &str,new_descriptor: &Descriptor,new_path: &str,) -> Result<(),ErrorCode>{
+          unsafe {
+
+            #[repr(align(1))]
+            struct RetArea([::core::mem::MaybeUninit::<u8>; 2]);
+            let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2]);
+            let vec0 = old_path;
+            let ptr0 = vec0.as_ptr().cast::<u8>();
+            let len0 = vec0.len();
+            let vec1 = new_path;
+            let ptr1 = vec1.as_ptr().cast::<u8>();
+            let len1 = vec1.len();
+            let ptr2 = ret_area.0.as_mut_ptr().cast::<u8>();
+            #[cfg(target_arch = "wasm32")]
+            #[link(wasm_import_module = "wasi:filesystem/types@0.2.9")]
+            unsafe extern "C" {
+              #[link_name = "[method]descriptor.rename-at"]
+              fn wit_import3(_: i32, _: *mut u8, _: usize, _: i32, _: *mut u8, _: usize, _: *mut u8, );
+            }
+
+            #[cfg(not(target_arch = "wasm32"))]
+            unsafe extern "C" fn wit_import3(_: i32, _: *mut u8, _: usize, _: i32, _: *mut u8, _: usize, _: *mut u8, ) { unreachable!() }
+            wit_import3((self).handle() as i32, ptr0.cast_mut(), len0, (new_descriptor).handle() as i32, ptr1.cast_mut(), len1, ptr2);
+            let l4 = i32::from(*ptr2.add(0).cast::<u8>());
+            let result6 = match l4 {
+              0 => {
+                let e = ();
+                Ok(e)
+              }
+              1 => {
+                let e = {
+                  let l5 = i32::from(*ptr2.add(1).cast::<u8>());
+
+                  ErrorCode::_lift(l5 as u8)
+                };
+                Err(e)
+              }
+              _ => _rt::invalid_enum_discriminant(),
+            };
+            result6
+          }
+        }
+      }
+      impl Descriptor {
+        #[allow(unused_unsafe, clippy::all)]
+        #[allow(async_fn_in_trait)]
+        pub fn symlink_at(&self,old_path: &str,new_path: &str,) -> Result<(),ErrorCode>{
+          unsafe {
+
+            #[repr(align(1))]
+            struct RetArea([::core::mem::MaybeUninit::<u8>; 2]);
+            let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2]);
+            let vec0 = old_path;
+            let ptr0 = vec0.as_ptr().cast::<u8>();
+            let len0 = vec0.len();
+            let vec1 = new_path;
+            let ptr1 = vec1.as_ptr().cast::<u8>();
+            let len1 = vec1.len();
+            let ptr2 = ret_area.0.as_mut_ptr().cast::<u8>();
+            #[cfg(target_arch = "wasm32")]
+            #[link(wasm_import_module = "wasi:filesystem/types@0.2.9")]
+            unsafe extern "C" {
+              #[link_name = "[method]descriptor.symlink-at"]
+              fn wit_import3(_: i32, _: *mut u8, _: usize, _: *mut u8, _: usize, _: *mut u8, );
+            }
+
+            #[cfg(not(target_arch = "wasm32"))]
+            unsafe extern "C" fn wit_import3(_: i32, _: *mut u8, _: usize, _: *mut u8, _: usize, _: *mut u8, ) { unreachable!() }
+            wit_import3((self).handle() as i32, ptr0.cast_mut(), len0, ptr1.cast_mut(), len1, ptr2);
+            let l4 = i32::from(*ptr2.add(0).cast::<u8>());
+            let result6 = match l4 {
+              0 => {
+                let e = ();
+                Ok(e)
+              }
+              1 => {
+                let e = {
+                  let l5 = i32::from(*ptr2.add(1).cast::<u8>());
+
+                  ErrorCode::_lift(l5 as u8)
+                };
+                Err(e)
+              }
+              _ => _rt::invalid_enum_discriminant(),
+            };
+            result6
+          }
+        }
+      }
+      impl Descriptor {
+        #[allow(unused_unsafe, clippy::all)]
+        #[allow(async_fn_in_trait)]
+        pub fn unlink_file_at(&self,path: &str,) -> Result<(),ErrorCode>{
+          unsafe {
+
+            #[repr(align(1))]
+            struct RetArea([::core::mem::MaybeUninit::<u8>; 2]);
+            let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2]);
+            let vec0 = path;
+            let ptr0 = vec0.as_ptr().cast::<u8>();
+            let len0 = vec0.len();
+            let ptr1 = ret_area.0.as_mut_ptr().cast::<u8>();
+            #[cfg(target_arch = "wasm32")]
+            #[link(wasm_import_module = "wasi:filesystem/types@0.2.9")]
+            unsafe extern "C" {
+              #[link_name = "[method]descriptor.unlink-file-at"]
+              fn wit_import2(_: i32, _: *mut u8, _: usize, _: *mut u8, );
+            }
+
+            #[cfg(not(target_arch = "wasm32"))]
+            unsafe extern "C" fn wit_import2(_: i32, _: *mut u8, _: usize, _: *mut u8, ) { unreachable!() }
+            wit_import2((self).handle() as i32, ptr0.cast_mut(), len0, ptr1);
+            let l3 = i32::from(*ptr1.add(0).cast::<u8>());
+            let result5 = match l3 {
+              0 => {
+                let e = ();
+                Ok(e)
+              }
+              1 => {
+                let e = {
+                  let l4 = i32::from(*ptr1.add(1).cast::<u8>());
+
+                  ErrorCode::_lift(l4 as u8)
+                };
+                Err(e)
+              }
+              _ => _rt::invalid_enum_discriminant(),
+            };
+            result5
+          }
+        }
+      }
+      impl Descriptor {
+        #[allow(unused_unsafe, clippy::all)]
+        #[allow(async_fn_in_trait)]
+        pub fn is_same_object(&self,other: &Descriptor,) -> bool{
+          unsafe {
+
+            #[cfg(target_arch = "wasm32")]
+            #[link(wasm_import_module = "wasi:filesystem/types@0.2.9")]
+            unsafe extern "C" {
+              #[link_name = "[method]descriptor.is-same-object"]
+              fn wit_import0(_: i32, _: i32, ) -> i32;
+            }
+
+            #[cfg(not(target_arch = "wasm32"))]
+            unsafe extern "C" fn wit_import0(_: i32, _: i32, ) -> i32 { unreachable!() }
+            let ret = wit_import0((self).handle() as i32, (other).handle() as i32);
+            _rt::bool_lift(ret as u8)
+          }
+        }
+      }
+      impl Descriptor {
+        #[allow(unused_unsafe, clippy::all)]
+        #[allow(async_fn_in_trait)]
+        pub fn metadata_hash(&self,) -> Result<MetadataHashValue,ErrorCode>{
+          unsafe {
+
+            #[repr(align(8))]
+            struct RetArea([::core::mem::MaybeUninit::<u8>; 24]);
+            let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 24]);
+            let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+            #[cfg(target_arch = "wasm32")]
+            #[link(wasm_import_module = "wasi:filesystem/types@0.2.9")]
+            unsafe extern "C" {
+              #[link_name = "[method]descriptor.metadata-hash"]
+              fn wit_import1(_: i32, _: *mut u8, );
+            }
+
+            #[cfg(not(target_arch = "wasm32"))]
+            unsafe extern "C" fn wit_import1(_: i32, _: *mut u8, ) { unreachable!() }
+            wit_import1((self).handle() as i32, ptr0);
+            let l2 = i32::from(*ptr0.add(0).cast::<u8>());
+            let result6 = match l2 {
+              0 => {
+                let e = {
+                  let l3 = *ptr0.add(8).cast::<i64>();
+                  let l4 = *ptr0.add(16).cast::<i64>();
+
+                  MetadataHashValue{
+                    lower: l3 as u64,
+                    upper: l4 as u64,
+                  }
+                };
+                Ok(e)
+              }
+              1 => {
+                let e = {
+                  let l5 = i32::from(*ptr0.add(8).cast::<u8>());
+
+                  ErrorCode::_lift(l5 as u8)
+                };
+                Err(e)
+              }
+              _ => _rt::invalid_enum_discriminant(),
+            };
+            result6
+          }
+        }
+      }
+      impl Descriptor {
+        #[allow(unused_unsafe, clippy::all)]
+        #[allow(async_fn_in_trait)]
+        pub fn metadata_hash_at(&self,path_flags: PathFlags,path: &str,) -> Result<MetadataHashValue,ErrorCode>{
+          unsafe {
+
+            #[repr(align(8))]
+            struct RetArea([::core::mem::MaybeUninit::<u8>; 24]);
+            let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 24]);
+            let flags0 = path_flags;
+            let vec1 = path;
+            let ptr1 = vec1.as_ptr().cast::<u8>();
+            let len1 = vec1.len();
+            let ptr2 = ret_area.0.as_mut_ptr().cast::<u8>();
+            #[cfg(target_arch = "wasm32")]
+            #[link(wasm_import_module = "wasi:filesystem/types@0.2.9")]
+            unsafe extern "C" {
+              #[link_name = "[method]descriptor.metadata-hash-at"]
+              fn wit_import3(_: i32, _: i32, _: *mut u8, _: usize, _: *mut u8, );
+            }
+
+            #[cfg(not(target_arch = "wasm32"))]
+            unsafe extern "C" fn wit_import3(_: i32, _: i32, _: *mut u8, _: usize, _: *mut u8, ) { unreachable!() }
+            wit_import3((self).handle() as i32, (flags0.bits() >> 0) as i32, ptr1.cast_mut(), len1, ptr2);
+            let l4 = i32::from(*ptr2.add(0).cast::<u8>());
+            let result8 = match l4 {
+              0 => {
+                let e = {
+                  let l5 = *ptr2.add(8).cast::<i64>();
+                  let l6 = *ptr2.add(16).cast::<i64>();
+
+                  MetadataHashValue{
+                    lower: l5 as u64,
+                    upper: l6 as u64,
+                  }
+                };
+                Ok(e)
+              }
+              1 => {
+                let e = {
+                  let l7 = i32::from(*ptr2.add(8).cast::<u8>());
+
+                  ErrorCode::_lift(l7 as u8)
+                };
+                Err(e)
+              }
+              _ => _rt::invalid_enum_discriminant(),
+            };
+            result8
+          }
+        }
+      }
+      impl DirectoryEntryStream {
+        #[allow(unused_unsafe, clippy::all)]
+        #[allow(async_fn_in_trait)]
+        pub fn read_directory_entry(&self,) -> Result<Option<DirectoryEntry>,ErrorCode>{
+          unsafe {
+
+            #[cfg_attr(target_pointer_width="64", repr(align(8)))]
+            #[cfg_attr(target_pointer_width="32", repr(align(4)))]
+            struct RetArea([::core::mem::MaybeUninit::<u8>; 5*::core::mem::size_of::<*const u8>()]);
+            let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 5*::core::mem::size_of::<*const u8>()]);
+            let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+            #[cfg(target_arch = "wasm32")]
+            #[link(wasm_import_module = "wasi:filesystem/types@0.2.9")]
+            unsafe extern "C" {
+              #[link_name = "[method]directory-entry-stream.read-directory-entry"]
+              fn wit_import1(_: i32, _: *mut u8, );
+            }
+
+            #[cfg(not(target_arch = "wasm32"))]
+            unsafe extern "C" fn wit_import1(_: i32, _: *mut u8, ) { unreachable!() }
+            wit_import1((self).handle() as i32, ptr0);
+            let l2 = i32::from(*ptr0.add(0).cast::<u8>());
+            let result9 = match l2 {
+              0 => {
+                let e = {
+                  let l3 = i32::from(*ptr0.add(::core::mem::size_of::<*const u8>()).cast::<u8>());
+
+                  match l3 {
+                    0 => None,
+                    1 => {
+                      let e = {
+                        let l4 = i32::from(*ptr0.add(2*::core::mem::size_of::<*const u8>()).cast::<u8>());
+                        let l5 = *ptr0.add(3*::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+                        let l6 = *ptr0.add(4*::core::mem::size_of::<*const u8>()).cast::<usize>();
+                        let len7 = l6;
+                        let bytes7 = _rt::Vec::from_raw_parts(l5.cast(), len7, len7);
+
+                        DirectoryEntry{
+                          type_: DescriptorType::_lift(l4 as u8),
+                          name: _rt::string_lift(bytes7),
+                        }
+                      };
+                      Some(e)
+                    }
+                    _ => _rt::invalid_enum_discriminant(),
+                  }
+                };
+                Ok(e)
+              }
+              1 => {
+                let e = {
+                  let l8 = i32::from(*ptr0.add(::core::mem::size_of::<*const u8>()).cast::<u8>());
+
+                  ErrorCode::_lift(l8 as u8)
+                };
+                Err(e)
+              }
+              _ => _rt::invalid_enum_discriminant(),
+            };
+            result9
+          }
+        }
+      }
       #[allow(unused_unsafe, clippy::all)]
-      /// If stdin is connected to a terminal, return a `terminal-input` handle
-      /// allowing further interaction with it.
       #[allow(async_fn_in_trait)]
-      pub fn get_terminal_stdin() -> Option<TerminalInput>{
+      pub fn filesystem_error_code(err: &Error,) -> Option<ErrorCode>{
         unsafe {
 
-          #[repr(align(4))]
-          struct RetArea([::core::mem::MaybeUninit::<u8>; 8]);
-          let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+          #[repr(align(1))]
+          struct RetArea([::core::mem::MaybeUninit::<u8>; 2]);
+          let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2]);
           let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
           #[cfg(target_arch = "wasm32")]
-          #[link(wasm_import_module = "wasi:cli/terminal-stdin@0.2.9")]
+          #[link(wasm_import_module = "wasi:filesystem/types@0.2.9")]
           unsafe extern "C" {
-            #[link_name = "get-terminal-stdin"]
-            fn wit_import1(_: *mut u8, );
+            #[link_name = "filesystem-error-code"]
+            fn wit_import1(_: i32, _: *mut u8, );
           }
 
           #[cfg(not(target_arch = "wasm32"))]
-          unsafe extern "C" fn wit_import1(_: *mut u8, ) { unreachable!() }
-          wit_import1(ptr0);
+          unsafe extern "C" fn wit_import1(_: i32, _: *mut u8, ) { unreachable!() }
+          wit_import1((err).handle() as i32, ptr0);
           let l2 = i32::from(*ptr0.add(0).cast::<u8>());
           let result4 = match l2 {
             0 => None,
             1 => {
               let e = {
-                let l3 = *ptr0.add(4).cast::<i32>();
+                let l3 = i32::from(*ptr0.add(1).cast::<u8>());
 
-                super::super::super::wasi::cli::terminal_input::TerminalInput::from_handle(l3 as u32)
+                ErrorCode::_lift(l3 as u8)
               };
               Some(e)
             }
@@ -450,103 +2279,57 @@ pub mod wasi {
 
     }
 
-    /// An interface providing an optional `terminal-output` for stdout as a
-    /// link-time authority.
+
     #[allow(dead_code, async_fn_in_trait, unused_imports, clippy::all)]
-    pub mod terminal_stdout {
+    pub mod preopens {
       #[used]
       #[doc(hidden)]
       static __FORCE_SECTION_REF: fn() =
       super::super::super::__link_custom_section_describing_imports;
       
       use super::super::super::_rt;
-      pub type TerminalOutput = super::super::super::wasi::cli::terminal_output::TerminalOutput;
+      pub type Descriptor = super::super::super::wasi::filesystem::types::Descriptor;
       #[allow(unused_unsafe, clippy::all)]
-      /// If stdout is connected to a terminal, return a `terminal-output` handle
-      /// allowing further interaction with it.
       #[allow(async_fn_in_trait)]
-      pub fn get_terminal_stdout() -> Option<TerminalOutput>{
+      pub fn get_directories() -> _rt::Vec::<(Descriptor,_rt::String,)>{
         unsafe {
 
-          #[repr(align(4))]
-          struct RetArea([::core::mem::MaybeUninit::<u8>; 8]);
-          let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
+          #[cfg_attr(target_pointer_width="64", repr(align(8)))]
+          #[cfg_attr(target_pointer_width="32", repr(align(4)))]
+          struct RetArea([::core::mem::MaybeUninit::<u8>; 2*::core::mem::size_of::<*const u8>()]);
+          let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2*::core::mem::size_of::<*const u8>()]);
           let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
           #[cfg(target_arch = "wasm32")]
-          #[link(wasm_import_module = "wasi:cli/terminal-stdout@0.2.9")]
+          #[link(wasm_import_module = "wasi:filesystem/preopens@0.2.9")]
           unsafe extern "C" {
-            #[link_name = "get-terminal-stdout"]
+            #[link_name = "get-directories"]
             fn wit_import1(_: *mut u8, );
           }
 
           #[cfg(not(target_arch = "wasm32"))]
           unsafe extern "C" fn wit_import1(_: *mut u8, ) { unreachable!() }
           wit_import1(ptr0);
-          let l2 = i32::from(*ptr0.add(0).cast::<u8>());
-          let result4 = match l2 {
-            0 => None,
-            1 => {
-              let e = {
-                let l3 = *ptr0.add(4).cast::<i32>();
+          let l2 = *ptr0.add(0).cast::<*mut u8>();
+          let l3 = *ptr0.add(::core::mem::size_of::<*const u8>()).cast::<usize>();
+          let base8 = l2;
+          let len8 = l3;
+          let mut result8 = _rt::Vec::with_capacity(len8);
+          for i in 0..len8 {
+            let base = base8.add(i * (3*::core::mem::size_of::<*const u8>()));
+            let e8 = {
+              let l4 = *base.add(0).cast::<i32>();
+              let l5 = *base.add(::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+              let l6 = *base.add(2*::core::mem::size_of::<*const u8>()).cast::<usize>();
+              let len7 = l6;
+              let bytes7 = _rt::Vec::from_raw_parts(l5.cast(), len7, len7);
 
-                super::super::super::wasi::cli::terminal_output::TerminalOutput::from_handle(l3 as u32)
-              };
-              Some(e)
-            }
-            _ => _rt::invalid_enum_discriminant(),
-          };
-          result4
-        }
-      }
-
-    }
-
-    /// An interface providing an optional `terminal-output` for stderr as a
-    /// link-time authority.
-    #[allow(dead_code, async_fn_in_trait, unused_imports, clippy::all)]
-    pub mod terminal_stderr {
-      #[used]
-      #[doc(hidden)]
-      static __FORCE_SECTION_REF: fn() =
-      super::super::super::__link_custom_section_describing_imports;
-      
-      use super::super::super::_rt;
-      pub type TerminalOutput = super::super::super::wasi::cli::terminal_output::TerminalOutput;
-      #[allow(unused_unsafe, clippy::all)]
-      /// If stderr is connected to a terminal, return a `terminal-output` handle
-      /// allowing further interaction with it.
-      #[allow(async_fn_in_trait)]
-      pub fn get_terminal_stderr() -> Option<TerminalOutput>{
-        unsafe {
-
-          #[repr(align(4))]
-          struct RetArea([::core::mem::MaybeUninit::<u8>; 8]);
-          let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 8]);
-          let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
-          #[cfg(target_arch = "wasm32")]
-          #[link(wasm_import_module = "wasi:cli/terminal-stderr@0.2.9")]
-          unsafe extern "C" {
-            #[link_name = "get-terminal-stderr"]
-            fn wit_import1(_: *mut u8, );
+              (super::super::super::wasi::filesystem::types::Descriptor::from_handle(l4 as u32), _rt::string_lift(bytes7))
+            };
+            result8.push(e8);
           }
-
-          #[cfg(not(target_arch = "wasm32"))]
-          unsafe extern "C" fn wit_import1(_: *mut u8, ) { unreachable!() }
-          wit_import1(ptr0);
-          let l2 = i32::from(*ptr0.add(0).cast::<u8>());
-          let result4 = match l2 {
-            0 => None,
-            1 => {
-              let e = {
-                let l3 = *ptr0.add(4).cast::<i32>();
-
-                super::super::super::wasi::cli::terminal_output::TerminalOutput::from_handle(l3 as u32)
-              };
-              Some(e)
-            }
-            _ => _rt::invalid_enum_discriminant(),
-          };
-          result4
+          _rt::cabi_dealloc(base8, len8 * (3*::core::mem::size_of::<*const u8>()), ::core::mem::size_of::<*const u8>());
+          let result9 = result8;
+          result9
         }
       }
 
@@ -1890,64 +3673,158 @@ _rt::run_ctors_once();{
 } }
 #[doc(hidden)]
 #[allow(non_snake_case, unused_unsafe)]
-pub unsafe fn _export_stdin_read_cabi<T: Guest>(arg0: i32,) -> *mut u8 { unsafe {#[cfg(target_arch="wasm32")]
-_rt::run_ctors_once();let result0 = {
-  T::stdin_read(arg0 as u32)
+pub unsafe fn _export_read_file_cabi<T: Guest>(arg0: *mut u8,arg1: usize,) -> *mut u8 { unsafe {#[cfg(target_arch="wasm32")]
+_rt::run_ctors_once();let result1 = {
+  let len0 = arg1;
+  let bytes0 = _rt::Vec::from_raw_parts(arg0.cast(), len0, len0);
+  T::read_file(_rt::string_lift(bytes0))
 };
-let ptr1 = (&raw mut _RET_AREA.0).cast::<u8>();
-let vec2 = <_ as Into<_rt::Vec<_>>>::into(result0).into_boxed_slice();
-let ptr2 = vec2.as_ptr().cast::<u8>();
-let len2 = vec2.len();
-::core::mem::forget(vec2);
-*ptr1.add(::core::mem::size_of::<*const u8>()).cast::<usize>() = len2;
-*ptr1.add(0).cast::<*mut u8>() = ptr2.cast_mut();
-ptr1
+let ptr2 = (&raw mut _RET_AREA.0).cast::<u8>();
+match result1 {
+  Ok(e) => { {
+    *ptr2.add(0).cast::<u8>() = (0i32) as u8;
+    let vec3 = <_ as Into<_rt::Vec<_>>>::into(e).into_boxed_slice();
+    let ptr3 = vec3.as_ptr().cast::<u8>();
+    let len3 = vec3.len();
+    ::core::mem::forget(vec3);
+    *ptr2.add(2*::core::mem::size_of::<*const u8>()).cast::<usize>() = len3;
+    *ptr2.add(::core::mem::size_of::<*const u8>()).cast::<*mut u8>() = ptr3.cast_mut();
+  } },
+  Err(e) => { {
+    *ptr2.add(0).cast::<u8>() = (1i32) as u8;
+    let vec4 = (e.into_bytes()).into_boxed_slice();
+    let ptr4 = vec4.as_ptr().cast::<u8>();
+    let len4 = vec4.len();
+    ::core::mem::forget(vec4);
+    *ptr2.add(2*::core::mem::size_of::<*const u8>()).cast::<usize>() = len4;
+    *ptr2.add(::core::mem::size_of::<*const u8>()).cast::<*mut u8>() = ptr4.cast_mut();
+  } },
+};ptr2
 } }
 #[doc(hidden)]
 #[allow(non_snake_case)]
-pub unsafe fn __post_return_stdin_read<T: Guest>(arg0: *mut u8,) { unsafe {
-  let l0 = *arg0.add(0).cast::<*mut u8>();
-  let l1 = *arg0.add(::core::mem::size_of::<*const u8>()).cast::<usize>();
-  let base2 = l0;
-  let len2 = l1;
-  _rt::cabi_dealloc(base2, len2 * 1, 1);
+pub unsafe fn __post_return_read_file<T: Guest>(arg0: *mut u8,) { unsafe {
+  let l0 = i32::from(*arg0.add(0).cast::<u8>());
+  match l0 {
+    0 => {
+      let l1 = *arg0.add(::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+      let l2 = *arg0.add(2*::core::mem::size_of::<*const u8>()).cast::<usize>();
+      let base3 = l1;
+      let len3 = l2;
+      _rt::cabi_dealloc(base3, len3 * 1, 1);
+    },
+    _ => {
+      let l4 = *arg0.add(::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+      let l5 = *arg0.add(2*::core::mem::size_of::<*const u8>()).cast::<usize>();
+      _rt::cabi_dealloc(l4, l5, 1);
+    },
+  }
 } }
 #[doc(hidden)]
 #[allow(non_snake_case, unused_unsafe)]
-pub unsafe fn _export_is_tty_stdout_cabi<T: Guest>() -> i32 { unsafe {#[cfg(target_arch="wasm32")]
-_rt::run_ctors_once();let result0 = {
-  T::is_tty_stdout()
+pub unsafe fn _export_write_file_cabi<T: Guest>(arg0: *mut u8,arg1: usize,arg2: *mut u8,arg3: usize,) -> *mut u8 { unsafe {#[cfg(target_arch="wasm32")]
+_rt::run_ctors_once();let result2 = {
+  let len0 = arg1;
+  let bytes0 = _rt::Vec::from_raw_parts(arg0.cast(), len0, len0);
+  let len1 = arg3;
+  T::write_file(_rt::string_lift(bytes0), <_ as From<_rt::Vec<_>>>::from(_rt::Vec::from_raw_parts(arg2.cast(), len1, len1)))
 };
-match result0 { true => 1, false => 0 }
+let ptr3 = (&raw mut _RET_AREA.0).cast::<u8>();
+match result2 {
+  Ok(_) => { {
+    *ptr3.add(0).cast::<u8>() = (0i32) as u8;
+  } },
+  Err(e) => { {
+    *ptr3.add(0).cast::<u8>() = (1i32) as u8;
+    let vec4 = (e.into_bytes()).into_boxed_slice();
+    let ptr4 = vec4.as_ptr().cast::<u8>();
+    let len4 = vec4.len();
+    ::core::mem::forget(vec4);
+    *ptr3.add(2*::core::mem::size_of::<*const u8>()).cast::<usize>() = len4;
+    *ptr3.add(::core::mem::size_of::<*const u8>()).cast::<*mut u8>() = ptr4.cast_mut();
+  } },
+};ptr3
+} }
+#[doc(hidden)]
+#[allow(non_snake_case)]
+pub unsafe fn __post_return_write_file<T: Guest>(arg0: *mut u8,) { unsafe {
+  let l0 = i32::from(*arg0.add(0).cast::<u8>());
+  match l0 {
+    0 => (),
+    _ => {
+      let l1 = *arg0.add(::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+      let l2 = *arg0.add(2*::core::mem::size_of::<*const u8>()).cast::<usize>();
+      _rt::cabi_dealloc(l1, l2, 1);
+    },
+  }
 } }
 #[doc(hidden)]
 #[allow(non_snake_case, unused_unsafe)]
-pub unsafe fn _export_is_tty_stderr_cabi<T: Guest>() -> i32 { unsafe {#[cfg(target_arch="wasm32")]
-_rt::run_ctors_once();let result0 = {
-  T::is_tty_stderr()
+pub unsafe fn _export_list_dir_cabi<T: Guest>(arg0: *mut u8,arg1: usize,) -> *mut u8 { unsafe {#[cfg(target_arch="wasm32")]
+_rt::run_ctors_once();let result1 = {
+  let len0 = arg1;
+  let bytes0 = _rt::Vec::from_raw_parts(arg0.cast(), len0, len0);
+  T::list_dir(_rt::string_lift(bytes0))
 };
-match result0 { true => 1, false => 0 }
-} }
-#[doc(hidden)]
-#[allow(non_snake_case, unused_unsafe)]
-pub unsafe fn _export_terminal_size_cabi<T: Guest>() -> *mut u8 { unsafe {#[cfg(target_arch="wasm32")]
-_rt::run_ctors_once();let result0 = {
-  T::terminal_size()
-};
-let ptr1 = (&raw mut _RET_AREA.0).cast::<u8>();
-match result0 {
-  Some(e) => {
-    *ptr1.add(0).cast::<u8>() = (1i32) as u8;
-    let (t2_0, t2_1, ) = e;
-    *ptr1.add(4).cast::<i32>() = _rt::as_i32(t2_0);
-    *ptr1.add(8).cast::<i32>() = _rt::as_i32(t2_1);
-  },
-  None => {
-    {
-      *ptr1.add(0).cast::<u8>() = (0i32) as u8;
+let ptr2 = (&raw mut _RET_AREA.0).cast::<u8>();
+match result1 {
+  Ok(e) => { {
+    *ptr2.add(0).cast::<u8>() = (0i32) as u8;
+    let vec4 = e;
+    let len4 = vec4.len();
+    let layout4 = _rt::alloc::Layout::from_size_align(vec4.len() * (2*::core::mem::size_of::<*const u8>()), ::core::mem::size_of::<*const u8>()).unwrap();
+    let (result4, _cleanup4) = wit_bindgen::rt::Cleanup::new(layout4);if let Some(cleanup) = _cleanup4 { cleanup.forget(); }
+    for (i, e) in vec4.into_iter().enumerate() {
+      let base = result4.add(i * (2*::core::mem::size_of::<*const u8>()));
+      {
+        let vec3 = (e.into_bytes()).into_boxed_slice();
+        let ptr3 = vec3.as_ptr().cast::<u8>();
+        let len3 = vec3.len();
+        ::core::mem::forget(vec3);
+        *base.add(::core::mem::size_of::<*const u8>()).cast::<usize>() = len3;
+        *base.add(0).cast::<*mut u8>() = ptr3.cast_mut();
+      }
     }
-  },
-};ptr1
+    *ptr2.add(2*::core::mem::size_of::<*const u8>()).cast::<usize>() = len4;
+    *ptr2.add(::core::mem::size_of::<*const u8>()).cast::<*mut u8>() = result4;
+  } },
+  Err(e) => { {
+    *ptr2.add(0).cast::<u8>() = (1i32) as u8;
+    let vec5 = (e.into_bytes()).into_boxed_slice();
+    let ptr5 = vec5.as_ptr().cast::<u8>();
+    let len5 = vec5.len();
+    ::core::mem::forget(vec5);
+    *ptr2.add(2*::core::mem::size_of::<*const u8>()).cast::<usize>() = len5;
+    *ptr2.add(::core::mem::size_of::<*const u8>()).cast::<*mut u8>() = ptr5.cast_mut();
+  } },
+};ptr2
+} }
+#[doc(hidden)]
+#[allow(non_snake_case)]
+pub unsafe fn __post_return_list_dir<T: Guest>(arg0: *mut u8,) { unsafe {
+  let l0 = i32::from(*arg0.add(0).cast::<u8>());
+  match l0 {
+    0 => {
+      let l1 = *arg0.add(::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+      let l2 = *arg0.add(2*::core::mem::size_of::<*const u8>()).cast::<usize>();
+      let base5 = l1;
+      let len5 = l2;
+      for i in 0..len5 {
+        let base = base5.add(i * (2*::core::mem::size_of::<*const u8>()));
+        {
+          let l3 = *base.add(0).cast::<*mut u8>();
+          let l4 = *base.add(::core::mem::size_of::<*const u8>()).cast::<usize>();
+          _rt::cabi_dealloc(l3, l4, 1);
+        }
+      }
+      _rt::cabi_dealloc(base5, len5 * (2*::core::mem::size_of::<*const u8>()), ::core::mem::size_of::<*const u8>());
+    },
+    _ => {
+      let l6 = *arg0.add(::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+      let l7 = *arg0.add(2*::core::mem::size_of::<*const u8>()).cast::<usize>();
+      _rt::cabi_dealloc(l6, l7, 1);
+    },
+  }
 } }
 #[doc(hidden)]
 #[allow(non_snake_case, unused_unsafe)]
@@ -1970,13 +3847,11 @@ pub trait Guest {
   #[allow(async_fn_in_trait)]
   fn stderr_flush() -> ();
   #[allow(async_fn_in_trait)]
-  fn stdin_read(max_bytes: u32,) -> _rt::Vec::<u8>;
+  fn read_file(path: _rt::String,) -> Result<_rt::Vec::<u8>,_rt::String>;
   #[allow(async_fn_in_trait)]
-  fn is_tty_stdout() -> bool;
+  fn write_file(path: _rt::String,contents: _rt::Vec::<u8>,) -> Result<(),_rt::String>;
   #[allow(async_fn_in_trait)]
-  fn is_tty_stderr() -> bool;
-  #[allow(async_fn_in_trait)]
-  fn terminal_size() -> Option<(u32,u32,)>;
+  fn list_dir(path: _rt::String,) -> Result<_rt::Vec::<_rt::String>,_rt::String>;
   #[allow(async_fn_in_trait)]
   fn exit(code: ExitCode,) -> ();
 }
@@ -2017,25 +3892,29 @@ macro_rules! __export_wacli_cli_host_1_0_0_cabi{
     unsafe extern "C" fn export_stderr_flush() {
       unsafe { $($path_to_types)*::_export_stderr_flush_cabi::<$ty>() }
     }
-    #[unsafe(export_name = "wacli:cli/host@1.0.0#stdin-read")]
-    unsafe extern "C" fn export_stdin_read(arg0: i32,) -> *mut u8 {
-      unsafe { $($path_to_types)*::_export_stdin_read_cabi::<$ty>(arg0) }
+    #[unsafe(export_name = "wacli:cli/host@1.0.0#read-file")]
+    unsafe extern "C" fn export_read_file(arg0: *mut u8,arg1: usize,) -> *mut u8 {
+      unsafe { $($path_to_types)*::_export_read_file_cabi::<$ty>(arg0, arg1) }
     }
-    #[unsafe(export_name = "cabi_post_wacli:cli/host@1.0.0#stdin-read")]
-    unsafe extern "C" fn _post_return_stdin_read(arg0: *mut u8,) {
-      unsafe { $($path_to_types)*::__post_return_stdin_read::<$ty>(arg0) }
+    #[unsafe(export_name = "cabi_post_wacli:cli/host@1.0.0#read-file")]
+    unsafe extern "C" fn _post_return_read_file(arg0: *mut u8,) {
+      unsafe { $($path_to_types)*::__post_return_read_file::<$ty>(arg0) }
     }
-    #[unsafe(export_name = "wacli:cli/host@1.0.0#is-tty-stdout")]
-    unsafe extern "C" fn export_is_tty_stdout() -> i32 {
-      unsafe { $($path_to_types)*::_export_is_tty_stdout_cabi::<$ty>() }
+    #[unsafe(export_name = "wacli:cli/host@1.0.0#write-file")]
+    unsafe extern "C" fn export_write_file(arg0: *mut u8,arg1: usize,arg2: *mut u8,arg3: usize,) -> *mut u8 {
+      unsafe { $($path_to_types)*::_export_write_file_cabi::<$ty>(arg0, arg1, arg2, arg3) }
     }
-    #[unsafe(export_name = "wacli:cli/host@1.0.0#is-tty-stderr")]
-    unsafe extern "C" fn export_is_tty_stderr() -> i32 {
-      unsafe { $($path_to_types)*::_export_is_tty_stderr_cabi::<$ty>() }
+    #[unsafe(export_name = "cabi_post_wacli:cli/host@1.0.0#write-file")]
+    unsafe extern "C" fn _post_return_write_file(arg0: *mut u8,) {
+      unsafe { $($path_to_types)*::__post_return_write_file::<$ty>(arg0) }
     }
-    #[unsafe(export_name = "wacli:cli/host@1.0.0#terminal-size")]
-    unsafe extern "C" fn export_terminal_size() -> *mut u8 {
-      unsafe { $($path_to_types)*::_export_terminal_size_cabi::<$ty>() }
+    #[unsafe(export_name = "wacli:cli/host@1.0.0#list-dir")]
+    unsafe extern "C" fn export_list_dir(arg0: *mut u8,arg1: usize,) -> *mut u8 {
+      unsafe { $($path_to_types)*::_export_list_dir_cabi::<$ty>(arg0, arg1) }
+    }
+    #[unsafe(export_name = "cabi_post_wacli:cli/host@1.0.0#list-dir")]
+    unsafe extern "C" fn _post_return_list_dir(arg0: *mut u8,) {
+      unsafe { $($path_to_types)*::__post_return_list_dir::<$ty>(arg0) }
     }
     #[unsafe(export_name = "wacli:cli/host@1.0.0#exit")]
     unsafe extern "C" fn export_exit(arg0: i32,) {
@@ -2048,8 +3927,8 @@ pub(crate) use __export_wacli_cli_host_1_0_0_cabi;
 
 #[cfg_attr(target_pointer_width="64", repr(align(8)))]
 #[cfg_attr(target_pointer_width="32", repr(align(4)))]
-struct _RetArea([::core::mem::MaybeUninit::<u8>; 8+1*::core::mem::size_of::<*const u8>()]);
-static mut _RET_AREA: _RetArea = _RetArea([::core::mem::MaybeUninit::uninit(); 8+1*::core::mem::size_of::<*const u8>()]);
+struct _RetArea([::core::mem::MaybeUninit::<u8>; 3*::core::mem::size_of::<*const u8>()]);
+static mut _RET_AREA: _RetArea = _RetArea([::core::mem::MaybeUninit::uninit(); 3*::core::mem::size_of::<*const u8>()]);
 
 }
 
@@ -2220,11 +4099,6 @@ mod _rt {
     }
   }
   
-  #[cfg(target_arch = "wasm32")]
-  pub fn run_ctors_once() {
-    wit_bindgen::rt::run_ctors_once();
-  }
-  
   pub fn as_i32<T: AsI32>(t: T) -> i32 {
     t.as_i32()
   }
@@ -2294,6 +4168,11 @@ mod _rt {
       self as i32
     }
   }
+  
+  #[cfg(target_arch = "wasm32")]
+  pub fn run_ctors_once() {
+    wit_bindgen::rt::run_ctors_once();
+  }
   extern crate alloc as alloc_crate;
 }
 
@@ -2330,27 +4209,27 @@ pub(crate) use __export_host_provider_impl as export;
 #[unsafe(link_section = "component-type:wit-bindgen:0.52.0:wacli:cli@1.0.0:host-provider:encoded world")]
 #[doc(hidden)]
 #[allow(clippy::octal_escapes)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 2745] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xb5\x14\x01A\x02\x01\
-A%\x01B\x0a\x01o\x02ss\x01p\0\x01@\0\0\x01\x04\0\x0fget-environment\x01\x02\x01p\
-s\x01@\0\0\x03\x04\0\x0dget-arguments\x01\x04\x01ks\x01@\0\0\x05\x04\0\x0binitia\
-l-cwd\x01\x06\x03\0\x1awasi:cli/environment@0.2.9\x05\0\x01B\x03\x01j\0\0\x01@\x01\
-\x06status\0\x01\0\x04\0\x04exit\x01\x01\x03\0\x13wasi:cli/exit@0.2.9\x05\x01\x01\
-B\x04\x04\0\x05error\x03\x01\x01h\0\x01@\x01\x04self\x01\0s\x04\0\x1d[method]err\
-or.to-debug-string\x01\x02\x03\0\x13wasi:io/error@0.2.9\x05\x02\x01B\x0a\x04\0\x08\
-pollable\x03\x01\x01h\0\x01@\x01\x04self\x01\0\x7f\x04\0\x16[method]pollable.rea\
-dy\x01\x02\x01@\x01\x04self\x01\x01\0\x04\0\x16[method]pollable.block\x01\x03\x01\
-p\x01\x01py\x01@\x01\x02in\x04\0\x05\x04\0\x04poll\x01\x06\x03\0\x12wasi:io/poll\
-@0.2.9\x05\x03\x02\x03\0\x02\x05error\x02\x03\0\x03\x08pollable\x01B(\x02\x03\x02\
-\x01\x04\x04\0\x05error\x03\0\0\x02\x03\x02\x01\x05\x04\0\x08pollable\x03\0\x02\x01\
-i\x01\x01q\x02\x15last-operation-failed\x01\x04\0\x06closed\0\0\x04\0\x0cstream-\
-error\x03\0\x05\x04\0\x0cinput-stream\x03\x01\x04\0\x0doutput-stream\x03\x01\x01\
-h\x07\x01p}\x01j\x01\x0a\x01\x06\x01@\x02\x04self\x09\x03lenw\0\x0b\x04\0\x19[me\
-thod]input-stream.read\x01\x0c\x04\0\"[method]input-stream.blocking-read\x01\x0c\
-\x01j\x01w\x01\x06\x01@\x02\x04self\x09\x03lenw\0\x0d\x04\0\x19[method]input-str\
-eam.skip\x01\x0e\x04\0\"[method]input-stream.blocking-skip\x01\x0e\x01i\x03\x01@\
-\x01\x04self\x09\0\x0f\x04\0\x1e[method]input-stream.subscribe\x01\x10\x01h\x08\x01\
-@\x01\x04self\x11\0\x0d\x04\0![method]output-stream.check-write\x01\x12\x01j\0\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 5556] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xb0*\x01A\x02\x01A\x20\
+\x01B\x0a\x01o\x02ss\x01p\0\x01@\0\0\x01\x04\0\x0fget-environment\x01\x02\x01ps\x01\
+@\0\0\x03\x04\0\x0dget-arguments\x01\x04\x01ks\x01@\0\0\x05\x04\0\x0binitial-cwd\
+\x01\x06\x03\0\x1awasi:cli/environment@0.2.9\x05\0\x01B\x03\x01j\0\0\x01@\x01\x06\
+status\0\x01\0\x04\0\x04exit\x01\x01\x03\0\x13wasi:cli/exit@0.2.9\x05\x01\x01B\x04\
+\x04\0\x05error\x03\x01\x01h\0\x01@\x01\x04self\x01\0s\x04\0\x1d[method]error.to\
+-debug-string\x01\x02\x03\0\x13wasi:io/error@0.2.9\x05\x02\x01B\x0a\x04\0\x08pol\
+lable\x03\x01\x01h\0\x01@\x01\x04self\x01\0\x7f\x04\0\x16[method]pollable.ready\x01\
+\x02\x01@\x01\x04self\x01\x01\0\x04\0\x16[method]pollable.block\x01\x03\x01p\x01\
+\x01py\x01@\x01\x02in\x04\0\x05\x04\0\x04poll\x01\x06\x03\0\x12wasi:io/poll@0.2.\
+9\x05\x03\x02\x03\0\x02\x05error\x02\x03\0\x03\x08pollable\x01B(\x02\x03\x02\x01\
+\x04\x04\0\x05error\x03\0\0\x02\x03\x02\x01\x05\x04\0\x08pollable\x03\0\x02\x01i\
+\x01\x01q\x02\x15last-operation-failed\x01\x04\0\x06closed\0\0\x04\0\x0cstream-e\
+rror\x03\0\x05\x04\0\x0cinput-stream\x03\x01\x04\0\x0doutput-stream\x03\x01\x01h\
+\x07\x01p}\x01j\x01\x0a\x01\x06\x01@\x02\x04self\x09\x03lenw\0\x0b\x04\0\x19[met\
+hod]input-stream.read\x01\x0c\x04\0\"[method]input-stream.blocking-read\x01\x0c\x01\
+j\x01w\x01\x06\x01@\x02\x04self\x09\x03lenw\0\x0d\x04\0\x19[method]input-stream.\
+skip\x01\x0e\x04\0\"[method]input-stream.blocking-skip\x01\x0e\x01i\x03\x01@\x01\
+\x04self\x09\0\x0f\x04\0\x1e[method]input-stream.subscribe\x01\x10\x01h\x08\x01@\
+\x01\x04self\x11\0\x0d\x04\0![method]output-stream.check-write\x01\x12\x01j\0\x01\
 \x06\x01@\x02\x04self\x11\x08contents\x0a\0\x13\x04\0\x1b[method]output-stream.w\
 rite\x01\x14\x04\0.[method]output-stream.blocking-write-and-flush\x01\x14\x01@\x01\
 \x04self\x11\0\x13\x04\0\x1b[method]output-stream.flush\x01\x15\x04\0$[method]ou\
@@ -2359,38 +4238,91 @@ utput-stream.subscribe\x01\x16\x01@\x02\x04self\x11\x03lenw\0\x13\x04\0\"[method
 ]output-stream.write-zeroes\x01\x17\x04\05[method]output-stream.blocking-write-z\
 eroes-and-flush\x01\x17\x01@\x03\x04self\x11\x03src\x09\x03lenw\0\x0d\x04\0\x1c[\
 method]output-stream.splice\x01\x18\x04\0%[method]output-stream.blocking-splice\x01\
-\x18\x03\0\x15wasi:io/streams@0.2.9\x05\x06\x02\x03\0\x04\x0cinput-stream\x01B\x05\
-\x02\x03\x02\x01\x07\x04\0\x0cinput-stream\x03\0\0\x01i\x01\x01@\0\0\x02\x04\0\x09\
-get-stdin\x01\x03\x03\0\x14wasi:cli/stdin@0.2.9\x05\x08\x02\x03\0\x04\x0doutput-\
-stream\x01B\x05\x02\x03\x02\x01\x09\x04\0\x0doutput-stream\x03\0\0\x01i\x01\x01@\
-\0\0\x02\x04\0\x0aget-stdout\x01\x03\x03\0\x15wasi:cli/stdout@0.2.9\x05\x0a\x01B\
-\x05\x02\x03\x02\x01\x09\x04\0\x0doutput-stream\x03\0\0\x01i\x01\x01@\0\0\x02\x04\
-\0\x0aget-stderr\x01\x03\x03\0\x15wasi:cli/stderr@0.2.9\x05\x0b\x01B\x01\x04\0\x0e\
-terminal-input\x03\x01\x03\0\x1dwasi:cli/terminal-input@0.2.9\x05\x0c\x01B\x01\x04\
-\0\x0fterminal-output\x03\x01\x03\0\x1ewasi:cli/terminal-output@0.2.9\x05\x0d\x02\
-\x03\0\x08\x0eterminal-input\x01B\x06\x02\x03\x02\x01\x0e\x04\0\x0eterminal-inpu\
-t\x03\0\0\x01i\x01\x01k\x02\x01@\0\0\x03\x04\0\x12get-terminal-stdin\x01\x04\x03\
-\0\x1dwasi:cli/terminal-stdin@0.2.9\x05\x0f\x02\x03\0\x09\x0fterminal-output\x01\
-B\x06\x02\x03\x02\x01\x10\x04\0\x0fterminal-output\x03\0\0\x01i\x01\x01k\x02\x01\
-@\0\0\x03\x04\0\x13get-terminal-stdout\x01\x04\x03\0\x1ewasi:cli/terminal-stdout\
-@0.2.9\x05\x11\x01B\x06\x02\x03\x02\x01\x10\x04\0\x0fterminal-output\x03\0\0\x01\
-i\x01\x01k\x02\x01@\0\0\x03\x04\0\x13get-terminal-stderr\x01\x04\x03\0\x1ewasi:c\
-li/terminal-stderr@0.2.9\x05\x12\x01B\x09\x01y\x04\0\x09exit-code\x03\0\0\x01ps\x01\
-r\x08\x04names\x07summarys\x05usages\x07aliases\x02\x07versions\x06hidden\x7f\x0b\
-descriptions\x08examples\x02\x04\0\x0ccommand-meta\x03\0\x03\x01q\x04\x0funknown\
--command\x01s\0\x0cinvalid-args\x01s\0\x06failed\x01s\0\x02io\x01s\0\x04\0\x0dco\
-mmand-error\x03\0\x05\x01j\x01\x01\x01\x06\x04\0\x0ecommand-result\x03\0\x07\x04\
-\0\x15wacli:cli/types@1.0.0\x05\x13\x02\x03\0\x0d\x09exit-code\x01B\x1b\x02\x03\x02\
-\x01\x14\x04\0\x09exit-code\x03\0\0\x01ps\x01@\0\0\x02\x04\0\x04args\x01\x03\x01\
-o\x02ss\x01p\x04\x01@\0\0\x05\x04\0\x03env\x01\x06\x01p}\x01@\x01\x05bytes\x07\x01\
-\0\x04\0\x0cstdout-write\x01\x08\x04\0\x0cstderr-write\x01\x08\x01@\0\x01\0\x04\0\
-\x0cstdout-flush\x01\x09\x04\0\x0cstderr-flush\x01\x09\x01@\x01\x09max-bytesy\0\x07\
-\x04\0\x0astdin-read\x01\x0a\x01@\0\0\x7f\x04\0\x0dis-tty-stdout\x01\x0b\x04\0\x0d\
-is-tty-stderr\x01\x0b\x01o\x02yy\x01k\x0c\x01@\0\0\x0d\x04\0\x0dterminal-size\x01\
-\x0e\x01@\x01\x04code\x01\x01\0\x04\0\x04exit\x01\x0f\x04\0\x14wacli:cli/host@1.\
-0.0\x05\x15\x04\0\x1dwacli:cli/host-provider@1.0.0\x04\0\x0b\x13\x01\0\x0dhost-p\
-rovider\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.24\
-4.0\x10wit-bindgen-rust\x060.52.0";
+\x18\x03\0\x15wasi:io/streams@0.2.9\x05\x06\x02\x03\0\x04\x0doutput-stream\x01B\x05\
+\x02\x03\x02\x01\x07\x04\0\x0doutput-stream\x03\0\0\x01i\x01\x01@\0\0\x02\x04\0\x0a\
+get-stdout\x01\x03\x03\0\x15wasi:cli/stdout@0.2.9\x05\x08\x01B\x05\x02\x03\x02\x01\
+\x07\x04\0\x0doutput-stream\x03\0\0\x01i\x01\x01@\0\0\x02\x04\0\x0aget-stderr\x01\
+\x03\x03\0\x15wasi:cli/stderr@0.2.9\x05\x09\x01B\x05\x01r\x02\x07secondsw\x0bnan\
+osecondsy\x04\0\x08datetime\x03\0\0\x01@\0\0\x01\x04\0\x03now\x01\x02\x04\0\x0ar\
+esolution\x01\x02\x03\0\x1cwasi:clocks/wall-clock@0.2.9\x05\x0a\x02\x03\0\x04\x0c\
+input-stream\x02\x03\0\x04\x05error\x02\x03\0\x07\x08datetime\x01Br\x02\x03\x02\x01\
+\x0b\x04\0\x0cinput-stream\x03\0\0\x02\x03\x02\x01\x07\x04\0\x0doutput-stream\x03\
+\0\x02\x02\x03\x02\x01\x0c\x04\0\x05error\x03\0\x04\x02\x03\x02\x01\x0d\x04\0\x08\
+datetime\x03\0\x06\x01w\x04\0\x08filesize\x03\0\x08\x01m\x08\x07unknown\x0cblock\
+-device\x10character-device\x09directory\x04fifo\x0dsymbolic-link\x0cregular-fil\
+e\x06socket\x04\0\x0fdescriptor-type\x03\0\x0a\x01n\x06\x04read\x05write\x13file\
+-integrity-sync\x13data-integrity-sync\x14requested-write-sync\x10mutate-directo\
+ry\x04\0\x10descriptor-flags\x03\0\x0c\x01n\x01\x0esymlink-follow\x04\0\x0apath-\
+flags\x03\0\x0e\x01n\x04\x06create\x09directory\x09exclusive\x08truncate\x04\0\x0a\
+open-flags\x03\0\x10\x01w\x04\0\x0alink-count\x03\0\x12\x01k\x07\x01r\x06\x04typ\
+e\x0b\x0alink-count\x13\x04size\x09\x15data-access-timestamp\x14\x1bdata-modific\
+ation-timestamp\x14\x17status-change-timestamp\x14\x04\0\x0fdescriptor-stat\x03\0\
+\x15\x01q\x03\x09no-change\0\0\x03now\0\0\x09timestamp\x01\x07\0\x04\0\x0dnew-ti\
+mestamp\x03\0\x17\x01r\x02\x04type\x0b\x04names\x04\0\x0fdirectory-entry\x03\0\x19\
+\x01m%\x06access\x0bwould-block\x07already\x0ebad-descriptor\x04busy\x08deadlock\
+\x05quota\x05exist\x0efile-too-large\x15illegal-byte-sequence\x0bin-progress\x0b\
+interrupted\x07invalid\x02io\x0cis-directory\x04loop\x0etoo-many-links\x0cmessag\
+e-size\x0dname-too-long\x09no-device\x08no-entry\x07no-lock\x13insufficient-memo\
+ry\x12insufficient-space\x0dnot-directory\x09not-empty\x0fnot-recoverable\x0buns\
+upported\x06no-tty\x0eno-such-device\x08overflow\x0dnot-permitted\x04pipe\x09rea\
+d-only\x0cinvalid-seek\x0etext-file-busy\x0ccross-device\x04\0\x0aerror-code\x03\
+\0\x1b\x01m\x06\x06normal\x0asequential\x06random\x09will-need\x09dont-need\x08n\
+o-reuse\x04\0\x06advice\x03\0\x1d\x01r\x02\x05lowerw\x05upperw\x04\0\x13metadata\
+-hash-value\x03\0\x1f\x04\0\x0adescriptor\x03\x01\x04\0\x16directory-entry-strea\
+m\x03\x01\x01h!\x01i\x01\x01j\x01$\x01\x1c\x01@\x02\x04self#\x06offset\x09\0%\x04\
+\0\"[method]descriptor.read-via-stream\x01&\x01i\x03\x01j\x01'\x01\x1c\x01@\x02\x04\
+self#\x06offset\x09\0(\x04\0#[method]descriptor.write-via-stream\x01)\x01@\x01\x04\
+self#\0(\x04\0$[method]descriptor.append-via-stream\x01*\x01j\0\x01\x1c\x01@\x04\
+\x04self#\x06offset\x09\x06length\x09\x06advice\x1e\0+\x04\0\x19[method]descript\
+or.advise\x01,\x01@\x01\x04self#\0+\x04\0\x1c[method]descriptor.sync-data\x01-\x01\
+j\x01\x0d\x01\x1c\x01@\x01\x04self#\0.\x04\0\x1c[method]descriptor.get-flags\x01\
+/\x01j\x01\x0b\x01\x1c\x01@\x01\x04self#\00\x04\0\x1b[method]descriptor.get-type\
+\x011\x01@\x02\x04self#\x04size\x09\0+\x04\0\x1b[method]descriptor.set-size\x012\
+\x01@\x03\x04self#\x15data-access-timestamp\x18\x1bdata-modification-timestamp\x18\
+\0+\x04\0\x1c[method]descriptor.set-times\x013\x01p}\x01o\x024\x7f\x01j\x015\x01\
+\x1c\x01@\x03\x04self#\x06length\x09\x06offset\x09\06\x04\0\x17[method]descripto\
+r.read\x017\x01j\x01\x09\x01\x1c\x01@\x03\x04self#\x06buffer4\x06offset\x09\08\x04\
+\0\x18[method]descriptor.write\x019\x01i\"\x01j\x01:\x01\x1c\x01@\x01\x04self#\0\
+;\x04\0![method]descriptor.read-directory\x01<\x04\0\x17[method]descriptor.sync\x01\
+-\x01@\x02\x04self#\x04paths\0+\x04\0&[method]descriptor.create-directory-at\x01\
+=\x01j\x01\x16\x01\x1c\x01@\x01\x04self#\0>\x04\0\x17[method]descriptor.stat\x01\
+?\x01@\x03\x04self#\x0apath-flags\x0f\x04paths\0>\x04\0\x1a[method]descriptor.st\
+at-at\x01@\x01@\x05\x04self#\x0apath-flags\x0f\x04paths\x15data-access-timestamp\
+\x18\x1bdata-modification-timestamp\x18\0+\x04\0\x1f[method]descriptor.set-times\
+-at\x01A\x01@\x05\x04self#\x0eold-path-flags\x0f\x08old-paths\x0enew-descriptor#\
+\x08new-paths\0+\x04\0\x1a[method]descriptor.link-at\x01B\x01i!\x01j\x01\xc3\0\x01\
+\x1c\x01@\x05\x04self#\x0apath-flags\x0f\x04paths\x0aopen-flags\x11\x05flags\x0d\
+\0\xc4\0\x04\0\x1a[method]descriptor.open-at\x01E\x01j\x01s\x01\x1c\x01@\x02\x04\
+self#\x04paths\0\xc6\0\x04\0\x1e[method]descriptor.readlink-at\x01G\x04\0&[metho\
+d]descriptor.remove-directory-at\x01=\x01@\x04\x04self#\x08old-paths\x0enew-desc\
+riptor#\x08new-paths\0+\x04\0\x1c[method]descriptor.rename-at\x01H\x01@\x03\x04s\
+elf#\x08old-paths\x08new-paths\0+\x04\0\x1d[method]descriptor.symlink-at\x01I\x04\
+\0![method]descriptor.unlink-file-at\x01=\x01@\x02\x04self#\x05other#\0\x7f\x04\0\
+![method]descriptor.is-same-object\x01J\x01j\x01\x20\x01\x1c\x01@\x01\x04self#\0\
+\xcb\0\x04\0\x20[method]descriptor.metadata-hash\x01L\x01@\x03\x04self#\x0apath-\
+flags\x0f\x04paths\0\xcb\0\x04\0#[method]descriptor.metadata-hash-at\x01M\x01h\"\
+\x01k\x1a\x01j\x01\xcf\0\x01\x1c\x01@\x01\x04self\xce\0\0\xd0\0\x04\03[method]di\
+rectory-entry-stream.read-directory-entry\x01Q\x01h\x05\x01k\x1c\x01@\x01\x03err\
+\xd2\0\0\xd3\0\x04\0\x15filesystem-error-code\x01T\x03\0\x1bwasi:filesystem/type\
+s@0.2.9\x05\x0e\x02\x03\0\x08\x0adescriptor\x01B\x07\x02\x03\x02\x01\x0f\x04\0\x0a\
+descriptor\x03\0\0\x01i\x01\x01o\x02\x02s\x01p\x03\x01@\0\0\x04\x04\0\x0fget-dir\
+ectories\x01\x05\x03\0\x1ewasi:filesystem/preopens@0.2.9\x05\x10\x01B\x09\x01y\x04\
+\0\x09exit-code\x03\0\0\x01ps\x01r\x08\x04names\x07summarys\x05usages\x07aliases\
+\x02\x07versions\x06hidden\x7f\x0bdescriptions\x08examples\x02\x04\0\x0ccommand-\
+meta\x03\0\x03\x01q\x04\x0funknown-command\x01s\0\x0cinvalid-args\x01s\0\x06fail\
+ed\x01s\0\x02io\x01s\0\x04\0\x0dcommand-error\x03\0\x05\x01j\x01\x01\x01\x06\x04\
+\0\x0ecommand-result\x03\0\x07\x04\0\x15wacli:cli/types@1.0.0\x05\x11\x02\x03\0\x0a\
+\x09exit-code\x01B\x1b\x02\x03\x02\x01\x12\x04\0\x09exit-code\x03\0\0\x01ps\x01@\
+\0\0\x02\x04\0\x04args\x01\x03\x01o\x02ss\x01p\x04\x01@\0\0\x05\x04\0\x03env\x01\
+\x06\x01p}\x01@\x01\x05bytes\x07\x01\0\x04\0\x0cstdout-write\x01\x08\x04\0\x0cst\
+derr-write\x01\x08\x01@\0\x01\0\x04\0\x0cstdout-flush\x01\x09\x04\0\x0cstderr-fl\
+ush\x01\x09\x01j\x01\x07\x01s\x01@\x01\x04paths\0\x0a\x04\0\x09read-file\x01\x0b\
+\x01j\0\x01s\x01@\x02\x04paths\x08contents\x07\0\x0c\x04\0\x0awrite-file\x01\x0d\
+\x01j\x01\x02\x01s\x01@\x01\x04paths\0\x0e\x04\0\x08list-dir\x01\x0f\x01@\x01\x04\
+code\x01\x01\0\x04\0\x04exit\x01\x10\x04\0\x14wacli:cli/host@1.0.0\x05\x13\x04\0\
+\x1dwacli:cli/host-provider@1.0.0\x04\0\x0b\x13\x01\0\x0dhost-provider\x03\0\0\0\
+G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.244.0\x10wit-bindge\
+n-rust\x060.52.0";
 
 #[inline(never)]
 #[doc(hidden)]
