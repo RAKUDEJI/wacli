@@ -78,6 +78,22 @@ Options:
 - `--no-validate`: Skip validation of the composed component
 - `--print-wac`: Print generated WAC without composing
 
+**Note:** `wacli build` scans `commands/**/*.component.wasm` recursively.
+
+### Run the composed CLI (native host)
+
+```bash
+wacli run my-cli.component.wasm <command> [args...]
+wacli run --dir /path/to/data my-cli.component.wasm <command> [args...]
+wacli run --dir /path/to/data::/data my-cli.component.wasm <command> [args...]
+```
+
+**Tip:** `--dir` can appear before or after the component path. Use `--` if you
+need to pass `--dir` through to the command itself.
+
+**Note:** Direct `wasmtime run` is not supported because the composed CLI imports
+`wacli:cli/pipe-runtime@1.0.0`, which is provided by `wacli run`.
+
 ### Compose components directly
 
 ```bash
@@ -108,7 +124,8 @@ my-cli/
     greet.component.wasm      # Command plugins (*.component.wasm)
     show.component.wasm
   wit/
-    command.wit               # Plugin interface for components
+    *.wit                     # Installed by `wacli init` (types/host/command/pipe, etc.)
+```
 
 Runtime layout (for `wacli run`):
 ```
@@ -117,7 +134,6 @@ plugins/
   show/
     format/
       table.component.wasm
-```
 ```
 
 The `wacli build` command:
@@ -128,7 +144,8 @@ The `wacli build` command:
 
 The `wacli run` command:
 - Runs a composed CLI component
-- Loads pipes from `./plugins/<command>/...` at runtime
+- Loads pipes from `./plugins/<command>/...` relative to the current working directory
+- Preopens the current directory and any `--dir HOST[::GUEST]` entries
 
 ## Architecture
 
@@ -175,6 +192,15 @@ impl Command for Greet {
 
 wacli_cdk::export!(Greet);
 ```
+
+**Tip:** The command name is derived from the component filename (e.g. `greet.component.wasm`
+becomes `greet`). Keep it in sync with `meta("greet")` to avoid confusion.
+
+**Note:** `wacli` calls `meta()` when building the command registry and when listing commands.
+Keep `meta()` side‑effect‑free and fast.
+
+For pipe plugins (the `pipe-plugin` world), see the “Building a Pipe Plugin” section in
+`crates/wacli-cdk/README.md`.
 
 ### Host Access
 

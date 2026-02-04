@@ -1,8 +1,0 @@
-package wacli:cli@1.0.0;
-
-interface host-io {
-  stdout-write: func(bytes: list<u8>);
-  stderr-write: func(bytes: list<u8>);
-  stdout-flush: func();
-  stderr-flush: func();
-}

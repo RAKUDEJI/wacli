@@ -29,6 +29,28 @@ pub use bindings::wacli::cli::types::{
     CommandError, CommandMeta, CommandResult, PipeError, PipeInfo, PipeMeta,
 };
 
+impl From<String> for CommandError {
+    fn from(s: String) -> Self {
+        CommandError::Io(s)
+    }
+}
+
+impl From<&str> for CommandError {
+    fn from(s: &str) -> Self {
+        CommandError::Io(s.to_string())
+    }
+}
+
+impl From<PipeError> for CommandError {
+    fn from(e: PipeError) -> Self {
+        match e {
+            PipeError::ParseError(msg) => CommandError::Failed(msg),
+            PipeError::TransformError(msg) => CommandError::Failed(msg),
+            PipeError::InvalidOption(msg) => CommandError::InvalidArgs(msg),
+        }
+    }
+}
+
 #[doc(hidden)]
 #[allow(dead_code)]
 #[used]

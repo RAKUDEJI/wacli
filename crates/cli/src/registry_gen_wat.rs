@@ -8,6 +8,7 @@
 use crate::component_scan::CommandInfo;
 use crate::wit;
 use anyhow::{Context, Result, bail};
+use semver::Version;
 use std::path::{Path, PathBuf};
 use wasm_encoder::{CustomSection, Section};
 use wit_component::ComponentEncoder;
@@ -191,15 +192,48 @@ fn build_imports(commands: &[CommandInfo]) -> Result<String> {
 }
 
 fn registry_package_name() -> Result<PackageName> {
-    let wit_path = Path::new("registry.wit");
-    let pkg_group = UnresolvedPackageGroup::parse(wit_path, REGISTRY_WIT_BASE)
-        .context("failed to parse registry WIT for package name")?;
-    Ok(pkg_group.main.name)
+    let decl = REGISTRY_WIT_BASE
+        .lines()
+        .find(|line| line.trim_start().starts_with("package "))
+        .context("registry WIT missing package declaration")?;
+    let mut name = decl.trim();
+    name = name.strip_prefix("package ").unwrap_or(name).trim();
+    name = name.strip_suffix(';').unwrap_or(name).trim();
+    parse_package_name(name).context("failed to parse registry package name")
+}
+
+fn parse_package_name(name: &str) -> Result<PackageName> {
+    let (namespace, rest) = name
+        .split_once(':')
+        .context("registry package name missing namespace")?;
+    let (pkg_name, version) = match rest.split_once('@') {
+        Some((pkg, version)) => (pkg, Some(version)),
+        None => (rest, None),
+    };
+    if namespace.is_empty() {
+        bail!("registry package namespace is empty");
+    }
+    if pkg_name.is_empty() {
+        bail!("registry package name is empty");
+    }
+    let version = match version {
+        Some(raw) if !raw.trim().is_empty() => {
+            Some(Version::parse(raw.trim()).context("invalid registry package version")?)
+        }
+        Some(_) => bail!("registry package version is empty"),
+        None => None,
+    };
+    Ok(PackageName {
+        namespace: namespace.trim().to_string(),
+        name: pkg_name.trim().to_string(),
+        version,
+    })
 }
 
 fn build_list_commands_body(commands: &[CommandInfo], name_offsets: &[(u32, u32)]) -> String {
     const RECORD_SIZE: i32 = 60;
     const ZERO_FIELDS: [i32; 12] = [8, 12, 16, 20, 24, 28, 32, 36, 44, 48, 52, 56];
+    const META_COPY_FIELDS: [i32; 12] = [8, 12, 16, 20, 24, 28, 32, 36, 44, 48, 52, 56];
 
     let count = commands.len() as i32;
     let list_bytes = count * RECORD_SIZE;
@@ -224,6 +258,8 @@ fn build_list_commands_body(commands: &[CommandInfo], name_offsets: &[(u32, u32)
     push_line(&mut body, 4, "i32.store offset=4 align=2");
 
     for (i, (name_ptr, name_len)) in name_offsets.iter().enumerate() {
+        let cmd = &commands[i];
+        let ident = command_ident(&cmd.name);
         let record_offset = (i as i32) * RECORD_SIZE;
         push_blank(&mut body);
         push_line(&mut body, 4, "local.get $list_ptr");
@@ -250,6 +286,28 @@ fn build_list_commands_body(commands: &[CommandInfo], name_offsets: &[(u32, u32)
 
         push_line(&mut body, 4, "local.get $record_ptr");
         push_line(&mut body, 4, "i32.const 0");
+        push_line(&mut body, 4, "i32.store8 offset=40");
+
+        push_line(&mut body, 4, "i32.const 60");
+        push_line(&mut body, 4, "call $alloc");
+        push_line(&mut body, 4, "local.set $meta_ptr");
+        push_line(&mut body, 4, "local.get $meta_ptr");
+        push_line(&mut body, 4, &format!("call ${}_meta", ident));
+
+        for offset in META_COPY_FIELDS {
+            push_line(&mut body, 4, "local.get $record_ptr");
+            push_line(&mut body, 4, "local.get $meta_ptr");
+            push_line(&mut body, 4, &format!("i32.load offset={} align=2", offset));
+            push_line(
+                &mut body,
+                4,
+                &format!("i32.store offset={} align=2", offset),
+            );
+        }
+
+        push_line(&mut body, 4, "local.get $record_ptr");
+        push_line(&mut body, 4, "local.get $meta_ptr");
+        push_line(&mut body, 4, "i32.load8_u offset=40");
         push_line(&mut body, 4, "i32.store8 offset=40");
     }
 

@@ -3,7 +3,7 @@ resolver = "3"
 members = ["crates/*", "components/host", "components/core"]
 
 [workspace.package]
-version = "0.0.32"
+version = "0.0.33"
 edition = "2024"
 rust-version = "1.92"
 license = "Apache-2.0"
@@ -16,7 +16,7 @@ wac-graph = "0.9.0"
 wac-types = "0.9.0"
 
 # Workspace crates
-plugin-loader = { path = "crates/plugin-loader", version = "0.0.32" }
+plugin-loader = { path = "crates/plugin-loader", version = "0.0.33" }
 
 # CLI and error handling
 clap = { version = "4.5", features = ["derive"] }
@@ -35,6 +35,7 @@ wit-component = "0.244"
 wit-parser = "0.244"
 wasmtime = { version = "41", features = ["component-model"] }
 wasmtime-wasi = { version = "41" }
+semver = "1.0"
 
 # Utilities
 indexmap = "2.2"

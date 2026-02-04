@@ -33,7 +33,7 @@ edition = "2024"
 crate-type = ["cdylib"]
 
 [dependencies]
-wacli-cdk = "0.0.32"
+wacli-cdk = "0.0.33"
 ```
 
 ## Quick Start
@@ -177,7 +177,7 @@ io::eprintln("something went wrong");
 #### Reading files
 
 ```rust
-use wacli_cdk::fs;
+use wacli_cdk::{fs, CommandError};
 
 // Read entire file as bytes
 let bytes = fs::read("config.json")?;
@@ -256,13 +256,86 @@ plugins/
       table.component.wasm   # pipes::load("format/table")
 ```
 
-**Note:** Pipes are only available when running with `wacli run`. The host dynamically loads pipe components from the `plugins/<command>/` directory.
+**Note:** Pipes are only available when running with `wacli run`. The host dynamically loads pipe components from `./plugins/<command>/` relative to the current working directory.
+
+### Building a Pipe Plugin (pipe-plugin)
+
+Pipes are separate components that implement the `pipe-plugin` world.
+
+**Cargo.toml**
+```toml
+[package]
+name = "format-table"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wit-bindgen = "0.52"
+```
+
+**src/lib.rs**
+```rust
+wit_bindgen::generate!({
+    // Point this to the `wit/` directory created by `wacli init`
+    path: "../my-cli/wit",
+    world: "pipe-plugin",
+});
+
+use exports::wacli::cli::pipe::Guest;
+use wacli::cli::types::{PipeError, PipeMeta};
+
+struct TablePipe;
+
+impl Guest for TablePipe {
+    fn meta() -> PipeMeta {
+        PipeMeta {
+            name: "format/table".to_string(),
+            summary: "Uppercase formatter".to_string(),
+            input_types: vec!["text/plain".to_string()],
+            output_type: "text/plain".to_string(),
+            version: "0.1.0".to_string(),
+        }
+    }
+
+    fn process(input: Vec<u8>, _options: Vec<String>) -> Result<Vec<u8>, PipeError> {
+        let s = String::from_utf8(input).map_err(|e| PipeError::ParseError(e.to_string()))?;
+        Ok(s.to_uppercase().into_bytes())
+    }
+}
+
+export!(TablePipe);
+```
+
+**Build & install**
+```bash
+cargo build --target wasm32-unknown-unknown --release
+wasm-tools component new \
+  target/wasm32-unknown-unknown/release/format_table.wasm \
+  -o table.component.wasm
+
+# Place under the command's plugins directory
+mkdir -p plugins/show/format
+cp table.component.wasm plugins/show/format/table.component.wasm
+```
+
+Now the command can load it:
+```rust
+let pipe = pipes::load("format/table")?;
+```
+
+**Notes**
+- `pipes::load("format/table")` maps to `plugins/<command>/format/table.component.wasm`.
+- `meta().name` is for display; keep it consistent with the path to avoid confusion.
+- Pipes are loaded only by `wacli run`.
 
 ### Metadata Builder
 
 ```rust
 meta("command-name")
-    .summary("One-line description")           // shown in command list
+    .summary("One-line description")
     .usage("cmd [OPTIONS] <ARGS>")             // usage pattern
     .description("Detailed description...")    // shown in help
     .version("1.0.0")                          // command version
@@ -314,8 +387,8 @@ use wacli_cdk::prelude::*;
 After building your component, integrate it with a wacli project:
 
 ```bash
-# Initialize a new CLI project
-wacli init my-cli
+# Initialize a new CLI project (downloads host/core components)
+wacli init my-cli --with-components
 
 # Copy your component to the commands directory
 cp my-command.component.wasm my-cli/commands/
@@ -323,31 +396,35 @@ cp my-command.component.wasm my-cli/commands/
 # Build the final CLI
 cd my-cli && wacli build
 
-# Run your command
-wasmtime run my-cli.component.wasm my-command --help
+# Run your command (native host; required for pipes)
+wacli run my-cli.component.wasm my-command --help
 ```
+
+**Note:** Direct `wasmtime run` will fail because the composed CLI imports
+`wacli:cli/pipe-runtime@1.0.0`, which is provided by `wacli run`.
+
+**Tip:** The file name (without `.component.wasm`) becomes the command name.
+Keep it in sync with `meta("...")` to avoid confusion.
 
 ## Running with File Access
 
-If your command uses `fs::read`, `fs::write`, or `fs::list_dir`, you must grant filesystem access when running with wasmtime:
+If your command uses `fs::read`, `fs::write`, or `fs::list_dir`, you must run from a directory you want to access. `wacli run` preopens the current working directory, and you can add more with `--dir`:
 
 ```bash
-# Grant access to current directory
-wasmtime run --dir . my-cli.component.wasm my-command input.txt
+# Run from the directory you want to access
+cd /path/to/data
+wacli run my-cli.component.wasm my-command input.txt
 
-# Grant access to a specific directory
-wasmtime run --dir /path/to/data my-cli.component.wasm my-command
+# Preopen another directory
+wacli run --dir /path/to/data my-cli.component.wasm my-command input.txt
 
-# Grant access to multiple directories
-wasmtime run --dir . --dir /tmp my-cli.component.wasm my-command
+# Map a host dir to a guest path
+wacli run --dir /path/to/data::/data my-cli.component.wasm my-command /data/input.txt
 ```
 
-**Without `--dir`**, file operations will fail:
-```
-Error: failed to find a pre-opened file descriptor for "input.txt"
-```
+File paths are resolved relative to the preopened directories.
 
-The `--dir` flag "preopens" a directory, making it accessible to the WebAssembly component. File paths in your code are relative to these preopened directories.
+**Tip:** Use `--` if your command also defines a `--dir` flag.
 
 ## Requirements
 

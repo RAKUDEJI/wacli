@@ -49,10 +49,7 @@ pub fn generate_wac(package_name: &str, commands: &[CommandInfo]) -> String {
     wac.push_str(&format!("  {types_import}: host.types"));
     for cmd in commands {
         let var_name = cmd.var_name();
-        wac.push_str(&format!(
-            ",\n  {}-command: {}.command",
-            cmd.name, var_name
-        ));
+        wac.push_str(&format!(",\n  {}-command: {}.command", cmd.name, var_name));
     }
     wac.push_str("\n};\n\n");
 

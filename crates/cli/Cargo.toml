@@ -52,6 +52,7 @@ tracing.workspace = true
 tracing-subscriber.workspace = true
 ureq.workspace = true
 self_update.workspace = true
+semver.workspace = true
 plugin-loader = { workspace = true, optional = true }
 
 [features]

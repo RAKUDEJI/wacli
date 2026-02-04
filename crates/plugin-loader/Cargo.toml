@@ -11,3 +11,6 @@ repository = "https://github.com/RAKUDEJI/wacli"
 anyhow.workspace = true
 wasmtime.workspace = true
 wasmtime-wasi.workspace = true
+
+[features]
+regen-bindings = []

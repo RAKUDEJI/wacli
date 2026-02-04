@@ -1,6 +1,7 @@
 //! Scan and validate command components in the commands/ directory.
 
 use anyhow::{Context, Result, bail};
+use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use wasmparser::{Parser, Payload};
@@ -73,7 +74,10 @@ fn is_valid_command_name(name: &str) -> bool {
 /// Result of analyzing a WASM binary.
 enum WasmKind {
     /// A WebAssembly Component with its exports.
-    Component { exports: Vec<String>, imports: Vec<String> },
+    Component {
+        exports: Vec<String>,
+        imports: Vec<String>,
+    },
     /// A core WebAssembly module (not a component).
     CoreModule,
 }
@@ -127,9 +131,9 @@ fn analyze_wasm(wasm_bytes: &[u8]) -> Result<WasmKind> {
 
 /// Check if a component exports the wacli:cli/command interface.
 fn exports_command_interface(exports: &[String]) -> bool {
-    exports.iter().any(|e| {
-        e == "wacli:cli/command@1.0.0" || e == "wacli:cli/command" || e == "command"
-    })
+    exports
+        .iter()
+        .any(|e| e == "wacli:cli/command@1.0.0" || e == "wacli:cli/command" || e == "command")
 }
 
 /// Scan the commands directory and return validated command info.
@@ -146,36 +150,54 @@ pub fn scan_commands(commands_dir: &Path) -> Result<Vec<CommandInfo>> {
     }
 
     let mut commands = Vec::new();
+    let mut seen = HashMap::new();
 
-    let entries = fs::read_dir(commands_dir).with_context(|| {
-        format!(
-            "failed to read commands directory: {}",
-            commands_dir.display()
-        )
-    })?;
+    collect_commands(commands_dir, &mut commands, &mut seen)?;
+
+    // Sort by name for deterministic output
+    commands.sort_by(|a, b| a.name.cmp(&b.name));
+
+    if commands.is_empty() {
+        bail!("no commands found in {}", commands_dir.display());
+    }
+
+    Ok(commands)
+}
+
+fn collect_commands(
+    dir: &Path,
+    out: &mut Vec<CommandInfo>,
+    seen: &mut HashMap<String, PathBuf>,
+) -> Result<()> {
+    let entries = fs::read_dir(dir)
+        .with_context(|| format!("failed to read commands directory: {}", dir.display()))?;
 
     for entry in entries {
         let entry = entry.context("failed to read directory entry")?;
         let path = entry.path();
 
-        // Skip non-files
+        if path.is_dir() {
+            collect_commands(&path, out, seen)?;
+            continue;
+        }
+
         if !path.is_file() {
             continue;
         }
 
-        // Check for .component.wasm extension
-        let file_name = path.file_name().unwrap().to_string_lossy();
+        let file_name = match path.file_name() {
+            Some(name) => name.to_string_lossy(),
+            None => continue,
+        };
         if !file_name.ends_with(".component.wasm") {
             continue;
         }
 
-        // Extract command name from filename
         let name = file_name
             .strip_suffix(".component.wasm")
             .unwrap()
             .to_string();
 
-        // Validate command name
         if !is_valid_command_name(&name) {
             bail!(
                 "invalid command name '{}': must match pattern [a-z][a-z0-9-]* (file: {})",
@@ -184,7 +206,16 @@ pub fn scan_commands(commands_dir: &Path) -> Result<Vec<CommandInfo>> {
             );
         }
 
-        // Read and validate the component
+        if let Some(prev) = seen.get(&name) {
+            bail!(
+                "duplicate command name '{}':\n  {}\n  {}",
+                name,
+                prev.display(),
+                path.display()
+            );
+        }
+        seen.insert(name.clone(), path.clone());
+
         let wasm_bytes = fs::read(&path)
             .with_context(|| format!("failed to read component: {}", path.display()))?;
 
@@ -208,17 +239,14 @@ pub fn scan_commands(commands_dir: &Path) -> Result<Vec<CommandInfo>> {
             );
         }
 
-        commands.push(CommandInfo { name, path, imports });
+        out.push(CommandInfo {
+            name,
+            path,
+            imports,
+        });
     }
 
-    // Sort by name for deterministic output
-    commands.sort_by(|a, b| a.name.cmp(&b.name));
-
-    if commands.is_empty() {
-        bail!("no commands found in {}", commands_dir.display());
-    }
-
-    Ok(commands)
+    Ok(())
 }
 
 /// Verify that required default components exist.

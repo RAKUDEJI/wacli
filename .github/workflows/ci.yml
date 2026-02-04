@@ -38,6 +38,11 @@ jobs:
       - name: Build components
         run: bash scripts/build_components.sh
 
+      - name: Check plugin-loader bindings
+        run: |
+          bash scripts/gen_plugin_loader_bindings.sh
+          git diff --exit-code -- crates/plugin-loader/src/bindings
+
       - name: Build
         run: cargo build -p wacli --verbose
 

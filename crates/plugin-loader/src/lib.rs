@@ -8,10 +8,14 @@ use wasmtime_wasi::p2;
 use wasmtime_wasi::p2::bindings::sync::Command;
 
 mod pipe_plugin_bindings {
-    wasmtime::component::bindgen!({
-        path: "wit/cli",
-        world: "pipe-plugin",
-    });
+    #![allow(
+        clippy::all,
+        dead_code,
+        unused_imports,
+        unused_mut,
+        unused_variables
+    )]
+    include!("bindings/pipe_plugin.rs");
 }
 
 #[derive(Default)]
@@ -23,17 +27,73 @@ pub struct LoadedPipe {
     meta: pipe_plugin_bindings::wacli::cli::types::PipeMeta,
 }
 
+#[derive(Debug, Clone)]
+pub struct PreopenDir {
+    pub host: PathBuf,
+    pub guest: String,
+}
+
+impl PreopenDir {
+    pub fn new(host: impl Into<PathBuf>, guest: impl Into<String>) -> Self {
+        Self {
+            host: host.into(),
+            guest: guest.into(),
+        }
+    }
+}
+
 mod pipe_runtime_bindings {
-    wasmtime::component::bindgen!({
-        path: "wit/cli",
-        world: "pipe-runtime-host",
-        with: {
-            "wacli:cli/pipe-runtime.pipe": crate::LoadedPipe,
-        },
-    });
+    #![allow(
+        clippy::all,
+        dead_code,
+        unused_imports,
+        unused_mut,
+        unused_variables
+    )]
+    include!("bindings/pipe_runtime_host.rs");
 }
 
 use pipe_runtime_bindings::wacli::cli::{pipe_runtime, types as pipe_types};
+
+#[cfg(feature = "regen-bindings")]
+mod regen_bindings {
+    #![allow(
+        clippy::all,
+        dead_code,
+        unused_imports,
+        unused_mut,
+        unused_variables
+    )]
+    mod pipe_plugin {
+        #![allow(
+            clippy::all,
+            dead_code,
+            unused_imports,
+            unused_mut,
+            unused_variables
+        )]
+        wasmtime::component::bindgen!({
+            path: "../../wit/cli",
+            world: "pipe-plugin",
+        });
+    }
+    mod pipe_runtime_host {
+        #![allow(
+            clippy::all,
+            dead_code,
+            unused_imports,
+            unused_mut,
+            unused_variables
+        )]
+        wasmtime::component::bindgen!({
+            path: "../../wit/cli",
+            world: "pipe-runtime-host",
+            with: {
+                "wacli:cli/pipe-runtime.pipe": crate::LoadedPipe,
+            },
+        });
+    }
+}
 
 /// Runs a composed CLI component with dynamic pipe loading.
 pub struct Runner {
@@ -51,6 +111,16 @@ impl Runner {
 
     /// Run a composed CLI component (.component.wasm).
     pub fn run_component(&self, component_path: impl AsRef<Path>, args: &[String]) -> Result<u32> {
+        self.run_component_with_preopens(component_path, args, &[])
+    }
+
+    /// Run a composed CLI component with extra preopened directories.
+    pub fn run_component_with_preopens(
+        &self,
+        component_path: impl AsRef<Path>,
+        args: &[String],
+        preopens: &[PreopenDir],
+    ) -> Result<u32> {
         let component_path = component_path.as_ref();
         let component = Component::from_file(&self.engine, component_path)
             .with_context(|| format!("failed to load component: {}", component_path.display()))?;
@@ -80,6 +150,33 @@ impl Runner {
         builder
             .preopened_dir(".", ".", DirPerms::all(), FilePerms::all())
             .context("failed to preopen current directory")?;
+        for dir in preopens {
+            if dir.guest.trim().is_empty() {
+                return Err(anyhow::anyhow!("guest path for --dir cannot be empty"));
+            }
+            let host = dir.host.as_path();
+            if !host.exists() {
+                return Err(anyhow::anyhow!(
+                    "preopen directory not found: {}",
+                    host.display()
+                ));
+            }
+            if !host.is_dir() {
+                return Err(anyhow::anyhow!(
+                    "preopen path is not a directory: {}",
+                    host.display()
+                ));
+            }
+            builder
+                .preopened_dir(host, &dir.guest, DirPerms::all(), FilePerms::all())
+                .with_context(|| {
+                    format!(
+                        "failed to preopen directory {} as {}",
+                        host.display(),
+                        dir.guest
+                    )
+                })?;
+        }
         let ctx = builder.build();
 
         let current_command = detect_command(args);

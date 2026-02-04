@@ -138,6 +138,10 @@ struct RunArgs {
     #[arg(value_name = "COMPONENT")]
     component: PathBuf,
 
+    /// Preopen a directory (HOST[::GUEST], repeatable)
+    #[arg(long = "dir", value_name = "HOST[::GUEST]")]
+    dirs: Vec<String>,
+
     /// Arguments passed to the command
     #[arg(value_name = "ARGS", trailing_var_arg = true)]
     args: Vec<String>,
@@ -251,8 +255,7 @@ fn write_wit_file(dir: &Path, name: &str, contents: &str, overwrite: bool) -> Re
     fs::write(&tmp_path, contents)
         .with_context(|| format!("failed to write {}", tmp_path.display()))?;
     if overwrite && dest.exists() {
-        fs::remove_file(&dest)
-            .with_context(|| format!("failed to remove {}", dest.display()))?;
+        fs::remove_file(&dest).with_context(|| format!("failed to remove {}", dest.display()))?;
     }
     fs::rename(&tmp_path, &dest)
         .with_context(|| format!("failed to move {} into place", dest.display()))?;
@@ -306,12 +309,10 @@ fn download_component(url: &str, dest: &Path, overwrite: bool, label: &str) -> R
         .with_context(|| format!("failed to write {}", tmp_path.display()))?;
 
     if overwrite && dest.exists() {
-        fs::remove_file(dest)
-            .with_context(|| format!("failed to remove {}", dest.display()))?;
+        fs::remove_file(dest).with_context(|| format!("failed to remove {}", dest.display()))?;
     }
 
-    fs::rename(&tmp_path, dest)
-        .with_context(|| format!("failed to move {} into place", label))?;
+    fs::rename(&tmp_path, dest).with_context(|| format!("failed to move {} into place", label))?;
     tracing::info!("downloaded {} -> {}", label, dest.display());
     Ok(())
 }
@@ -557,11 +558,79 @@ fn plug(args: PlugArgs) -> Result<()> {
 #[cfg(feature = "runtime")]
 fn run(args: RunArgs) -> Result<()> {
     let runner = plugin_loader::Runner::new()?;
-    let code = runner.run_component(&args.component, &args.args)?;
+    let mut preopens = Vec::new();
+    for dir in &args.dirs {
+        preopens.push(parse_preopen_dir(dir)?);
+    }
+    let (extra_dirs, passthrough_args) = split_run_args(&args.args)?;
+    for dir in extra_dirs {
+        preopens.push(parse_preopen_dir(&dir)?);
+    }
+    let code = runner.run_component_with_preopens(&args.component, &passthrough_args, &preopens)?;
     if code != 0 {
         std::process::exit(code as i32);
     }
     Ok(())
+}
+
+#[cfg(feature = "runtime")]
+fn parse_preopen_dir(value: &str) -> Result<plugin_loader::PreopenDir> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        bail!("--dir value is empty");
+    }
+    let (host, guest) = match trimmed.split_once("::") {
+        Some((host, guest)) => (host.trim(), guest.trim()),
+        None => (trimmed, trimmed),
+    };
+    if host.is_empty() {
+        bail!("--dir host path is empty");
+    }
+    if guest.is_empty() {
+        bail!("--dir guest path is empty");
+    }
+    Ok(plugin_loader::PreopenDir::new(host, guest))
+}
+
+#[cfg(feature = "runtime")]
+fn split_run_args(args: &[String]) -> Result<(Vec<String>, Vec<String>)> {
+    let mut preopens = Vec::new();
+    let mut passthrough = Vec::new();
+    let mut i = 0usize;
+    let mut stop = false;
+
+    while i < args.len() {
+        let arg = &args[i];
+        if !stop {
+            if arg == "--" {
+                stop = true;
+                passthrough.push(arg.clone());
+                i += 1;
+                continue;
+            }
+            if arg == "--dir" {
+                let next = args
+                    .get(i + 1)
+                    .ok_or_else(|| anyhow::anyhow!("--dir requires a value (HOST[::GUEST])"))?;
+                preopens.push(next.clone());
+                i += 2;
+                continue;
+            }
+            if let Some(rest) = arg.strip_prefix("--dir=") {
+                if rest.trim().is_empty() {
+                    bail!("--dir requires a value (HOST[::GUEST])");
+                }
+                preopens.push(rest.to_string());
+                i += 1;
+                continue;
+            }
+        }
+
+        passthrough.push(arg.clone());
+        i += 1;
+    }
+
+    Ok((preopens, passthrough))
 }
 
 fn init_tracing() {

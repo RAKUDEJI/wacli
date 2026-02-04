@@ -1,7 +1,0 @@
-package wacli:cli@1.0.0;
-
-interface host-fs {
-  read-file: func(path: string) -> result<list<u8>, string>;
-  write-file: func(path: string, contents: list<u8>) -> result<_, string>;
-  list-dir: func(path: string) -> result<list<string>, string>;
-}

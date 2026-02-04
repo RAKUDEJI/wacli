@@ -95,6 +95,7 @@
     (local $result_ptr i32)
     (local $list_ptr i32)
     (local $record_ptr i32)
+    (local $meta_ptr i32)
 {{LIST_COMMANDS_BODY}}
   )
 
