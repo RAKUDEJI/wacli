@@ -1,6 +1,6 @@
 [package]
 name = "wacli"
-version = "0.0.29"
+version = "0.0.30"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
@@ -52,7 +52,7 @@ tracing.workspace = true
 tracing-subscriber.workspace = true
 ureq.workspace = true
 self_update.workspace = true
-plugin-loader = { path = "../plugin-loader", version = "0.1.1", optional = true }
+plugin-loader = { path = "../plugin-loader", version = "0.0.30", optional = true }
 
 [features]
 default = ["runtime"]
