@@ -3,11 +3,15 @@
 mod bindings;
 
 use bindings::export;
-use bindings::exports::wacli::cli::{host_env, host_fs, host_io, host_process};
+use bindings::exports::wacli::cli::{host_env, host_fs, host_io, host_pipes, host_process};
+use bindings::wacli::cli::pipe_runtime;
 use bindings::wasi;
 use wasi::filesystem::types::{Descriptor, DescriptorFlags, ErrorCode, OpenFlags, PathFlags};
 
 struct HostProvider;
+struct HostPipe {
+    inner: pipe_runtime::Pipe,
+}
 
 impl host_env::Guest for HostProvider {
     fn args() -> Vec<String> {
@@ -126,6 +130,38 @@ impl host_process::Guest for HostProvider {
     }
 }
 
+impl host_pipes::Guest for HostProvider {
+    type Pipe = HostPipe;
+
+    fn list_pipes() -> Vec<host_pipes::PipeInfo> {
+        pipe_runtime::list_pipes()
+            .into_iter()
+            .map(convert_pipe_info)
+            .collect()
+    }
+
+    fn load_pipe(name: String) -> Result<host_pipes::Pipe, String> {
+        pipe_runtime::load_pipe(&name)
+            .map(|pipe| host_pipes::Pipe::new(HostPipe { inner: pipe }))
+    }
+}
+
+impl host_pipes::GuestPipe for HostPipe {
+    fn meta(&self) -> host_pipes::PipeMeta {
+        convert_pipe_meta(self.inner.meta())
+    }
+
+    fn process(
+        &self,
+        input: Vec<u8>,
+        options: Vec<String>,
+    ) -> Result<Vec<u8>, host_pipes::PipeError> {
+        self.inner
+            .process(&input, &options)
+            .map_err(convert_pipe_error)
+    }
+}
+
 export!(HostProvider with_types_in bindings);
 
 enum StreamTarget {
@@ -178,4 +214,34 @@ fn pick_preopen() -> Result<Descriptor, String> {
 
 fn fs_error(err: ErrorCode) -> String {
     format!("filesystem error: {err:?}")
+}
+
+fn convert_pipe_info(info: pipe_runtime::PipeInfo) -> host_pipes::PipeInfo {
+    host_pipes::PipeInfo {
+        name: info.name,
+        summary: info.summary,
+        path: info.path,
+    }
+}
+
+fn convert_pipe_meta(meta: pipe_runtime::PipeMeta) -> host_pipes::PipeMeta {
+    host_pipes::PipeMeta {
+        name: meta.name,
+        summary: meta.summary,
+        input_types: meta.input_types,
+        output_type: meta.output_type,
+        version: meta.version,
+    }
+}
+
+fn convert_pipe_error(err: pipe_runtime::PipeError) -> host_pipes::PipeError {
+    match err {
+        pipe_runtime::PipeError::ParseError(msg) => host_pipes::PipeError::ParseError(msg),
+        pipe_runtime::PipeError::TransformError(msg) => {
+            host_pipes::PipeError::TransformError(msg)
+        }
+        pipe_runtime::PipeError::InvalidOption(msg) => {
+            host_pipes::PipeError::InvalidOption(msg)
+        }
+    }
 }

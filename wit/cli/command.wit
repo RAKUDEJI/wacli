@@ -12,6 +12,7 @@ world plugin {
   import host-io;
   import host-fs;
   import host-process;
+  import host-pipes;
 
   export command;
 }

@@ -2,18 +2,19 @@ package wacli:cli@1.0.0;
 
 world host-provider {
   include wasi-cli-capabilities;
+  import pipe-runtime;
 
   export types;
   export host-env;
   export host-io;
   export host-fs;
   export host-process;
+  export host-pipes;
 }
 
 world core {
   import host-env;
   import host-io;
-  import host-fs;
   import host-process;
   import registry;
 

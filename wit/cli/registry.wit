@@ -8,9 +8,5 @@ interface registry {
 }
 
 world registry-provider {
-  import host-env;
-  import host-io;
-  import host-fs;
-  import host-process;
   export registry;
 }

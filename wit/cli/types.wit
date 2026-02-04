@@ -22,4 +22,24 @@ interface types {
   }
 
   type command-result = result<exit-code, command-error>;
+
+  record pipe-meta {
+    name: string,
+    summary: string,
+    input-types: list<string>,
+    output-type: string,
+    version: string,
+  }
+
+  variant pipe-error {
+    parse-error(string),
+    transform-error(string),
+    invalid-option(string),
+  }
+
+  record pipe-info {
+    name: string,
+    summary: string,
+    path: string,
+  }
 }

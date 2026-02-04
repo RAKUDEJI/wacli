@@ -27,6 +27,9 @@ wacli/
 │   │       ├── component_scan.rs   # コンポーネントスキャン
 │   │       ├── registry_gen_wat.rs # Registry自動生成（WAT）
 │   │       └── wac_gen.rs      # WAC生成
+│   ├── plugin-loader/          # ランタイム用プラグインローダー
+│   │   ├── Cargo.toml
+│   │   └── src/lib.rs
 │   └── wacli-cdk/              # プラグイン開発キット (crates.io公開)
 │       ├── Cargo.toml
 │       └── src/
@@ -39,7 +42,9 @@ wacli/
 │   │   ├── host-io.wit         # wacli/host-io インターフェース
 │   │   ├── host-fs.wit         # wacli/host-fs インターフェース
 │   │   ├── host-process.wit    # wacli/host-process インターフェース
+│   │   ├── host-pipes.wit      # wacli/host-pipes インターフェース
 │   │   ├── command.wit         # plugin world
+│   │   ├── pipe.wit            # pipe-plugin world
 │   │   ├── registry.wit        # registry インターフェース
 │   │   ├── wasi-deps.wit       # WASI依存定義 (0.2.9)
 │   │   └── wacli.wit           # worlds 定義
@@ -80,6 +85,9 @@ wacli compose app.wac -o app.wasm -d "pkg:name=path.wasm"
 
 # プラグ合成
 wacli plug socket.wasm --plug a.wasm --plug b.wasm -o out.wasm
+
+# ランタイム実行
+wacli run <component.wasm> [args...]
 ```
 
 ### ビルドオプション
@@ -125,6 +133,7 @@ WASI 0.2.9 を使用。WASI は host/core 側で利用し、プラグインは�
 - `wacli/host-io` (`stdout-write`, `stderr-write`, flush)
 - `wacli/host-fs` (ファイルI/O)
 - `wacli/host-process` (`exit`)
+- `wacli/host-pipes` (パイプローダー)
 
 ### wacli/command
 プラグインがエクスポート: `meta() -> command-meta`, `run(argv) -> command-result`
@@ -140,6 +149,7 @@ world plugin {
   import host-io;
   import host-fs;
   import host-process;
+  import host-pipes;
   export command;
 }
 ```
@@ -176,7 +186,7 @@ wasm-tools component new components/core/core.wasm \
 
 ### 特徴
 - `Command` trait + `export!` マクロ
-- `host` モジュール（host-* の集約: stdout/stderr, args/env, ファイルI/O, exit）
+- `host` モジュール（host-* の集約: stdout/stderr, args/env, ファイルI/O, exit, pipes）
 - `args` モジュール（引数パース）
 - `io` モジュール（print, println, eprint, eprintln）
 

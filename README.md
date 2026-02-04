@@ -97,6 +97,15 @@ my-cli/
     show.component.wasm
   wit/
     command.wit               # Plugin interface for components
+
+Runtime layout (for `wacli run`):
+```
+my-cli.component.wasm
+plugins/
+  show/
+    format/
+      table.component.wasm
+```
 ```
 
 The `wacli build` command:
@@ -104,6 +113,10 @@ The `wacli build` command:
 2. Scans `commands/` for command plugins (`*.component.wasm`)
 3. Auto-generates `registry.component.wasm` if not present
 4. Composes all components into the final CLI
+
+The `wacli run` command:
+- Runs a composed CLI component
+- Loads pipes from `./plugins/<command>/...` at runtime
 
 ## Architecture
 
@@ -154,7 +167,7 @@ wacli_cdk::export!(Greet);
 ### Host Access
 
 Plugins do not import WASI directly. All host interactions go through the
-`wacli:cli/host-*` interfaces (`host-env`, `host-io`, `host-fs`, `host-process`).
+`wacli:cli/host-*` interfaces (`host-env`, `host-io`, `host-fs`, `host-process`, `host-pipes`).
 
 ## Framework Components
 
@@ -174,8 +187,10 @@ Download from [Releases](https://github.com/RAKUDEJI/wacli/releases).
 | `wacli:cli/host-io` | Host I/O (`stdout-write`, `stderr-write`, flush) |
 | `wacli:cli/host-fs` | Host filesystem (`read-file`, `write-file`, `list-dir`) |
 | `wacli:cli/host-process` | Host process (`exit`) |
+| `wacli:cli/host-pipes` | Pipe loader (`list-pipes`, `load-pipe`) |
 | `wacli:cli/command` | Plugin export interface (`meta`, `run`) |
 | `wacli:cli/registry` | Command management (`list-commands`, `run`) |
+| `wacli:cli/pipe` | Pipe export interface (`meta`, `process`) |
 
 ### Plugin World
 
@@ -185,6 +200,7 @@ world plugin {
   import host-io;
   import host-fs;
   import host-process;
+  import host-pipes;
   export command;
 }
 ```

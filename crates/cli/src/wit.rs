@@ -22,6 +22,26 @@ interface types {
   }
 
   type command-result = result<exit-code, command-error>;
+
+  record pipe-meta {
+    name: string,
+    summary: string,
+    input-types: list<string>,
+    output-type: string,
+    version: string,
+  }
+
+  variant pipe-error {
+    parse-error(string),
+    transform-error(string),
+    invalid-option(string),
+  }
+
+  record pipe-info {
+    name: string,
+    summary: string,
+    path: string,
+  }
 }
 "#;
 
@@ -61,6 +81,40 @@ interface host-process {
 }
 "#;
 
+pub const HOST_PIPES_WIT: &str = r#"package wacli:cli@1.0.0;
+
+interface host-pipes {
+  use types.{pipe-meta, pipe-error, pipe-info};
+
+  list-pipes: func() -> list<pipe-info>;
+  load-pipe: func(name: string) -> result<pipe, string>;
+
+  resource pipe {
+    meta: func() -> pipe-meta;
+    process: func(input: list<u8>, options: list<string>) -> result<list<u8>, pipe-error>;
+  }
+}
+"#;
+
+pub const PIPE_RUNTIME_WIT: &str = r#"package wacli:cli@1.0.0;
+
+interface pipe-runtime {
+  use types.{pipe-meta, pipe-error, pipe-info};
+
+  list-pipes: func() -> list<pipe-info>;
+  load-pipe: func(name: string) -> result<pipe, string>;
+
+  resource pipe {
+    meta: func() -> pipe-meta;
+    process: func(input: list<u8>, options: list<string>) -> result<list<u8>, pipe-error>;
+  }
+}
+
+world pipe-runtime-host {
+  import pipe-runtime;
+}
+"#;
+
 pub const COMMAND_WIT: &str = r#"package wacli:cli@1.0.0;
 
 interface command {
@@ -75,8 +129,23 @@ world plugin {
   import host-io;
   import host-fs;
   import host-process;
+  import host-pipes;
 
   export command;
+}
+"#;
+
+pub const PIPE_WIT: &str = r#"package wacli:cli@1.0.0;
+
+interface pipe {
+  use types.{pipe-meta, pipe-error};
+
+  meta: func() -> pipe-meta;
+  process: func(input: list<u8>, options: list<string>) -> result<list<u8>, pipe-error>;
+}
+
+world pipe-plugin {
+  export pipe;
 }
 "#;
 
@@ -90,10 +159,6 @@ interface registry {
 }
 
 world registry-provider {
-  import host-env;
-  import host-io;
-  import host-fs;
-  import host-process;
   export registry;
 }
 "#;

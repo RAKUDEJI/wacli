@@ -47,6 +47,9 @@ enum Commands {
     /// Plug exports of components into imports of another component
     Plug(PlugArgs),
 
+    /// Run a composed CLI component with dynamic pipes
+    Run(RunArgs),
+
     /// Update wacli from GitHub Releases
     SelfUpdate(SelfUpdateArgs),
 }
@@ -128,6 +131,17 @@ struct PlugArgs {
 }
 
 #[derive(Parser)]
+struct RunArgs {
+    /// Composed CLI component (.component.wasm)
+    #[arg(value_name = "COMPONENT")]
+    component: PathBuf,
+
+    /// Arguments passed to the command
+    #[arg(value_name = "ARGS", trailing_var_arg = true)]
+    args: Vec<String>,
+}
+
+#[derive(Parser)]
 struct SelfUpdateArgs {
     /// Update to a specific version (e.g., 0.0.14). Defaults to latest.
     #[arg(long)]
@@ -143,6 +157,7 @@ fn main() -> Result<()> {
         Commands::Build(args) => build(args),
         Commands::Compose(args) => compose(args),
         Commands::Plug(args) => plug(args),
+        Commands::Run(args) => run(args),
         Commands::SelfUpdate(args) => self_update(args),
     }
 }
@@ -191,6 +206,9 @@ const HOST_ENV_WIT: &str = wit::HOST_ENV_WIT;
 const HOST_IO_WIT: &str = wit::HOST_IO_WIT;
 const HOST_FS_WIT: &str = wit::HOST_FS_WIT;
 const HOST_PROCESS_WIT: &str = wit::HOST_PROCESS_WIT;
+const HOST_PIPES_WIT: &str = wit::HOST_PIPES_WIT;
+const PIPE_RUNTIME_WIT: &str = wit::PIPE_RUNTIME_WIT;
+const PIPE_WIT: &str = wit::PIPE_WIT;
 const HOST_COMPONENT_URL: &str =
     "https://github.com/RAKUDEJI/wacli/releases/latest/download/host.component.wasm";
 const CORE_COMPONENT_URL: &str =
@@ -207,7 +225,10 @@ fn write_plugin_wit(project_dir: &Path, overwrite: bool) -> Result<()> {
         ("host-io.wit", HOST_IO_WIT),
         ("host-fs.wit", HOST_FS_WIT),
         ("host-process.wit", HOST_PROCESS_WIT),
+        ("host-pipes.wit", HOST_PIPES_WIT),
+        ("pipe-runtime.wit", PIPE_RUNTIME_WIT),
         ("command.wit", PLUGIN_WIT),
+        ("pipe.wit", PIPE_WIT),
     ];
 
     for (name, contents) in files {
@@ -527,6 +548,15 @@ fn plug(args: PlugArgs) -> Result<()> {
         }
     }
 
+    Ok(())
+}
+
+fn run(args: RunArgs) -> Result<()> {
+    let runner = plugin_loader::Runner::new()?;
+    let code = runner.run_component(&args.component, &args.args)?;
+    if code != 0 {
+        std::process::exit(code as i32);
+    }
     Ok(())
 }
 

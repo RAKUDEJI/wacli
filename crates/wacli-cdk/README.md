@@ -17,6 +17,7 @@ Command Development Kit for building [wacli](https://github.com/RAKUDEJI/wacli) 
 - **`args` module** - Lightweight argument parsing helpers
 - **`io` module** - stdout/stderr utilities
 - **`fs` module** - File read/write/list helpers via the host
+- **`pipes` module** - Dynamic pipe loading for data transformation
 
 ## Installation
 
@@ -32,7 +33,7 @@ edition = "2024"
 crate-type = ["cdylib"]
 
 [dependencies]
-wacli-cdk = "0.0.24"
+wacli-cdk = "0.0.25"
 ```
 
 ## Quick Start
@@ -216,6 +217,47 @@ for name in entries {
 **Note:** File paths are relative to the preopened directories provided at runtime.
 See [Running with File Access](#running-with-file-access) for details.
 
+### Pipe Helpers
+
+Pipes are dynamically loaded data transformation plugins. Use `pipes` module to load and invoke them at runtime:
+
+```rust
+use wacli_cdk::pipes;
+
+fn run(argv: Vec<String>) -> CommandResult {
+    // List available pipes
+    let available = pipes::list();
+    for info in &available {
+        wacli_cdk::io::println(format!("{}: {}", info.name, info.summary));
+    }
+
+    // Load a pipe by name
+    let formatter = pipes::load("format/json")?;
+
+    // Get pipe metadata
+    let meta = formatter.meta();
+    wacli_cdk::io::println(format!("Loaded: {} v{}", meta.name, meta.version));
+
+    // Process data through the pipe
+    let input = b"hello world";
+    let output = formatter.process(input, &["--pretty".to_string()])?;
+
+    wacli_cdk::io::print(String::from_utf8_lossy(&output));
+    Ok(0)
+}
+```
+
+**Pipe directory structure:**
+```
+plugins/
+  <command>/
+    format/
+      json.component.wasm    # pipes::load("format/json")
+      table.component.wasm   # pipes::load("format/table")
+```
+
+**Note:** Pipes are only available when running with `wacli run`. The host dynamically loads pipe components from the `plugins/<command>/` directory.
+
 ### Metadata Builder
 
 ```rust
@@ -256,7 +298,7 @@ fn run(argv: Vec<String>) -> CommandResult {
 ### WASI Capabilities
 
 Plugins do not import WASI directly. All host interactions should go through the
-`wacli:cli/host-*` interfaces (`host-env`, `host-io`, `host-fs`, `host-process`).
+`wacli:cli/host-*` interfaces (`host-env`, `host-io`, `host-fs`, `host-process`, `host-pipes`).
 
 ### Prelude
 

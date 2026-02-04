@@ -418,6 +418,58 @@ pub mod wacli {
         }
       }
       pub type CommandResult= Result<ExitCode,CommandError>;
+      #[derive(Clone)]
+      pub struct PipeMeta {
+        pub name: _rt::String,
+        pub summary: _rt::String,
+        pub input_types: _rt::Vec::<_rt::String>,
+        pub output_type: _rt::String,
+        pub version: _rt::String,
+      }
+      impl ::core::fmt::Debug for PipeMeta {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+          f.debug_struct("PipeMeta").field("name", &self.name).field("summary", &self.summary).field("input-types", &self.input_types).field("output-type", &self.output_type).field("version", &self.version).finish()
+        }
+      }
+      #[derive(Clone)]
+      pub enum PipeError {
+        ParseError(_rt::String),
+        TransformError(_rt::String),
+        InvalidOption(_rt::String),
+      }
+      impl ::core::fmt::Debug for PipeError {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+          match self {
+            PipeError::ParseError(e) => {
+              f.debug_tuple("PipeError::ParseError").field(e).finish()
+            }
+            PipeError::TransformError(e) => {
+              f.debug_tuple("PipeError::TransformError").field(e).finish()
+            }
+            PipeError::InvalidOption(e) => {
+              f.debug_tuple("PipeError::InvalidOption").field(e).finish()
+            }
+          }
+        }
+      }
+      impl ::core::fmt::Display for PipeError {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+          write!(f, "{:?}", self)
+        }
+      }
+
+      impl ::core::error::Error for PipeError {}
+      #[derive(Clone)]
+      pub struct PipeInfo {
+        pub name: _rt::String,
+        pub summary: _rt::String,
+        pub path: _rt::String,
+      }
+      impl ::core::fmt::Debug for PipeInfo {
+        fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+          f.debug_struct("PipeInfo").field("name", &self.name).field("summary", &self.summary).field("path", &self.path).finish()
+        }
+      }
 
     }
 
@@ -446,6 +498,335 @@ pub mod wacli {
           #[cfg(not(target_arch = "wasm32"))]
           unsafe extern "C" fn wit_import0(_: i32, ) { unreachable!() }
           wit_import0(_rt::as_i32(code));
+        }
+      }
+
+    }
+
+
+    #[allow(dead_code, async_fn_in_trait, unused_imports, clippy::all)]
+    pub mod host_pipes {
+      #[used]
+      #[doc(hidden)]
+      static __FORCE_SECTION_REF: fn() =
+      super::super::super::__link_custom_section_describing_imports;
+      
+      use super::super::super::_rt;
+      pub type PipeMeta = super::super::super::wacli::cli::types::PipeMeta;
+      pub type PipeError = super::super::super::wacli::cli::types::PipeError;
+      pub type PipeInfo = super::super::super::wacli::cli::types::PipeInfo;
+
+      #[derive(Debug)]
+      #[repr(transparent)]
+      pub struct Pipe{
+        handle: _rt::Resource<Pipe>,
+      }
+
+      impl Pipe{
+        #[doc(hidden)]
+        pub unsafe fn from_handle(handle: u32) -> Self {
+          Self {
+            handle: unsafe { _rt::Resource::from_handle(handle) },
+          }
+        }
+
+        #[doc(hidden)]
+        pub fn take_handle(&self) -> u32 {
+          _rt::Resource::take_handle(&self.handle)
+        }
+
+        #[doc(hidden)]
+        pub fn handle(&self) -> u32 {
+          _rt::Resource::handle(&self.handle)
+        }
+      }
+      
+
+      unsafe impl _rt::WasmResource for Pipe{
+        #[inline]
+        unsafe fn drop(_handle: u32) {
+          
+          #[cfg(target_arch = "wasm32")]
+          #[link(wasm_import_module = "wacli:cli/host-pipes@1.0.0")]
+          unsafe extern "C" {
+            #[link_name = "[resource-drop]pipe"]
+            fn drop(_: i32, );
+          }
+
+          #[cfg(not(target_arch = "wasm32"))]
+          unsafe extern "C" fn drop(_: i32, ) { unreachable!() }
+          
+          unsafe { drop(_handle as i32); }
+        }
+      }
+      
+      #[allow(unused_unsafe, clippy::all)]
+      #[allow(async_fn_in_trait)]
+      pub fn list_pipes() -> _rt::Vec::<PipeInfo>{
+        unsafe {
+
+          #[cfg_attr(target_pointer_width="64", repr(align(8)))]
+          #[cfg_attr(target_pointer_width="32", repr(align(4)))]
+          struct RetArea([::core::mem::MaybeUninit::<u8>; 2*::core::mem::size_of::<*const u8>()]);
+          let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2*::core::mem::size_of::<*const u8>()]);
+          let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+          #[cfg(target_arch = "wasm32")]
+          #[link(wasm_import_module = "wacli:cli/host-pipes@1.0.0")]
+          unsafe extern "C" {
+            #[link_name = "list-pipes"]
+            fn wit_import1(_: *mut u8, );
+          }
+
+          #[cfg(not(target_arch = "wasm32"))]
+          unsafe extern "C" fn wit_import1(_: *mut u8, ) { unreachable!() }
+          wit_import1(ptr0);
+          let l2 = *ptr0.add(0).cast::<*mut u8>();
+          let l3 = *ptr0.add(::core::mem::size_of::<*const u8>()).cast::<usize>();
+          let base13 = l2;
+          let len13 = l3;
+          let mut result13 = _rt::Vec::with_capacity(len13);
+          for i in 0..len13 {
+            let base = base13.add(i * (6*::core::mem::size_of::<*const u8>()));
+            let e13 = {
+              let l4 = *base.add(0).cast::<*mut u8>();
+              let l5 = *base.add(::core::mem::size_of::<*const u8>()).cast::<usize>();
+              let len6 = l5;
+              let bytes6 = _rt::Vec::from_raw_parts(l4.cast(), len6, len6);
+              let l7 = *base.add(2*::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+              let l8 = *base.add(3*::core::mem::size_of::<*const u8>()).cast::<usize>();
+              let len9 = l8;
+              let bytes9 = _rt::Vec::from_raw_parts(l7.cast(), len9, len9);
+              let l10 = *base.add(4*::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+              let l11 = *base.add(5*::core::mem::size_of::<*const u8>()).cast::<usize>();
+              let len12 = l11;
+              let bytes12 = _rt::Vec::from_raw_parts(l10.cast(), len12, len12);
+
+              super::super::super::wacli::cli::types::PipeInfo{
+                name: _rt::string_lift(bytes6),
+                summary: _rt::string_lift(bytes9),
+                path: _rt::string_lift(bytes12),
+              }
+            };
+            result13.push(e13);
+          }
+          _rt::cabi_dealloc(base13, len13 * (6*::core::mem::size_of::<*const u8>()), ::core::mem::size_of::<*const u8>());
+          let result14 = result13;
+          result14
+        }
+      }
+      #[allow(unused_unsafe, clippy::all)]
+      #[allow(async_fn_in_trait)]
+      pub fn load_pipe(name: &str,) -> Result<Pipe,_rt::String>{
+        unsafe {
+
+          #[cfg_attr(target_pointer_width="64", repr(align(8)))]
+          #[cfg_attr(target_pointer_width="32", repr(align(4)))]
+          struct RetArea([::core::mem::MaybeUninit::<u8>; 3*::core::mem::size_of::<*const u8>()]);
+          let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 3*::core::mem::size_of::<*const u8>()]);
+          let vec0 = name;
+          let ptr0 = vec0.as_ptr().cast::<u8>();
+          let len0 = vec0.len();
+          let ptr1 = ret_area.0.as_mut_ptr().cast::<u8>();
+          #[cfg(target_arch = "wasm32")]
+          #[link(wasm_import_module = "wacli:cli/host-pipes@1.0.0")]
+          unsafe extern "C" {
+            #[link_name = "load-pipe"]
+            fn wit_import2(_: *mut u8, _: usize, _: *mut u8, );
+          }
+
+          #[cfg(not(target_arch = "wasm32"))]
+          unsafe extern "C" fn wit_import2(_: *mut u8, _: usize, _: *mut u8, ) { unreachable!() }
+          wit_import2(ptr0.cast_mut(), len0, ptr1);
+          let l3 = i32::from(*ptr1.add(0).cast::<u8>());
+          let result8 = match l3 {
+            0 => {
+              let e = {
+                let l4 = *ptr1.add(::core::mem::size_of::<*const u8>()).cast::<i32>();
+
+                Pipe::from_handle(l4 as u32)
+              };
+              Ok(e)
+            }
+            1 => {
+              let e = {
+                let l5 = *ptr1.add(::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+                let l6 = *ptr1.add(2*::core::mem::size_of::<*const u8>()).cast::<usize>();
+                let len7 = l6;
+                let bytes7 = _rt::Vec::from_raw_parts(l5.cast(), len7, len7);
+
+                _rt::string_lift(bytes7)
+              };
+              Err(e)
+            }
+            _ => _rt::invalid_enum_discriminant(),
+          };
+          result8
+        }
+      }
+      impl Pipe {
+        #[allow(unused_unsafe, clippy::all)]
+        #[allow(async_fn_in_trait)]
+        pub fn meta(&self,) -> PipeMeta{
+          unsafe {
+
+            #[cfg_attr(target_pointer_width="64", repr(align(8)))]
+            #[cfg_attr(target_pointer_width="32", repr(align(4)))]
+            struct RetArea([::core::mem::MaybeUninit::<u8>; 10*::core::mem::size_of::<*const u8>()]);
+            let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 10*::core::mem::size_of::<*const u8>()]);
+            let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+            #[cfg(target_arch = "wasm32")]
+            #[link(wasm_import_module = "wacli:cli/host-pipes@1.0.0")]
+            unsafe extern "C" {
+              #[link_name = "[method]pipe.meta"]
+              fn wit_import1(_: i32, _: *mut u8, );
+            }
+
+            #[cfg(not(target_arch = "wasm32"))]
+            unsafe extern "C" fn wit_import1(_: i32, _: *mut u8, ) { unreachable!() }
+            wit_import1((self).handle() as i32, ptr0);
+            let l2 = *ptr0.add(0).cast::<*mut u8>();
+            let l3 = *ptr0.add(::core::mem::size_of::<*const u8>()).cast::<usize>();
+            let len4 = l3;
+            let bytes4 = _rt::Vec::from_raw_parts(l2.cast(), len4, len4);
+            let l5 = *ptr0.add(2*::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+            let l6 = *ptr0.add(3*::core::mem::size_of::<*const u8>()).cast::<usize>();
+            let len7 = l6;
+            let bytes7 = _rt::Vec::from_raw_parts(l5.cast(), len7, len7);
+            let l8 = *ptr0.add(4*::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+            let l9 = *ptr0.add(5*::core::mem::size_of::<*const u8>()).cast::<usize>();
+            let base13 = l8;
+            let len13 = l9;
+            let mut result13 = _rt::Vec::with_capacity(len13);
+            for i in 0..len13 {
+              let base = base13.add(i * (2*::core::mem::size_of::<*const u8>()));
+              let e13 = {
+                let l10 = *base.add(0).cast::<*mut u8>();
+                let l11 = *base.add(::core::mem::size_of::<*const u8>()).cast::<usize>();
+                let len12 = l11;
+                let bytes12 = _rt::Vec::from_raw_parts(l10.cast(), len12, len12);
+
+                _rt::string_lift(bytes12)
+              };
+              result13.push(e13);
+            }
+            _rt::cabi_dealloc(base13, len13 * (2*::core::mem::size_of::<*const u8>()), ::core::mem::size_of::<*const u8>());
+            let l14 = *ptr0.add(6*::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+            let l15 = *ptr0.add(7*::core::mem::size_of::<*const u8>()).cast::<usize>();
+            let len16 = l15;
+            let bytes16 = _rt::Vec::from_raw_parts(l14.cast(), len16, len16);
+            let l17 = *ptr0.add(8*::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+            let l18 = *ptr0.add(9*::core::mem::size_of::<*const u8>()).cast::<usize>();
+            let len19 = l18;
+            let bytes19 = _rt::Vec::from_raw_parts(l17.cast(), len19, len19);
+            let result20 = super::super::super::wacli::cli::types::PipeMeta{
+              name: _rt::string_lift(bytes4),
+              summary: _rt::string_lift(bytes7),
+              input_types: result13,
+              output_type: _rt::string_lift(bytes16),
+              version: _rt::string_lift(bytes19),
+            };
+            result20
+          }
+        }
+      }
+      impl Pipe {
+        #[allow(unused_unsafe, clippy::all)]
+        #[allow(async_fn_in_trait)]
+        pub fn process(&self,input: &[u8],options: &[_rt::String],) -> Result<_rt::Vec::<u8>,PipeError>{
+          unsafe {
+
+            #[cfg_attr(target_pointer_width="64", repr(align(8)))]
+            #[cfg_attr(target_pointer_width="32", repr(align(4)))]
+            struct RetArea([::core::mem::MaybeUninit::<u8>; 4*::core::mem::size_of::<*const u8>()]);
+            let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 4*::core::mem::size_of::<*const u8>()]);
+            let vec0 = input;
+            let ptr0 = vec0.as_ptr().cast::<u8>();
+            let len0 = vec0.len();
+            let vec2 = options;
+            let len2 = vec2.len();
+            let layout2 = _rt::alloc::Layout::from_size_align(vec2.len() * (2*::core::mem::size_of::<*const u8>()), ::core::mem::size_of::<*const u8>()).unwrap();
+            let (result2, _cleanup2) = wit_bindgen::rt::Cleanup::new(layout2);for (i, e) in vec2.into_iter().enumerate() {
+              let base = result2.add(i * (2*::core::mem::size_of::<*const u8>()));
+              {
+                let vec1 = e;
+                let ptr1 = vec1.as_ptr().cast::<u8>();
+                let len1 = vec1.len();
+                *base.add(::core::mem::size_of::<*const u8>()).cast::<usize>() = len1;
+                *base.add(0).cast::<*mut u8>() = ptr1.cast_mut();
+              }
+            }
+            let ptr3 = ret_area.0.as_mut_ptr().cast::<u8>();
+            #[cfg(target_arch = "wasm32")]
+            #[link(wasm_import_module = "wacli:cli/host-pipes@1.0.0")]
+            unsafe extern "C" {
+              #[link_name = "[method]pipe.process"]
+              fn wit_import4(_: i32, _: *mut u8, _: usize, _: *mut u8, _: usize, _: *mut u8, );
+            }
+
+            #[cfg(not(target_arch = "wasm32"))]
+            unsafe extern "C" fn wit_import4(_: i32, _: *mut u8, _: usize, _: *mut u8, _: usize, _: *mut u8, ) { unreachable!() }
+            wit_import4((self).handle() as i32, ptr0.cast_mut(), len0, result2, len2, ptr3);
+            let l5 = i32::from(*ptr3.add(0).cast::<u8>());
+            let result20 = match l5 {
+              0 => {
+                let e = {
+                  let l6 = *ptr3.add(::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+                  let l7 = *ptr3.add(2*::core::mem::size_of::<*const u8>()).cast::<usize>();
+                  let len8 = l7;
+
+                  <_ as From<_rt::Vec<_>>>::from(_rt::Vec::from_raw_parts(l6.cast(), len8, len8))
+                };
+                Ok(e)
+              }
+              1 => {
+                let e = {
+                  let l9 = i32::from(*ptr3.add(::core::mem::size_of::<*const u8>()).cast::<u8>());
+                  use super::super::super::wacli::cli::types::PipeError as V19;
+                  let v19 = match l9 {
+                    0 => {
+                      let e19 = {
+                        let l10 = *ptr3.add(2*::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+                        let l11 = *ptr3.add(3*::core::mem::size_of::<*const u8>()).cast::<usize>();
+                        let len12 = l11;
+                        let bytes12 = _rt::Vec::from_raw_parts(l10.cast(), len12, len12);
+
+                        _rt::string_lift(bytes12)
+                      };
+                      V19::ParseError(e19)
+                    }
+                    1 => {
+                      let e19 = {
+                        let l13 = *ptr3.add(2*::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+                        let l14 = *ptr3.add(3*::core::mem::size_of::<*const u8>()).cast::<usize>();
+                        let len15 = l14;
+                        let bytes15 = _rt::Vec::from_raw_parts(l13.cast(), len15, len15);
+
+                        _rt::string_lift(bytes15)
+                      };
+                      V19::TransformError(e19)
+                    }
+                    n => {
+                      debug_assert_eq!(n, 2, "invalid enum discriminant");
+                      let e19 = {
+                        let l16 = *ptr3.add(2*::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+                        let l17 = *ptr3.add(3*::core::mem::size_of::<*const u8>()).cast::<usize>();
+                        let len18 = l17;
+                        let bytes18 = _rt::Vec::from_raw_parts(l16.cast(), len18, len18);
+
+                        _rt::string_lift(bytes18)
+                      };
+                      V19::InvalidOption(e19)
+                    }
+                  };
+
+                  v19
+                };
+                Err(e)
+              }
+              _ => _rt::invalid_enum_discriminant(),
+            };
+            result20
+          }
         }
       }
 
@@ -833,11 +1214,107 @@ mod _rt {
     }
   }
   
+
+  use core::fmt;
+  use core::marker;
+  use core::sync::atomic::{AtomicU32, Ordering::Relaxed};
+
+  /// A type which represents a component model resource, either imported or
+  /// exported into this component.
+  ///
+  /// This is a low-level wrapper which handles the lifetime of the resource
+  /// (namely this has a destructor). The `T` provided defines the component model
+  /// intrinsics that this wrapper uses.
+  ///
+  /// One of the chief purposes of this type is to provide `Deref` implementations
+  /// to access the underlying data when it is owned.
+  ///
+  /// This type is primarily used in generated code for exported and imported
+  /// resources.
+  #[repr(transparent)]
+  pub struct Resource<T: WasmResource> {
+    // NB: This would ideally be `u32` but it is not. The fact that this has
+    // interior mutability is not exposed in the API of this type except for the
+    // `take_handle` method which is supposed to in theory be private.
+    //
+    // This represents, almost all the time, a valid handle value. When it's
+    // invalid it's stored as `u32::MAX`.
+    handle: AtomicU32,
+    _marker: marker::PhantomData<T>,
+  }
+
+  /// A trait which all wasm resources implement, namely providing the ability to
+  /// drop a resource.
+  ///
+  /// This generally is implemented by generated code, not user-facing code.
+  #[allow(clippy::missing_safety_doc)]
+  pub unsafe trait WasmResource {
+    /// Invokes the `[resource-drop]...` intrinsic.
+    unsafe fn drop(handle: u32);
+  }
+
+  impl<T: WasmResource> Resource<T> {
+    #[doc(hidden)]
+    pub unsafe fn from_handle(handle: u32) -> Self {
+      debug_assert!(handle != 0 && handle != u32::MAX);
+      Self {
+        handle: AtomicU32::new(handle),
+        _marker: marker::PhantomData,
+      }
+    }
+
+    /// Takes ownership of the handle owned by `resource`.
+    ///
+    /// Note that this ideally would be `into_handle` taking `Resource<T>` by
+    /// ownership. The code generator does not enable that in all situations,
+    /// unfortunately, so this is provided instead.
+    ///
+    /// Also note that `take_handle` is in theory only ever called on values
+    /// owned by a generated function. For example a generated function might
+    /// take `Resource<T>` as an argument but then call `take_handle` on a
+    /// reference to that argument. In that sense the dynamic nature of
+    /// `take_handle` should only be exposed internally to generated code, not
+    /// to user code.
+    #[doc(hidden)]
+    pub fn take_handle(resource: &Resource<T>) -> u32 {
+      resource.handle.swap(u32::MAX, Relaxed)
+    }
+
+    #[doc(hidden)]
+    pub fn handle(resource: &Resource<T>) -> u32 {
+      resource.handle.load(Relaxed)
+    }
+  }
+
+  impl<T: WasmResource> fmt::Debug for Resource<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+      f.debug_struct("Resource")
+      .field("handle", &self.handle)
+      .finish()
+    }
+  }
+
+  impl<T: WasmResource> Drop for Resource<T> {
+    fn drop(&mut self) {
+      unsafe {
+        match self.handle.load(Relaxed) {
+          // If this handle was "taken" then don't do anything in the
+          // destructor.
+          u32::MAX => {}
+
+          // ... but otherwise do actually destroy it with the imported
+          // component model intrinsic as defined through `T`.
+          other => T::drop(other),
+        }
+      }
+    }
+  }
+  pub use alloc_crate::alloc;
+
   #[cfg(target_arch = "wasm32")]
   pub fn run_ctors_once() {
     wit_bindgen::rt::run_ctors_once();
   }
-  pub use alloc_crate::alloc;
   extern crate alloc as alloc_crate;
 }
 
@@ -873,9 +1350,9 @@ pub(crate) use __export_plugin_impl as export;
 #[unsafe(link_section = "component-type:wit-bindgen:0.52.0:wacli:cli@1.0.0:plugin:encoded world")]
 #[doc(hidden)]
 #[allow(clippy::octal_escapes)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 967] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xca\x06\x01A\x02\x01\
-A\x0f\x01B\x07\x01ps\x01@\0\0\0\x04\0\x04args\x01\x01\x01o\x02ss\x01p\x02\x01@\0\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 1449] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xac\x0a\x01A\x02\x01\
+A\x14\x01B\x07\x01ps\x01@\0\0\0\x04\0\x04args\x01\x01\x01o\x02ss\x01p\x02\x01@\0\
 \0\x03\x04\0\x03env\x01\x04\x03\0\x18wacli:cli/host-env@1.0.0\x05\0\x01B\x07\x01\
 p}\x01@\x01\x05bytes\0\x01\0\x04\0\x0cstdout-write\x01\x01\x04\0\x0cstderr-write\
 \x01\x01\x01@\0\x01\0\x04\0\x0cstdout-flush\x01\x02\x04\0\x0cstderr-flush\x01\x02\
@@ -883,20 +1360,31 @@ p}\x01@\x01\x05bytes\0\x01\0\x04\0\x0cstdout-write\x01\x01\x04\0\x0cstderr-write
 \x04paths\0\x01\x04\0\x09read-file\x01\x02\x01j\0\x01s\x01@\x02\x04paths\x08cont\
 ents\0\0\x03\x04\0\x0awrite-file\x01\x04\x01ps\x01j\x01\x05\x01s\x01@\x01\x04pat\
 hs\0\x06\x04\0\x08list-dir\x01\x07\x03\0\x17wacli:cli/host-fs@1.0.0\x05\x02\x01B\
-\x09\x01y\x04\0\x09exit-code\x03\0\0\x01ps\x01r\x08\x04names\x07summarys\x05usag\
+\x0f\x01y\x04\0\x09exit-code\x03\0\0\x01ps\x01r\x08\x04names\x07summarys\x05usag\
 es\x07aliases\x02\x07versions\x06hidden\x7f\x0bdescriptions\x08examples\x02\x04\0\
 \x0ccommand-meta\x03\0\x03\x01q\x04\x0funknown-command\x01s\0\x0cinvalid-args\x01\
 s\0\x06failed\x01s\0\x02io\x01s\0\x04\0\x0dcommand-error\x03\0\x05\x01j\x01\x01\x01\
-\x06\x04\0\x0ecommand-result\x03\0\x07\x03\0\x15wacli:cli/types@1.0.0\x05\x03\x02\
-\x03\0\x03\x09exit-code\x01B\x04\x02\x03\x02\x01\x04\x04\0\x09exit-code\x03\0\0\x01\
-@\x01\x04code\x01\x01\0\x04\0\x04exit\x01\x02\x03\0\x1cwacli:cli/host-process@1.\
-0.0\x05\x05\x02\x03\0\x03\x0ccommand-meta\x02\x03\0\x03\x0ecommand-result\x01B\x09\
-\x02\x03\x02\x01\x06\x04\0\x0ccommand-meta\x03\0\0\x02\x03\x02\x01\x07\x04\0\x0e\
-command-result\x03\0\x02\x01@\0\0\x01\x04\0\x04meta\x01\x04\x01ps\x01@\x01\x04ar\
-gv\x05\0\x03\x04\0\x03run\x01\x06\x04\0\x17wacli:cli/command@1.0.0\x05\x08\x04\0\
-\x16wacli:cli/plugin@1.0.0\x04\0\x0b\x0c\x01\0\x06plugin\x03\0\0\0G\x09producers\
-\x01\x0cprocessed-by\x02\x0dwit-component\x070.244.0\x10wit-bindgen-rust\x060.52\
-.0";
+\x06\x04\0\x0ecommand-result\x03\0\x07\x01r\x05\x04names\x07summarys\x0binput-ty\
+pes\x02\x0boutput-types\x07versions\x04\0\x09pipe-meta\x03\0\x09\x01q\x03\x0bpar\
+se-error\x01s\0\x0ftransform-error\x01s\0\x0einvalid-option\x01s\0\x04\0\x0apipe\
+-error\x03\0\x0b\x01r\x03\x04names\x07summarys\x04paths\x04\0\x09pipe-info\x03\0\
+\x0d\x03\0\x15wacli:cli/types@1.0.0\x05\x03\x02\x03\0\x03\x09exit-code\x01B\x04\x02\
+\x03\x02\x01\x04\x04\0\x09exit-code\x03\0\0\x01@\x01\x04code\x01\x01\0\x04\0\x04\
+exit\x01\x02\x03\0\x1cwacli:cli/host-process@1.0.0\x05\x05\x02\x03\0\x03\x09pipe\
+-meta\x02\x03\0\x03\x0apipe-error\x02\x03\0\x03\x09pipe-info\x01B\x16\x02\x03\x02\
+\x01\x06\x04\0\x09pipe-meta\x03\0\0\x02\x03\x02\x01\x07\x04\0\x0apipe-error\x03\0\
+\x02\x02\x03\x02\x01\x08\x04\0\x09pipe-info\x03\0\x04\x04\0\x04pipe\x03\x01\x01h\
+\x06\x01@\x01\x04self\x07\0\x01\x04\0\x11[method]pipe.meta\x01\x08\x01p}\x01ps\x01\
+j\x01\x09\x01\x03\x01@\x03\x04self\x07\x05input\x09\x07options\x0a\0\x0b\x04\0\x14\
+[method]pipe.process\x01\x0c\x01p\x05\x01@\0\0\x0d\x04\0\x0alist-pipes\x01\x0e\x01\
+i\x06\x01j\x01\x0f\x01s\x01@\x01\x04names\0\x10\x04\0\x09load-pipe\x01\x11\x03\0\
+\x1awacli:cli/host-pipes@1.0.0\x05\x09\x02\x03\0\x03\x0ccommand-meta\x02\x03\0\x03\
+\x0ecommand-result\x01B\x09\x02\x03\x02\x01\x0a\x04\0\x0ccommand-meta\x03\0\0\x02\
+\x03\x02\x01\x0b\x04\0\x0ecommand-result\x03\0\x02\x01@\0\0\x01\x04\0\x04meta\x01\
+\x04\x01ps\x01@\x01\x04argv\x05\0\x03\x04\0\x03run\x01\x06\x04\0\x17wacli:cli/co\
+mmand@1.0.0\x05\x0c\x04\0\x16wacli:cli/plugin@1.0.0\x04\0\x0b\x0c\x01\0\x06plugi\
+n\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.244.0\x10\
+wit-bindgen-rust\x060.52.0";
 
 #[inline(never)]
 #[doc(hidden)]

@@ -24,21 +24,43 @@
 #[doc(hidden)]
 pub mod bindings;
 
-pub use bindings::wacli::cli::{host_env, host_fs, host_io, host_process};
-pub use bindings::wacli::cli::types::{CommandError, CommandMeta, CommandResult};
+pub use bindings::wacli::cli::{host_env, host_fs, host_io, host_pipes, host_process};
+pub use bindings::wacli::cli::types::{
+    CommandError, CommandMeta, CommandResult, PipeError, PipeInfo, PipeMeta,
+};
+
+#[doc(hidden)]
+#[allow(dead_code)]
+#[used]
+static __WACLI_FORCE_HOST_IMPORTS: (
+    fn() -> Vec<String>,
+    fn() -> Vec<(String, String)>,
+    fn(&[u8]),
+    fn(&str) -> Result<Vec<u8>, String>,
+    fn(u32),
+    fn() -> Vec<PipeInfo>,
+) = (
+    host_env::args,
+    host_env::env,
+    host_io::stdout_write,
+    host_fs::read_file,
+    host_process::exit,
+    host_pipes::list_pipes,
+);
 
 /// Convenience facade over the split host interfaces.
 pub mod host {
     pub use super::host_env::{args, env};
     pub use super::host_fs::{list_dir, read_file, write_file};
     pub use super::host_io::{stderr_flush, stderr_write, stdout_flush, stdout_write};
+    pub use super::host_pipes::{list_pipes, load_pipe, Pipe};
     pub use super::host_process::exit;
 }
 
 /// Common imports for wacli command implementations.
 pub mod prelude {
     pub use super::{
-        args, fs, io, meta, Command, CommandError, CommandMeta, CommandResult, Context,
+        args, fs, io, meta, pipes, Command, CommandError, CommandMeta, CommandResult, Context,
     };
 }
 
@@ -455,5 +477,21 @@ pub mod fs {
     /// List entries in a directory.
     pub fn list_dir(path: impl AsRef<str>) -> Result<Vec<String>, String> {
         host::list_dir(path.as_ref())
+    }
+}
+
+/// Pipe loader helpers via the host-pipes interface.
+pub mod pipes {
+    use super::host_pipes;
+    use super::PipeInfo;
+
+    /// List available pipes.
+    pub fn list() -> Vec<PipeInfo> {
+        host_pipes::list_pipes()
+    }
+
+    /// Load a pipe by name.
+    pub fn load(name: impl AsRef<str>) -> Result<host_pipes::Pipe, String> {
+        host_pipes::load_pipe(name.as_ref())
     }
 }

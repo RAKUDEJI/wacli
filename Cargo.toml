@@ -29,6 +29,8 @@ wat = "1.244"
 wit-bindgen = { version = "0.52", default-features = false, features = ["realloc", "async"] }
 wit-component = "0.244"
 wit-parser = "0.244"
+wasmtime = { version = "41", features = ["component-model"] }
+wasmtime-wasi = { version = "41" }
 
 # Utilities
 indexmap = "2.2"

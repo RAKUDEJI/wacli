@@ -87,10 +87,6 @@ fn generate_dynamic_wit(commands: &[CommandInfo]) -> String {
     }
 
     wit.push_str("world dynamic-registry {\n");
-    wit.push_str("  import host-env;\n");
-    wit.push_str("  import host-io;\n");
-    wit.push_str("  import host-fs;\n");
-    wit.push_str("  import host-process;\n");
 
     for cmd in commands {
         wit.push_str(&format!("  import {}-command;\n", cmd.name));
