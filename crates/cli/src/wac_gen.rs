@@ -12,13 +12,11 @@ use crate::component_scan::CommandInfo;
 /// 5. Exports the CLI entry point (wasi:cli/run)
 pub fn generate_wac(package_name: &str, commands: &[CommandInfo]) -> String {
     let mut wac = String::new();
-    let types_import = "\"wacli:cli/types@1.0.0\"";
     let host_env_import = "\"wacli:cli/host-env@1.0.0\"";
     let host_io_import = "\"wacli:cli/host-io@1.0.0\"";
-    let host_fs_import = "\"wacli:cli/host-fs@1.0.0\"";
     let host_process_import = "\"wacli:cli/host-process@1.0.0\"";
-    let host_pipes_import = "\"wacli:cli/host-pipes@1.0.0\"";
     let registry_import = "\"wacli:cli/registry@1.0.0\"";
+    let types_import = "\"wacli:cli/types@1.0.0\"";
 
     // Package declaration
     wac.push_str(&format!("package {};\n\n", package_name));
@@ -33,8 +31,14 @@ pub fn generate_wac(package_name: &str, commands: &[CommandInfo]) -> String {
         for cmd in commands {
             let var_name = cmd.var_name();
             let pkg_name = cmd.package_name();
+            let cmd_types_import = cmd.import_name("types");
+            let cmd_host_env_import = cmd.import_name("host-env");
+            let cmd_host_io_import = cmd.import_name("host-io");
+            let cmd_host_fs_import = cmd.import_name("host-fs");
+            let cmd_host_process_import = cmd.import_name("host-process");
+            let cmd_host_pipes_import = cmd.import_name("host-pipes");
             wac.push_str(&format!(
-                "let {var_name} = new {pkg_name} {{\n  {types_import}: host.types,\n  {host_env_import}: host.host-env,\n  {host_io_import}: host.host-io,\n  {host_fs_import}: host.host-fs,\n  {host_process_import}: host.host-process,\n  {host_pipes_import}: host.host-pipes,\n  ...\n}};\n\n",
+                "let {var_name} = new {pkg_name} {{\n  \"{cmd_types_import}\": host.types,\n  \"{cmd_host_env_import}\": host.host-env,\n  \"{cmd_host_io_import}\": host.host-io,\n  \"{cmd_host_fs_import}\": host.host-fs,\n  \"{cmd_host_process_import}\": host.host-process,\n  \"{cmd_host_pipes_import}\": host.host-pipes,\n  ...\n}};\n\n",
             ));
         }
     }
@@ -90,10 +94,12 @@ mod tests {
             CommandInfo {
                 name: "greet".to_string(),
                 path: PathBuf::from("commands/greet.component.wasm"),
+                imports: Vec::new(),
             },
             CommandInfo {
                 name: "hello-world".to_string(),
                 path: PathBuf::from("commands/hello-world.component.wasm"),
+                imports: Vec::new(),
             },
         ];
 
@@ -112,6 +118,7 @@ mod tests {
         let cmd = CommandInfo {
             name: "my-command".to_string(),
             path: PathBuf::from("test.wasm"),
+            imports: Vec::new(),
         };
         assert_eq!(cmd.var_name(), "my_command");
     }

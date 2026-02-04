@@ -12,6 +12,8 @@ pub struct CommandInfo {
     pub name: String,
     /// Path to the component file.
     pub path: PathBuf,
+    /// Top-level component import names.
+    pub imports: Vec<String>,
 }
 
 impl CommandInfo {
@@ -23,6 +25,23 @@ impl CommandInfo {
     /// Returns the package name for WAC composition.
     pub fn package_name(&self) -> String {
         format!("wacli:cmd-{}", self.name)
+    }
+
+    /// Resolve the preferred import name for a given base (e.g. "host-env").
+    /// Falls back to the fully qualified name if no match is found.
+    pub fn import_name(&self, base: &str) -> String {
+        let fqn = format!("wacli:cli/{base}@1.0.0");
+        if self.imports.iter().any(|i| i == &fqn) {
+            return fqn;
+        }
+        let pkg = format!("wacli:cli/{base}");
+        if self.imports.iter().any(|i| i == &pkg) {
+            return pkg;
+        }
+        if self.imports.iter().any(|i| i == base) {
+            return base.to_string();
+        }
+        fqn
     }
 }
 
@@ -54,7 +73,7 @@ fn is_valid_command_name(name: &str) -> bool {
 /// Result of analyzing a WASM binary.
 enum WasmKind {
     /// A WebAssembly Component with its exports.
-    Component(Vec<String>),
+    Component { exports: Vec<String>, imports: Vec<String> },
     /// A core WebAssembly module (not a component).
     CoreModule,
 }
@@ -64,6 +83,7 @@ fn analyze_wasm(wasm_bytes: &[u8]) -> Result<WasmKind> {
     let parser = Parser::new(0);
     let mut is_component = false;
     let mut exports = Vec::new();
+    let mut imports = Vec::new();
     let mut depth = 0;
 
     for payload in parser.parse_all(wasm_bytes) {
@@ -88,37 +108,28 @@ fn analyze_wasm(wasm_bytes: &[u8]) -> Result<WasmKind> {
                     exports.push(export.name.0.to_string());
                 }
             }
+            Payload::ComponentImportSection(reader) if depth == 0 => {
+                for import in reader {
+                    let import = import.context("failed to read component import")?;
+                    imports.push(import.name.0.to_string());
+                }
+            }
             _ => {}
         }
     }
 
     if is_component {
-        Ok(WasmKind::Component(exports))
+        Ok(WasmKind::Component { exports, imports })
     } else {
         Ok(WasmKind::CoreModule)
     }
 }
 
 /// Check if a component exports the wacli:cli/command interface.
-fn exports_command_interface(wasm_bytes: &[u8], path: &Path) -> Result<bool> {
-    match analyze_wasm(wasm_bytes)? {
-        WasmKind::CoreModule => {
-            bail!(
-                "'{}' is a core WebAssembly module, not a component.\n\
-                 Hint: run `wasm-tools component new {} -o {}`",
-                path.display(),
-                path.display(),
-                path.display()
-            );
-        }
-        WasmKind::Component(exports) => {
-            // The export name should be "wacli:cli/command@1.0.0" or just "command"
-            // depending on how the component was built
-            Ok(exports.iter().any(|e| {
-                e == "wacli:cli/command@1.0.0" || e == "wacli:cli/command" || e == "command"
-            }))
-        }
-    }
+fn exports_command_interface(exports: &[String]) -> bool {
+    exports.iter().any(|e| {
+        e == "wacli:cli/command@1.0.0" || e == "wacli:cli/command" || e == "command"
+    })
 }
 
 /// Scan the commands directory and return validated command info.
@@ -177,14 +188,27 @@ pub fn scan_commands(commands_dir: &Path) -> Result<Vec<CommandInfo>> {
         let wasm_bytes = fs::read(&path)
             .with_context(|| format!("failed to read component: {}", path.display()))?;
 
-        if !exports_command_interface(&wasm_bytes, &path)? {
+        let (exports, imports) = match analyze_wasm(&wasm_bytes)? {
+            WasmKind::CoreModule => {
+                bail!(
+                    "'{}' is a core WebAssembly module, not a component.\n\
+                     Hint: run `wasm-tools component new {} -o {}`",
+                    path.display(),
+                    path.display(),
+                    path.display()
+                );
+            }
+            WasmKind::Component { exports, imports } => (exports, imports),
+        };
+
+        if !exports_command_interface(&exports) {
             bail!(
                 "'{}' does not export wacli:cli/command interface",
                 path.display()
             );
         }
 
-        commands.push(CommandInfo { name, path });
+        commands.push(CommandInfo { name, path, imports });
     }
 
     // Sort by name for deterministic output
@@ -245,6 +269,7 @@ mod tests {
         let cmd = CommandInfo {
             name: "my-command".to_string(),
             path: PathBuf::from("test.wasm"),
+            imports: Vec::new(),
         };
         assert_eq!(cmd.var_name(), "my_command");
     }
@@ -254,6 +279,7 @@ mod tests {
         let cmd = CommandInfo {
             name: "greet".to_string(),
             path: PathBuf::from("test.wasm"),
+            imports: Vec::new(),
         };
         assert_eq!(cmd.package_name(), "wacli:cmd-greet");
     }
