@@ -29,6 +29,18 @@ cd wacli
 cargo build --release
 ```
 
+### Features
+
+| Feature | Default | Description |
+|---------|---------|-------------|
+| `runtime` | ✓ | Enables `wacli run` command (requires wasmtime) |
+
+To build without runtime support (smaller binary, faster compile):
+
+```bash
+cargo install wacli --no-default-features
+```
+
 ## Usage
 
 ### Initialize a new project

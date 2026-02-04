@@ -12,6 +12,13 @@ use crate::component_scan::CommandInfo;
 /// 5. Exports the CLI entry point (wasi:cli/run)
 pub fn generate_wac(package_name: &str, commands: &[CommandInfo]) -> String {
     let mut wac = String::new();
+    let types_import = "\"wacli:cli/types@1.0.0\"";
+    let host_env_import = "\"wacli:cli/host-env@1.0.0\"";
+    let host_io_import = "\"wacli:cli/host-io@1.0.0\"";
+    let host_fs_import = "\"wacli:cli/host-fs@1.0.0\"";
+    let host_process_import = "\"wacli:cli/host-process@1.0.0\"";
+    let host_pipes_import = "\"wacli:cli/host-pipes@1.0.0\"";
+    let registry_import = "\"wacli:cli/registry@1.0.0\"";
 
     // Package declaration
     wac.push_str(&format!("package {};\n\n", package_name));
@@ -27,7 +34,7 @@ pub fn generate_wac(package_name: &str, commands: &[CommandInfo]) -> String {
             let var_name = cmd.var_name();
             let pkg_name = cmd.package_name();
             wac.push_str(&format!(
-                "let {var_name} = new {pkg_name} {{\n  types: host.types,\n  host-env: host.host-env,\n  host-io: host.host-io,\n  host-fs: host.host-fs,\n  host-process: host.host-process,\n  host-pipes: host.host-pipes,\n  ...\n}};\n\n",
+                "let {var_name} = new {pkg_name} {{\n  {types_import}: host.types,\n  {host_env_import}: host.host-env,\n  {host_io_import}: host.host-io,\n  {host_fs_import}: host.host-fs,\n  {host_process_import}: host.host-process,\n  {host_pipes_import}: host.host-pipes,\n  ...\n}};\n\n",
             ));
         }
     }
@@ -35,7 +42,7 @@ pub fn generate_wac(package_name: &str, commands: &[CommandInfo]) -> String {
     // Instantiate registry with all command exports
     wac.push_str("// Registry (command dispatch)\n");
     wac.push_str("let registry = new wacli:registry {\n");
-    wac.push_str("  types: host.types");
+    wac.push_str(&format!("  {types_import}: host.types"));
     for cmd in commands {
         let var_name = cmd.var_name();
         wac.push_str(&format!(
@@ -48,11 +55,11 @@ pub fn generate_wac(package_name: &str, commands: &[CommandInfo]) -> String {
     // Instantiate core
     wac.push_str("// Core (CLI router)\n");
     wac.push_str("let core = new wacli:core {\n");
-    wac.push_str("  types: host.types,\n");
-    wac.push_str("  host-env: host.host-env,\n");
-    wac.push_str("  host-io: host.host-io,\n");
-    wac.push_str("  host-process: host.host-process,\n");
-    wac.push_str("  registry: registry.registry\n");
+    wac.push_str(&format!("  {types_import}: host.types,\n"));
+    wac.push_str(&format!("  {host_env_import}: host.host-env,\n"));
+    wac.push_str(&format!("  {host_io_import}: host.host-io,\n"));
+    wac.push_str(&format!("  {host_process_import}: host.host-process,\n"));
+    wac.push_str(&format!("  {registry_import}: registry.registry\n"));
     wac.push_str("};\n\n");
 
     // Export run
