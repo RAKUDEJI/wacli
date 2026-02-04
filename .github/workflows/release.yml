@@ -36,10 +36,6 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
-      - uses: mozilla-actions/sccache-action@v0.0.5
-      - name: Enable sccache
-        run: echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
-
       - name: Cache cargo
         uses: actions/cache@v4
         with:
@@ -61,7 +57,6 @@ jobs:
         run: cargo build --release -p wacli --target ${{ matrix.target }}
         env:
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
-          RUSTC_WRAPPER: sccache
 
       - name: Rename binary (Unix)
         if: runner.os != 'Windows'
@@ -87,10 +82,6 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
 
-      - uses: mozilla-actions/sccache-action@v0.0.5
-      - name: Enable sccache
-        run: echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
-
       - name: Cache cargo
         uses: actions/cache@v4
         with:
@@ -107,8 +98,6 @@ jobs:
 
       - name: Build components
         run: bash scripts/build_components.sh
-        env:
-          RUSTC_WRAPPER: sccache
 
       - name: Upload components
         uses: actions/upload-artifact@v4
@@ -136,7 +125,27 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Check wacli-cdk version matches tag
+        id: cdk
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          python - <<'PY'
+          import os, tomllib
+          with open("crates/wacli-cdk/Cargo.toml", "rb") as f:
+              data = tomllib.load(f)
+          version = data["package"]["version"]
+          tag = os.environ["TAG"]
+          publish = "true" if tag == f"v{version}" else "false"
+          print(f"publish={publish}")
+          print(f"version={version}")
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+              out.write(f"publish={publish}\\n")
+              out.write(f"version={version}\\n")
+          PY
+
       - name: Publish wacli-cdk to crates.io
+        if: steps.cdk.outputs.publish == 'true'
         run: cargo publish -p wacli-cdk
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
@@ -161,7 +170,27 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Check plugin-loader version matches tag
+        id: plugin_loader
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          python - <<'PY'
+          import os, tomllib
+          with open("crates/plugin-loader/Cargo.toml", "rb") as f:
+              data = tomllib.load(f)
+          version = data["package"]["version"]
+          tag = os.environ["TAG"]
+          publish = "true" if tag == f"v{version}" else "false"
+          print(f"publish={publish}")
+          print(f"version={version}")
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+              out.write(f"publish={publish}\\n")
+              out.write(f"version={version}\\n")
+          PY
+
       - name: Publish plugin-loader to crates.io
+        if: steps.plugin_loader.outputs.publish == 'true'
         run: cargo publish -p plugin-loader
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
