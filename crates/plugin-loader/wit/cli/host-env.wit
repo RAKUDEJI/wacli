@@ -1,0 +1,6 @@
+package wacli:cli@1.0.0;
+
+interface host-env {
+  args: func() -> list<string>;
+  env: func() -> list<tuple<string, string>>;
+}

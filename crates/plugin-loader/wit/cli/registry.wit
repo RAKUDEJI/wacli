@@ -1,0 +1,12 @@
+package wacli:cli@1.0.0;
+
+interface registry {
+  use types.{command-meta, command-result};
+
+  list-commands: func() -> list<command-meta>;
+  run: func(name: string, argv: list<string>) -> command-result;
+}
+
+world registry-provider {
+  export registry;
+}

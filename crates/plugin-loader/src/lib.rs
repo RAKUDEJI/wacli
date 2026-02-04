@@ -9,7 +9,7 @@ use wasmtime_wasi::p2::bindings::sync::Command;
 
 mod pipe_plugin_bindings {
     wasmtime::component::bindgen!({
-        path: "../../wit/cli",
+        path: "wit/cli",
         world: "pipe-plugin",
     });
 }
@@ -25,7 +25,7 @@ pub struct LoadedPipe {
 
 mod pipe_runtime_bindings {
     wasmtime::component::bindgen!({
-        path: "../../wit/cli",
+        path: "wit/cli",
         world: "pipe-runtime-host",
         with: {
             "wacli:cli/pipe-runtime.pipe": crate::LoadedPipe,
