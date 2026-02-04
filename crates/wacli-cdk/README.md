@@ -32,7 +32,7 @@ edition = "2024"
 crate-type = ["cdylib"]
 
 [dependencies]
-wacli-cdk = "0.0.22"
+wacli-cdk = "0.0.24"
 ```
 
 ## Quick Start
@@ -65,14 +65,28 @@ wacli_cdk::export!(Hello);
 
 ## Building
 
-```bash
-# Build the WebAssembly module
-cargo build --target wasm32-unknown-unknown --release
+### Step 1: Build the WebAssembly module
 
-# Convert to a WebAssembly Component
+```bash
+cargo build --target wasm32-unknown-unknown --release
+```
+
+This produces a core WebAssembly module at `target/wasm32-unknown-unknown/release/my_command.wasm`.
+
+### Step 2: Convert to a WebAssembly Component
+
+The core module must be converted to a Component using `wasm-tools`:
+
+```bash
 wasm-tools component new \
     target/wasm32-unknown-unknown/release/my_command.wasm \
     -o my-command.component.wasm
+```
+
+**Important:** Without this step, wacli will reject the module with an error like:
+```
+Error: found core module (version 0x1), expected component (version 0xd)
+Hint: run `wasm-tools component new your.wasm -o your.component.wasm`
 ```
 
 ## API Reference
@@ -159,21 +173,48 @@ io::eprintln("something went wrong");
 
 ### File System Helpers
 
+#### Reading files
+
 ```rust
 use wacli_cdk::fs;
 
-fn run(argv: Vec<String>) -> CommandResult {
-    let entries = fs::list_dir(".")?;
-    for name in entries {
-        wacli_cdk::io::println(name);
-    }
+// Read entire file as bytes
+let bytes = fs::read("config.json")?;
 
-    let bytes = fs::read("input.txt")?;
-    fs::write("copy.txt", &bytes)?;
+// Convert to string
+let text = String::from_utf8(bytes)
+    .map_err(|e| CommandError::Failed(e.to_string()))?;
+```
 
-    Ok(0)
+#### Writing files
+
+```rust
+use wacli_cdk::fs;
+
+// Write string data
+fs::write("output.txt", "Hello, World!")?;
+
+// Write binary data
+fs::write("data.bin", &[0x00, 0x01, 0x02])?;
+
+// Copy a file
+let contents = fs::read("source.txt")?;
+fs::write("dest.txt", &contents)?;
+```
+
+#### Listing directories
+
+```rust
+use wacli_cdk::fs;
+
+let entries = fs::list_dir(".")?;
+for name in entries {
+    wacli_cdk::io::println(&name);
 }
 ```
+
+**Note:** File paths are relative to the preopened directories provided at runtime.
+See [Running with File Access](#running-with-file-access) for details.
 
 ### Metadata Builder
 
@@ -215,7 +256,7 @@ fn run(argv: Vec<String>) -> CommandResult {
 ### WASI Capabilities
 
 Plugins do not import WASI directly. All host interactions should go through the
-`wacli:cli/host` interface.
+`wacli:cli/host-*` interfaces (`host-env`, `host-io`, `host-fs`, `host-process`).
 
 ### Prelude
 
@@ -243,6 +284,28 @@ cd my-cli && wacli build
 # Run your command
 wasmtime run my-cli.component.wasm my-command --help
 ```
+
+## Running with File Access
+
+If your command uses `fs::read`, `fs::write`, or `fs::list_dir`, you must grant filesystem access when running with wasmtime:
+
+```bash
+# Grant access to current directory
+wasmtime run --dir . my-cli.component.wasm my-command input.txt
+
+# Grant access to a specific directory
+wasmtime run --dir /path/to/data my-cli.component.wasm my-command
+
+# Grant access to multiple directories
+wasmtime run --dir . --dir /tmp my-cli.component.wasm my-command
+```
+
+**Without `--dir`**, file operations will fail:
+```
+Error: failed to find a pre-opened file descriptor for "input.txt"
+```
+
+The `--dir` flag "preopens" a directory, making it accessible to the WebAssembly component. File paths in your code are relative to these preopened directories.
 
 ## Requirements
 

@@ -87,7 +87,10 @@ fn generate_dynamic_wit(commands: &[CommandInfo]) -> String {
     }
 
     wit.push_str("world dynamic-registry {\n");
-    wit.push_str("  import host;\n");
+    wit.push_str("  import host-env;\n");
+    wit.push_str("  import host-io;\n");
+    wit.push_str("  import host-fs;\n");
+    wit.push_str("  import host-process;\n");
 
     for cmd in commands {
         wit.push_str(&format!("  import {}-command;\n", cmd.name));
@@ -102,7 +105,13 @@ fn generate_dynamic_wit(commands: &[CommandInfo]) -> String {
 fn append_wit_base(dst: &mut String) {
     dst.push_str(wit::TYPES_WIT.trim_end());
     dst.push_str("\n\n");
-    append_without_package(dst, wit::HOST_WIT);
+    append_without_package(dst, wit::HOST_ENV_WIT);
+    dst.push_str("\n\n");
+    append_without_package(dst, wit::HOST_IO_WIT);
+    dst.push_str("\n\n");
+    append_without_package(dst, wit::HOST_FS_WIT);
+    dst.push_str("\n\n");
+    append_without_package(dst, wit::HOST_PROCESS_WIT);
     dst.push_str("\n\n");
     append_without_package(dst, REGISTRY_WIT_BASE);
     dst.push_str("\n\n");

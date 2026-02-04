@@ -3,13 +3,13 @@
 mod bindings;
 
 use bindings::export;
-use bindings::exports::wacli::cli::host;
+use bindings::exports::wacli::cli::{host_env, host_fs, host_io, host_process};
 use bindings::wasi;
 use wasi::filesystem::types::{Descriptor, DescriptorFlags, ErrorCode, OpenFlags, PathFlags};
 
 struct HostProvider;
 
-impl host::Guest for HostProvider {
+impl host_env::Guest for HostProvider {
     fn args() -> Vec<String> {
         wasi::cli::environment::get_arguments()
     }
@@ -17,7 +17,9 @@ impl host::Guest for HostProvider {
     fn env() -> Vec<(String, String)> {
         wasi::cli::environment::get_environment()
     }
+}
 
+impl host_io::Guest for HostProvider {
     fn stdout_write(bytes: Vec<u8>) {
         write_output(bytes, StreamTarget::Stdout);
     }
@@ -33,7 +35,9 @@ impl host::Guest for HostProvider {
     fn stderr_flush() {
         flush_output(StreamTarget::Stderr);
     }
+}
 
+impl host_fs::Guest for HostProvider {
     fn read_file(path: String) -> Result<Vec<u8>, String> {
         if path.is_empty() {
             return Err("path is empty".to_string());
@@ -110,7 +114,9 @@ impl host::Guest for HostProvider {
         }
         Ok(out)
     }
+}
 
+impl host_process::Guest for HostProvider {
     fn exit(code: u32) {
         if code == 0 {
             wasi::cli::exit::exit(Ok(()));

@@ -119,7 +119,7 @@ The `wacli build` command:
 
 ### Components
 
-- **host**: Bridges WASI interfaces to `wacli:cli/host`
+- **host**: Bridges WASI interfaces to `wacli:cli/host-*`
 - **core**: Routes commands and exports `wasi:cli/run`
 - **registry**: Manages command registration
 - **plugins**: Implement commands via `wacli:cli/command`
@@ -153,8 +153,8 @@ wacli_cdk::export!(Greet);
 
 ### Host Access
 
-Plugins do not import WASI directly. All host interactions go through
-`wacli:cli/host`.
+Plugins do not import WASI directly. All host interactions go through the
+`wacli:cli/host-*` interfaces (`host-env`, `host-io`, `host-fs`, `host-process`).
 
 ## Framework Components
 
@@ -170,7 +170,10 @@ Download from [Releases](https://github.com/RAKUDEJI/wacli/releases).
 | Interface | Description |
 |-----------|-------------|
 | `wacli:cli/types` | Shared types (`exit-code`, `command-meta`, `command-error`) |
-| `wacli:cli/host` | Host API for plugins (`args`, `stdout-write`, `exit`, filesystem I/O) |
+| `wacli:cli/host-env` | Host environment (`args`, `env`) |
+| `wacli:cli/host-io` | Host I/O (`stdout-write`, `stderr-write`, flush) |
+| `wacli:cli/host-fs` | Host filesystem (`read-file`, `write-file`, `list-dir`) |
+| `wacli:cli/host-process` | Host process (`exit`) |
 | `wacli:cli/command` | Plugin export interface (`meta`, `run`) |
 | `wacli:cli/registry` | Command management (`list-commands`, `run`) |
 
@@ -178,7 +181,10 @@ Download from [Releases](https://github.com/RAKUDEJI/wacli/releases).
 
 ```wit
 world plugin {
-  import host;
+  import host-env;
+  import host-io;
+  import host-fs;
+  import host-process;
   export command;
 }
 ```

@@ -5,6 +5,369 @@ pub mod wacli {
   pub mod cli {
 
     #[allow(dead_code, async_fn_in_trait, unused_imports, clippy::all)]
+    pub mod host_env {
+      #[used]
+      #[doc(hidden)]
+      static __FORCE_SECTION_REF: fn() =
+      super::super::super::__link_custom_section_describing_imports;
+      
+      use super::super::super::_rt;
+      #[allow(unused_unsafe, clippy::all)]
+      #[allow(async_fn_in_trait)]
+      pub fn args() -> _rt::Vec::<_rt::String>{
+        unsafe {
+
+          #[cfg_attr(target_pointer_width="64", repr(align(8)))]
+          #[cfg_attr(target_pointer_width="32", repr(align(4)))]
+          struct RetArea([::core::mem::MaybeUninit::<u8>; 2*::core::mem::size_of::<*const u8>()]);
+          let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2*::core::mem::size_of::<*const u8>()]);
+          let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+          #[cfg(target_arch = "wasm32")]
+          #[link(wasm_import_module = "wacli:cli/host-env@1.0.0")]
+          unsafe extern "C" {
+            #[link_name = "args"]
+            fn wit_import1(_: *mut u8, );
+          }
+
+          #[cfg(not(target_arch = "wasm32"))]
+          unsafe extern "C" fn wit_import1(_: *mut u8, ) { unreachable!() }
+          wit_import1(ptr0);
+          let l2 = *ptr0.add(0).cast::<*mut u8>();
+          let l3 = *ptr0.add(::core::mem::size_of::<*const u8>()).cast::<usize>();
+          let base7 = l2;
+          let len7 = l3;
+          let mut result7 = _rt::Vec::with_capacity(len7);
+          for i in 0..len7 {
+            let base = base7.add(i * (2*::core::mem::size_of::<*const u8>()));
+            let e7 = {
+              let l4 = *base.add(0).cast::<*mut u8>();
+              let l5 = *base.add(::core::mem::size_of::<*const u8>()).cast::<usize>();
+              let len6 = l5;
+              let bytes6 = _rt::Vec::from_raw_parts(l4.cast(), len6, len6);
+
+              _rt::string_lift(bytes6)
+            };
+            result7.push(e7);
+          }
+          _rt::cabi_dealloc(base7, len7 * (2*::core::mem::size_of::<*const u8>()), ::core::mem::size_of::<*const u8>());
+          let result8 = result7;
+          result8
+        }
+      }
+      #[allow(unused_unsafe, clippy::all)]
+      #[allow(async_fn_in_trait)]
+      pub fn env() -> _rt::Vec::<(_rt::String,_rt::String,)>{
+        unsafe {
+
+          #[cfg_attr(target_pointer_width="64", repr(align(8)))]
+          #[cfg_attr(target_pointer_width="32", repr(align(4)))]
+          struct RetArea([::core::mem::MaybeUninit::<u8>; 2*::core::mem::size_of::<*const u8>()]);
+          let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2*::core::mem::size_of::<*const u8>()]);
+          let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
+          #[cfg(target_arch = "wasm32")]
+          #[link(wasm_import_module = "wacli:cli/host-env@1.0.0")]
+          unsafe extern "C" {
+            #[link_name = "env"]
+            fn wit_import1(_: *mut u8, );
+          }
+
+          #[cfg(not(target_arch = "wasm32"))]
+          unsafe extern "C" fn wit_import1(_: *mut u8, ) { unreachable!() }
+          wit_import1(ptr0);
+          let l2 = *ptr0.add(0).cast::<*mut u8>();
+          let l3 = *ptr0.add(::core::mem::size_of::<*const u8>()).cast::<usize>();
+          let base10 = l2;
+          let len10 = l3;
+          let mut result10 = _rt::Vec::with_capacity(len10);
+          for i in 0..len10 {
+            let base = base10.add(i * (4*::core::mem::size_of::<*const u8>()));
+            let e10 = {
+              let l4 = *base.add(0).cast::<*mut u8>();
+              let l5 = *base.add(::core::mem::size_of::<*const u8>()).cast::<usize>();
+              let len6 = l5;
+              let bytes6 = _rt::Vec::from_raw_parts(l4.cast(), len6, len6);
+              let l7 = *base.add(2*::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+              let l8 = *base.add(3*::core::mem::size_of::<*const u8>()).cast::<usize>();
+              let len9 = l8;
+              let bytes9 = _rt::Vec::from_raw_parts(l7.cast(), len9, len9);
+
+              (_rt::string_lift(bytes6), _rt::string_lift(bytes9))
+            };
+            result10.push(e10);
+          }
+          _rt::cabi_dealloc(base10, len10 * (4*::core::mem::size_of::<*const u8>()), ::core::mem::size_of::<*const u8>());
+          let result11 = result10;
+          result11
+        }
+      }
+
+    }
+
+
+    #[allow(dead_code, async_fn_in_trait, unused_imports, clippy::all)]
+    pub mod host_io {
+      #[used]
+      #[doc(hidden)]
+      static __FORCE_SECTION_REF: fn() =
+      super::super::super::__link_custom_section_describing_imports;
+      
+      use super::super::super::_rt;
+      #[allow(unused_unsafe, clippy::all)]
+      #[allow(async_fn_in_trait)]
+      pub fn stdout_write(bytes: &[u8],) -> (){
+        unsafe {
+          let vec0 = bytes;
+          let ptr0 = vec0.as_ptr().cast::<u8>();
+          let len0 = vec0.len();
+
+          #[cfg(target_arch = "wasm32")]
+          #[link(wasm_import_module = "wacli:cli/host-io@1.0.0")]
+          unsafe extern "C" {
+            #[link_name = "stdout-write"]
+            fn wit_import1(_: *mut u8, _: usize, );
+          }
+
+          #[cfg(not(target_arch = "wasm32"))]
+          unsafe extern "C" fn wit_import1(_: *mut u8, _: usize, ) { unreachable!() }
+          wit_import1(ptr0.cast_mut(), len0);
+        }
+      }
+      #[allow(unused_unsafe, clippy::all)]
+      #[allow(async_fn_in_trait)]
+      pub fn stderr_write(bytes: &[u8],) -> (){
+        unsafe {
+          let vec0 = bytes;
+          let ptr0 = vec0.as_ptr().cast::<u8>();
+          let len0 = vec0.len();
+
+          #[cfg(target_arch = "wasm32")]
+          #[link(wasm_import_module = "wacli:cli/host-io@1.0.0")]
+          unsafe extern "C" {
+            #[link_name = "stderr-write"]
+            fn wit_import1(_: *mut u8, _: usize, );
+          }
+
+          #[cfg(not(target_arch = "wasm32"))]
+          unsafe extern "C" fn wit_import1(_: *mut u8, _: usize, ) { unreachable!() }
+          wit_import1(ptr0.cast_mut(), len0);
+        }
+      }
+      #[allow(unused_unsafe, clippy::all)]
+      #[allow(async_fn_in_trait)]
+      pub fn stdout_flush() -> (){
+        unsafe {
+
+          #[cfg(target_arch = "wasm32")]
+          #[link(wasm_import_module = "wacli:cli/host-io@1.0.0")]
+          unsafe extern "C" {
+            #[link_name = "stdout-flush"]
+            fn wit_import0();
+          }
+
+          #[cfg(not(target_arch = "wasm32"))]
+          unsafe extern "C" fn wit_import0() { unreachable!() }
+          wit_import0();
+        }
+      }
+      #[allow(unused_unsafe, clippy::all)]
+      #[allow(async_fn_in_trait)]
+      pub fn stderr_flush() -> (){
+        unsafe {
+
+          #[cfg(target_arch = "wasm32")]
+          #[link(wasm_import_module = "wacli:cli/host-io@1.0.0")]
+          unsafe extern "C" {
+            #[link_name = "stderr-flush"]
+            fn wit_import0();
+          }
+
+          #[cfg(not(target_arch = "wasm32"))]
+          unsafe extern "C" fn wit_import0() { unreachable!() }
+          wit_import0();
+        }
+      }
+
+    }
+
+
+    #[allow(dead_code, async_fn_in_trait, unused_imports, clippy::all)]
+    pub mod host_fs {
+      #[used]
+      #[doc(hidden)]
+      static __FORCE_SECTION_REF: fn() =
+      super::super::super::__link_custom_section_describing_imports;
+      
+      use super::super::super::_rt;
+      #[allow(unused_unsafe, clippy::all)]
+      #[allow(async_fn_in_trait)]
+      pub fn read_file(path: &str,) -> Result<_rt::Vec::<u8>,_rt::String>{
+        unsafe {
+
+          #[cfg_attr(target_pointer_width="64", repr(align(8)))]
+          #[cfg_attr(target_pointer_width="32", repr(align(4)))]
+          struct RetArea([::core::mem::MaybeUninit::<u8>; 3*::core::mem::size_of::<*const u8>()]);
+          let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 3*::core::mem::size_of::<*const u8>()]);
+          let vec0 = path;
+          let ptr0 = vec0.as_ptr().cast::<u8>();
+          let len0 = vec0.len();
+          let ptr1 = ret_area.0.as_mut_ptr().cast::<u8>();
+          #[cfg(target_arch = "wasm32")]
+          #[link(wasm_import_module = "wacli:cli/host-fs@1.0.0")]
+          unsafe extern "C" {
+            #[link_name = "read-file"]
+            fn wit_import2(_: *mut u8, _: usize, _: *mut u8, );
+          }
+
+          #[cfg(not(target_arch = "wasm32"))]
+          unsafe extern "C" fn wit_import2(_: *mut u8, _: usize, _: *mut u8, ) { unreachable!() }
+          wit_import2(ptr0.cast_mut(), len0, ptr1);
+          let l3 = i32::from(*ptr1.add(0).cast::<u8>());
+          let result10 = match l3 {
+            0 => {
+              let e = {
+                let l4 = *ptr1.add(::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+                let l5 = *ptr1.add(2*::core::mem::size_of::<*const u8>()).cast::<usize>();
+                let len6 = l5;
+
+                <_ as From<_rt::Vec<_>>>::from(_rt::Vec::from_raw_parts(l4.cast(), len6, len6))
+              };
+              Ok(e)
+            }
+            1 => {
+              let e = {
+                let l7 = *ptr1.add(::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+                let l8 = *ptr1.add(2*::core::mem::size_of::<*const u8>()).cast::<usize>();
+                let len9 = l8;
+                let bytes9 = _rt::Vec::from_raw_parts(l7.cast(), len9, len9);
+
+                _rt::string_lift(bytes9)
+              };
+              Err(e)
+            }
+            _ => _rt::invalid_enum_discriminant(),
+          };
+          result10
+        }
+      }
+      #[allow(unused_unsafe, clippy::all)]
+      #[allow(async_fn_in_trait)]
+      pub fn write_file(path: &str,contents: &[u8],) -> Result<(),_rt::String>{
+        unsafe {
+
+          #[cfg_attr(target_pointer_width="64", repr(align(8)))]
+          #[cfg_attr(target_pointer_width="32", repr(align(4)))]
+          struct RetArea([::core::mem::MaybeUninit::<u8>; 3*::core::mem::size_of::<*const u8>()]);
+          let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 3*::core::mem::size_of::<*const u8>()]);
+          let vec0 = path;
+          let ptr0 = vec0.as_ptr().cast::<u8>();
+          let len0 = vec0.len();
+          let vec1 = contents;
+          let ptr1 = vec1.as_ptr().cast::<u8>();
+          let len1 = vec1.len();
+          let ptr2 = ret_area.0.as_mut_ptr().cast::<u8>();
+          #[cfg(target_arch = "wasm32")]
+          #[link(wasm_import_module = "wacli:cli/host-fs@1.0.0")]
+          unsafe extern "C" {
+            #[link_name = "write-file"]
+            fn wit_import3(_: *mut u8, _: usize, _: *mut u8, _: usize, _: *mut u8, );
+          }
+
+          #[cfg(not(target_arch = "wasm32"))]
+          unsafe extern "C" fn wit_import3(_: *mut u8, _: usize, _: *mut u8, _: usize, _: *mut u8, ) { unreachable!() }
+          wit_import3(ptr0.cast_mut(), len0, ptr1.cast_mut(), len1, ptr2);
+          let l4 = i32::from(*ptr2.add(0).cast::<u8>());
+          let result8 = match l4 {
+            0 => {
+              let e = ();
+              Ok(e)
+            }
+            1 => {
+              let e = {
+                let l5 = *ptr2.add(::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+                let l6 = *ptr2.add(2*::core::mem::size_of::<*const u8>()).cast::<usize>();
+                let len7 = l6;
+                let bytes7 = _rt::Vec::from_raw_parts(l5.cast(), len7, len7);
+
+                _rt::string_lift(bytes7)
+              };
+              Err(e)
+            }
+            _ => _rt::invalid_enum_discriminant(),
+          };
+          result8
+        }
+      }
+      #[allow(unused_unsafe, clippy::all)]
+      #[allow(async_fn_in_trait)]
+      pub fn list_dir(path: &str,) -> Result<_rt::Vec::<_rt::String>,_rt::String>{
+        unsafe {
+
+          #[cfg_attr(target_pointer_width="64", repr(align(8)))]
+          #[cfg_attr(target_pointer_width="32", repr(align(4)))]
+          struct RetArea([::core::mem::MaybeUninit::<u8>; 3*::core::mem::size_of::<*const u8>()]);
+          let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 3*::core::mem::size_of::<*const u8>()]);
+          let vec0 = path;
+          let ptr0 = vec0.as_ptr().cast::<u8>();
+          let len0 = vec0.len();
+          let ptr1 = ret_area.0.as_mut_ptr().cast::<u8>();
+          #[cfg(target_arch = "wasm32")]
+          #[link(wasm_import_module = "wacli:cli/host-fs@1.0.0")]
+          unsafe extern "C" {
+            #[link_name = "list-dir"]
+            fn wit_import2(_: *mut u8, _: usize, _: *mut u8, );
+          }
+
+          #[cfg(not(target_arch = "wasm32"))]
+          unsafe extern "C" fn wit_import2(_: *mut u8, _: usize, _: *mut u8, ) { unreachable!() }
+          wit_import2(ptr0.cast_mut(), len0, ptr1);
+          let l3 = i32::from(*ptr1.add(0).cast::<u8>());
+          let result13 = match l3 {
+            0 => {
+              let e = {
+                let l4 = *ptr1.add(::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+                let l5 = *ptr1.add(2*::core::mem::size_of::<*const u8>()).cast::<usize>();
+                let base9 = l4;
+                let len9 = l5;
+                let mut result9 = _rt::Vec::with_capacity(len9);
+                for i in 0..len9 {
+                  let base = base9.add(i * (2*::core::mem::size_of::<*const u8>()));
+                  let e9 = {
+                    let l6 = *base.add(0).cast::<*mut u8>();
+                    let l7 = *base.add(::core::mem::size_of::<*const u8>()).cast::<usize>();
+                    let len8 = l7;
+                    let bytes8 = _rt::Vec::from_raw_parts(l6.cast(), len8, len8);
+
+                    _rt::string_lift(bytes8)
+                  };
+                  result9.push(e9);
+                }
+                _rt::cabi_dealloc(base9, len9 * (2*::core::mem::size_of::<*const u8>()), ::core::mem::size_of::<*const u8>());
+
+                result9
+              };
+              Ok(e)
+            }
+            1 => {
+              let e = {
+                let l10 = *ptr1.add(::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
+                let l11 = *ptr1.add(2*::core::mem::size_of::<*const u8>()).cast::<usize>();
+                let len12 = l11;
+                let bytes12 = _rt::Vec::from_raw_parts(l10.cast(), len12, len12);
+
+                _rt::string_lift(bytes12)
+              };
+              Err(e)
+            }
+            _ => _rt::invalid_enum_discriminant(),
+          };
+          result13
+        }
+      }
+
+    }
+
+
+    #[allow(dead_code, async_fn_in_trait, unused_imports, clippy::all)]
     pub mod types {
       #[used]
       #[doc(hidden)]
@@ -60,7 +423,7 @@ pub mod wacli {
 
 
     #[allow(dead_code, async_fn_in_trait, unused_imports, clippy::all)]
-    pub mod host {
+    pub mod host_process {
       #[used]
       #[doc(hidden)]
       static __FORCE_SECTION_REF: fn() =
@@ -70,338 +433,11 @@ pub mod wacli {
       pub type ExitCode = super::super::super::wacli::cli::types::ExitCode;
       #[allow(unused_unsafe, clippy::all)]
       #[allow(async_fn_in_trait)]
-      pub fn args() -> _rt::Vec::<_rt::String>{
-        unsafe {
-
-          #[cfg_attr(target_pointer_width="64", repr(align(8)))]
-          #[cfg_attr(target_pointer_width="32", repr(align(4)))]
-          struct RetArea([::core::mem::MaybeUninit::<u8>; 2*::core::mem::size_of::<*const u8>()]);
-          let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2*::core::mem::size_of::<*const u8>()]);
-          let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
-          #[cfg(target_arch = "wasm32")]
-          #[link(wasm_import_module = "wacli:cli/host@1.0.0")]
-          unsafe extern "C" {
-            #[link_name = "args"]
-            fn wit_import1(_: *mut u8, );
-          }
-
-          #[cfg(not(target_arch = "wasm32"))]
-          unsafe extern "C" fn wit_import1(_: *mut u8, ) { unreachable!() }
-          wit_import1(ptr0);
-          let l2 = *ptr0.add(0).cast::<*mut u8>();
-          let l3 = *ptr0.add(::core::mem::size_of::<*const u8>()).cast::<usize>();
-          let base7 = l2;
-          let len7 = l3;
-          let mut result7 = _rt::Vec::with_capacity(len7);
-          for i in 0..len7 {
-            let base = base7.add(i * (2*::core::mem::size_of::<*const u8>()));
-            let e7 = {
-              let l4 = *base.add(0).cast::<*mut u8>();
-              let l5 = *base.add(::core::mem::size_of::<*const u8>()).cast::<usize>();
-              let len6 = l5;
-              let bytes6 = _rt::Vec::from_raw_parts(l4.cast(), len6, len6);
-
-              _rt::string_lift(bytes6)
-            };
-            result7.push(e7);
-          }
-          _rt::cabi_dealloc(base7, len7 * (2*::core::mem::size_of::<*const u8>()), ::core::mem::size_of::<*const u8>());
-          let result8 = result7;
-          result8
-        }
-      }
-      #[allow(unused_unsafe, clippy::all)]
-      #[allow(async_fn_in_trait)]
-      pub fn env() -> _rt::Vec::<(_rt::String,_rt::String,)>{
-        unsafe {
-
-          #[cfg_attr(target_pointer_width="64", repr(align(8)))]
-          #[cfg_attr(target_pointer_width="32", repr(align(4)))]
-          struct RetArea([::core::mem::MaybeUninit::<u8>; 2*::core::mem::size_of::<*const u8>()]);
-          let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 2*::core::mem::size_of::<*const u8>()]);
-          let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
-          #[cfg(target_arch = "wasm32")]
-          #[link(wasm_import_module = "wacli:cli/host@1.0.0")]
-          unsafe extern "C" {
-            #[link_name = "env"]
-            fn wit_import1(_: *mut u8, );
-          }
-
-          #[cfg(not(target_arch = "wasm32"))]
-          unsafe extern "C" fn wit_import1(_: *mut u8, ) { unreachable!() }
-          wit_import1(ptr0);
-          let l2 = *ptr0.add(0).cast::<*mut u8>();
-          let l3 = *ptr0.add(::core::mem::size_of::<*const u8>()).cast::<usize>();
-          let base10 = l2;
-          let len10 = l3;
-          let mut result10 = _rt::Vec::with_capacity(len10);
-          for i in 0..len10 {
-            let base = base10.add(i * (4*::core::mem::size_of::<*const u8>()));
-            let e10 = {
-              let l4 = *base.add(0).cast::<*mut u8>();
-              let l5 = *base.add(::core::mem::size_of::<*const u8>()).cast::<usize>();
-              let len6 = l5;
-              let bytes6 = _rt::Vec::from_raw_parts(l4.cast(), len6, len6);
-              let l7 = *base.add(2*::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
-              let l8 = *base.add(3*::core::mem::size_of::<*const u8>()).cast::<usize>();
-              let len9 = l8;
-              let bytes9 = _rt::Vec::from_raw_parts(l7.cast(), len9, len9);
-
-              (_rt::string_lift(bytes6), _rt::string_lift(bytes9))
-            };
-            result10.push(e10);
-          }
-          _rt::cabi_dealloc(base10, len10 * (4*::core::mem::size_of::<*const u8>()), ::core::mem::size_of::<*const u8>());
-          let result11 = result10;
-          result11
-        }
-      }
-      #[allow(unused_unsafe, clippy::all)]
-      #[allow(async_fn_in_trait)]
-      pub fn stdout_write(bytes: &[u8],) -> (){
-        unsafe {
-          let vec0 = bytes;
-          let ptr0 = vec0.as_ptr().cast::<u8>();
-          let len0 = vec0.len();
-
-          #[cfg(target_arch = "wasm32")]
-          #[link(wasm_import_module = "wacli:cli/host@1.0.0")]
-          unsafe extern "C" {
-            #[link_name = "stdout-write"]
-            fn wit_import1(_: *mut u8, _: usize, );
-          }
-
-          #[cfg(not(target_arch = "wasm32"))]
-          unsafe extern "C" fn wit_import1(_: *mut u8, _: usize, ) { unreachable!() }
-          wit_import1(ptr0.cast_mut(), len0);
-        }
-      }
-      #[allow(unused_unsafe, clippy::all)]
-      #[allow(async_fn_in_trait)]
-      pub fn stderr_write(bytes: &[u8],) -> (){
-        unsafe {
-          let vec0 = bytes;
-          let ptr0 = vec0.as_ptr().cast::<u8>();
-          let len0 = vec0.len();
-
-          #[cfg(target_arch = "wasm32")]
-          #[link(wasm_import_module = "wacli:cli/host@1.0.0")]
-          unsafe extern "C" {
-            #[link_name = "stderr-write"]
-            fn wit_import1(_: *mut u8, _: usize, );
-          }
-
-          #[cfg(not(target_arch = "wasm32"))]
-          unsafe extern "C" fn wit_import1(_: *mut u8, _: usize, ) { unreachable!() }
-          wit_import1(ptr0.cast_mut(), len0);
-        }
-      }
-      #[allow(unused_unsafe, clippy::all)]
-      #[allow(async_fn_in_trait)]
-      pub fn stdout_flush() -> (){
-        unsafe {
-
-          #[cfg(target_arch = "wasm32")]
-          #[link(wasm_import_module = "wacli:cli/host@1.0.0")]
-          unsafe extern "C" {
-            #[link_name = "stdout-flush"]
-            fn wit_import0();
-          }
-
-          #[cfg(not(target_arch = "wasm32"))]
-          unsafe extern "C" fn wit_import0() { unreachable!() }
-          wit_import0();
-        }
-      }
-      #[allow(unused_unsafe, clippy::all)]
-      #[allow(async_fn_in_trait)]
-      pub fn stderr_flush() -> (){
-        unsafe {
-
-          #[cfg(target_arch = "wasm32")]
-          #[link(wasm_import_module = "wacli:cli/host@1.0.0")]
-          unsafe extern "C" {
-            #[link_name = "stderr-flush"]
-            fn wit_import0();
-          }
-
-          #[cfg(not(target_arch = "wasm32"))]
-          unsafe extern "C" fn wit_import0() { unreachable!() }
-          wit_import0();
-        }
-      }
-      #[allow(unused_unsafe, clippy::all)]
-      #[allow(async_fn_in_trait)]
-      pub fn read_file(path: &str,) -> Result<_rt::Vec::<u8>,_rt::String>{
-        unsafe {
-
-          #[cfg_attr(target_pointer_width="64", repr(align(8)))]
-          #[cfg_attr(target_pointer_width="32", repr(align(4)))]
-          struct RetArea([::core::mem::MaybeUninit::<u8>; 3*::core::mem::size_of::<*const u8>()]);
-          let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 3*::core::mem::size_of::<*const u8>()]);
-          let vec0 = path;
-          let ptr0 = vec0.as_ptr().cast::<u8>();
-          let len0 = vec0.len();
-          let ptr1 = ret_area.0.as_mut_ptr().cast::<u8>();
-          #[cfg(target_arch = "wasm32")]
-          #[link(wasm_import_module = "wacli:cli/host@1.0.0")]
-          unsafe extern "C" {
-            #[link_name = "read-file"]
-            fn wit_import2(_: *mut u8, _: usize, _: *mut u8, );
-          }
-
-          #[cfg(not(target_arch = "wasm32"))]
-          unsafe extern "C" fn wit_import2(_: *mut u8, _: usize, _: *mut u8, ) { unreachable!() }
-          wit_import2(ptr0.cast_mut(), len0, ptr1);
-          let l3 = i32::from(*ptr1.add(0).cast::<u8>());
-          let result10 = match l3 {
-            0 => {
-              let e = {
-                let l4 = *ptr1.add(::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
-                let l5 = *ptr1.add(2*::core::mem::size_of::<*const u8>()).cast::<usize>();
-                let len6 = l5;
-
-                <_ as From<_rt::Vec<_>>>::from(_rt::Vec::from_raw_parts(l4.cast(), len6, len6))
-              };
-              Ok(e)
-            }
-            1 => {
-              let e = {
-                let l7 = *ptr1.add(::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
-                let l8 = *ptr1.add(2*::core::mem::size_of::<*const u8>()).cast::<usize>();
-                let len9 = l8;
-                let bytes9 = _rt::Vec::from_raw_parts(l7.cast(), len9, len9);
-
-                _rt::string_lift(bytes9)
-              };
-              Err(e)
-            }
-            _ => _rt::invalid_enum_discriminant(),
-          };
-          result10
-        }
-      }
-      #[allow(unused_unsafe, clippy::all)]
-      #[allow(async_fn_in_trait)]
-      pub fn write_file(path: &str,contents: &[u8],) -> Result<(),_rt::String>{
-        unsafe {
-
-          #[cfg_attr(target_pointer_width="64", repr(align(8)))]
-          #[cfg_attr(target_pointer_width="32", repr(align(4)))]
-          struct RetArea([::core::mem::MaybeUninit::<u8>; 3*::core::mem::size_of::<*const u8>()]);
-          let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 3*::core::mem::size_of::<*const u8>()]);
-          let vec0 = path;
-          let ptr0 = vec0.as_ptr().cast::<u8>();
-          let len0 = vec0.len();
-          let vec1 = contents;
-          let ptr1 = vec1.as_ptr().cast::<u8>();
-          let len1 = vec1.len();
-          let ptr2 = ret_area.0.as_mut_ptr().cast::<u8>();
-          #[cfg(target_arch = "wasm32")]
-          #[link(wasm_import_module = "wacli:cli/host@1.0.0")]
-          unsafe extern "C" {
-            #[link_name = "write-file"]
-            fn wit_import3(_: *mut u8, _: usize, _: *mut u8, _: usize, _: *mut u8, );
-          }
-
-          #[cfg(not(target_arch = "wasm32"))]
-          unsafe extern "C" fn wit_import3(_: *mut u8, _: usize, _: *mut u8, _: usize, _: *mut u8, ) { unreachable!() }
-          wit_import3(ptr0.cast_mut(), len0, ptr1.cast_mut(), len1, ptr2);
-          let l4 = i32::from(*ptr2.add(0).cast::<u8>());
-          let result8 = match l4 {
-            0 => {
-              let e = ();
-              Ok(e)
-            }
-            1 => {
-              let e = {
-                let l5 = *ptr2.add(::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
-                let l6 = *ptr2.add(2*::core::mem::size_of::<*const u8>()).cast::<usize>();
-                let len7 = l6;
-                let bytes7 = _rt::Vec::from_raw_parts(l5.cast(), len7, len7);
-
-                _rt::string_lift(bytes7)
-              };
-              Err(e)
-            }
-            _ => _rt::invalid_enum_discriminant(),
-          };
-          result8
-        }
-      }
-      #[allow(unused_unsafe, clippy::all)]
-      #[allow(async_fn_in_trait)]
-      pub fn list_dir(path: &str,) -> Result<_rt::Vec::<_rt::String>,_rt::String>{
-        unsafe {
-
-          #[cfg_attr(target_pointer_width="64", repr(align(8)))]
-          #[cfg_attr(target_pointer_width="32", repr(align(4)))]
-          struct RetArea([::core::mem::MaybeUninit::<u8>; 3*::core::mem::size_of::<*const u8>()]);
-          let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 3*::core::mem::size_of::<*const u8>()]);
-          let vec0 = path;
-          let ptr0 = vec0.as_ptr().cast::<u8>();
-          let len0 = vec0.len();
-          let ptr1 = ret_area.0.as_mut_ptr().cast::<u8>();
-          #[cfg(target_arch = "wasm32")]
-          #[link(wasm_import_module = "wacli:cli/host@1.0.0")]
-          unsafe extern "C" {
-            #[link_name = "list-dir"]
-            fn wit_import2(_: *mut u8, _: usize, _: *mut u8, );
-          }
-
-          #[cfg(not(target_arch = "wasm32"))]
-          unsafe extern "C" fn wit_import2(_: *mut u8, _: usize, _: *mut u8, ) { unreachable!() }
-          wit_import2(ptr0.cast_mut(), len0, ptr1);
-          let l3 = i32::from(*ptr1.add(0).cast::<u8>());
-          let result13 = match l3 {
-            0 => {
-              let e = {
-                let l4 = *ptr1.add(::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
-                let l5 = *ptr1.add(2*::core::mem::size_of::<*const u8>()).cast::<usize>();
-                let base9 = l4;
-                let len9 = l5;
-                let mut result9 = _rt::Vec::with_capacity(len9);
-                for i in 0..len9 {
-                  let base = base9.add(i * (2*::core::mem::size_of::<*const u8>()));
-                  let e9 = {
-                    let l6 = *base.add(0).cast::<*mut u8>();
-                    let l7 = *base.add(::core::mem::size_of::<*const u8>()).cast::<usize>();
-                    let len8 = l7;
-                    let bytes8 = _rt::Vec::from_raw_parts(l6.cast(), len8, len8);
-
-                    _rt::string_lift(bytes8)
-                  };
-                  result9.push(e9);
-                }
-                _rt::cabi_dealloc(base9, len9 * (2*::core::mem::size_of::<*const u8>()), ::core::mem::size_of::<*const u8>());
-
-                result9
-              };
-              Ok(e)
-            }
-            1 => {
-              let e = {
-                let l10 = *ptr1.add(::core::mem::size_of::<*const u8>()).cast::<*mut u8>();
-                let l11 = *ptr1.add(2*::core::mem::size_of::<*const u8>()).cast::<usize>();
-                let len12 = l11;
-                let bytes12 = _rt::Vec::from_raw_parts(l10.cast(), len12, len12);
-
-                _rt::string_lift(bytes12)
-              };
-              Err(e)
-            }
-            _ => _rt::invalid_enum_discriminant(),
-          };
-          result13
-        }
-      }
-      #[allow(unused_unsafe, clippy::all)]
-      #[allow(async_fn_in_trait)]
       pub fn exit(code: ExitCode,) -> (){
         unsafe {
 
           #[cfg(target_arch = "wasm32")]
-          #[link(wasm_import_module = "wacli:cli/host@1.0.0")]
+          #[link(wasm_import_module = "wacli:cli/host-process@1.0.0")]
           unsafe extern "C" {
             #[link_name = "exit"]
             fn wit_import0(_: i32, );
@@ -701,8 +737,8 @@ pub mod exports {
 }
 mod _rt {
   #![allow(dead_code, unused_imports, clippy::all)]
-  pub use alloc_crate::string::String;
   pub use alloc_crate::vec::Vec;
+  pub use alloc_crate::string::String;
   pub unsafe fn string_lift(bytes: Vec<u8>) -> String {
     if cfg!(debug_assertions) {
       String::from_utf8(bytes).unwrap()
@@ -837,27 +873,30 @@ pub(crate) use __export_plugin_impl as export;
 #[unsafe(link_section = "component-type:wit-bindgen:0.52.0:wacli:cli@1.0.0:plugin:encoded world")]
 #[doc(hidden)]
 #[allow(clippy::octal_escapes)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 859] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xde\x05\x01A\x02\x01\
-A\x09\x01B\x09\x01y\x04\0\x09exit-code\x03\0\0\x01ps\x01r\x08\x04names\x07summar\
-ys\x05usages\x07aliases\x02\x07versions\x06hidden\x7f\x0bdescriptions\x08example\
-s\x02\x04\0\x0ccommand-meta\x03\0\x03\x01q\x04\x0funknown-command\x01s\0\x0cinva\
-lid-args\x01s\0\x06failed\x01s\0\x02io\x01s\0\x04\0\x0dcommand-error\x03\0\x05\x01\
-j\x01\x01\x01\x06\x04\0\x0ecommand-result\x03\0\x07\x03\0\x15wacli:cli/types@1.0\
-.0\x05\0\x02\x03\0\0\x09exit-code\x01B\x1b\x02\x03\x02\x01\x01\x04\0\x09exit-cod\
-e\x03\0\0\x01ps\x01@\0\0\x02\x04\0\x04args\x01\x03\x01o\x02ss\x01p\x04\x01@\0\0\x05\
-\x04\0\x03env\x01\x06\x01p}\x01@\x01\x05bytes\x07\x01\0\x04\0\x0cstdout-write\x01\
-\x08\x04\0\x0cstderr-write\x01\x08\x01@\0\x01\0\x04\0\x0cstdout-flush\x01\x09\x04\
-\0\x0cstderr-flush\x01\x09\x01j\x01\x07\x01s\x01@\x01\x04paths\0\x0a\x04\0\x09re\
-ad-file\x01\x0b\x01j\0\x01s\x01@\x02\x04paths\x08contents\x07\0\x0c\x04\0\x0awri\
-te-file\x01\x0d\x01j\x01\x02\x01s\x01@\x01\x04paths\0\x0e\x04\0\x08list-dir\x01\x0f\
-\x01@\x01\x04code\x01\x01\0\x04\0\x04exit\x01\x10\x03\0\x14wacli:cli/host@1.0.0\x05\
-\x02\x02\x03\0\0\x0ccommand-meta\x02\x03\0\0\x0ecommand-result\x01B\x09\x02\x03\x02\
-\x01\x03\x04\0\x0ccommand-meta\x03\0\0\x02\x03\x02\x01\x04\x04\0\x0ecommand-resu\
-lt\x03\0\x02\x01@\0\0\x01\x04\0\x04meta\x01\x04\x01ps\x01@\x01\x04argv\x05\0\x03\
-\x04\0\x03run\x01\x06\x04\0\x17wacli:cli/command@1.0.0\x05\x05\x04\0\x16wacli:cl\
-i/plugin@1.0.0\x04\0\x0b\x0c\x01\0\x06plugin\x03\0\0\0G\x09producers\x01\x0cproc\
-essed-by\x02\x0dwit-component\x070.244.0\x10wit-bindgen-rust\x060.52.0";
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 967] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xca\x06\x01A\x02\x01\
+A\x0f\x01B\x07\x01ps\x01@\0\0\0\x04\0\x04args\x01\x01\x01o\x02ss\x01p\x02\x01@\0\
+\0\x03\x04\0\x03env\x01\x04\x03\0\x18wacli:cli/host-env@1.0.0\x05\0\x01B\x07\x01\
+p}\x01@\x01\x05bytes\0\x01\0\x04\0\x0cstdout-write\x01\x01\x04\0\x0cstderr-write\
+\x01\x01\x01@\0\x01\0\x04\0\x0cstdout-flush\x01\x02\x04\0\x0cstderr-flush\x01\x02\
+\x03\0\x17wacli:cli/host-io@1.0.0\x05\x01\x01B\x0b\x01p}\x01j\x01\0\x01s\x01@\x01\
+\x04paths\0\x01\x04\0\x09read-file\x01\x02\x01j\0\x01s\x01@\x02\x04paths\x08cont\
+ents\0\0\x03\x04\0\x0awrite-file\x01\x04\x01ps\x01j\x01\x05\x01s\x01@\x01\x04pat\
+hs\0\x06\x04\0\x08list-dir\x01\x07\x03\0\x17wacli:cli/host-fs@1.0.0\x05\x02\x01B\
+\x09\x01y\x04\0\x09exit-code\x03\0\0\x01ps\x01r\x08\x04names\x07summarys\x05usag\
+es\x07aliases\x02\x07versions\x06hidden\x7f\x0bdescriptions\x08examples\x02\x04\0\
+\x0ccommand-meta\x03\0\x03\x01q\x04\x0funknown-command\x01s\0\x0cinvalid-args\x01\
+s\0\x06failed\x01s\0\x02io\x01s\0\x04\0\x0dcommand-error\x03\0\x05\x01j\x01\x01\x01\
+\x06\x04\0\x0ecommand-result\x03\0\x07\x03\0\x15wacli:cli/types@1.0.0\x05\x03\x02\
+\x03\0\x03\x09exit-code\x01B\x04\x02\x03\x02\x01\x04\x04\0\x09exit-code\x03\0\0\x01\
+@\x01\x04code\x01\x01\0\x04\0\x04exit\x01\x02\x03\0\x1cwacli:cli/host-process@1.\
+0.0\x05\x05\x02\x03\0\x03\x0ccommand-meta\x02\x03\0\x03\x0ecommand-result\x01B\x09\
+\x02\x03\x02\x01\x06\x04\0\x0ccommand-meta\x03\0\0\x02\x03\x02\x01\x07\x04\0\x0e\
+command-result\x03\0\x02\x01@\0\0\x01\x04\0\x04meta\x01\x04\x01ps\x01@\x01\x04ar\
+gv\x05\0\x03\x04\0\x03run\x01\x06\x04\0\x17wacli:cli/command@1.0.0\x05\x08\x04\0\
+\x16wacli:cli/plugin@1.0.0\x04\0\x0b\x0c\x01\0\x06plugin\x03\0\0\0G\x09producers\
+\x01\x0cprocessed-by\x02\x0dwit-component\x070.244.0\x10wit-bindgen-rust\x060.52\
+.0";
 
 #[inline(never)]
 #[doc(hidden)]

@@ -4,13 +4,13 @@ mod bindings;
 
 use bindings::export;
 use bindings::exports::wasi::cli::run;
-use bindings::wacli::cli::{host, registry, types};
+use bindings::wacli::cli::{host_env, host_io, host_process, registry, types};
 
 struct Core;
 
 impl run::Guest for Core {
     fn run() -> Result<(), ()> {
-        let args = host::args();
+        let args = host_env::args();
         let argv = trim_program_name(args);
 
         if argv.is_empty() {
@@ -29,13 +29,13 @@ impl run::Guest for Core {
         match registry::run(&cmd_name, &cmd_args) {
             Ok(code) => {
                 if code != 0 {
-                    host::exit(code);
+                    host_process::exit(code);
                 }
                 Ok(())
             }
             Err(err) => {
                 report_command_error(&cmd_name, err);
-                host::exit(1);
+                host_process::exit(1);
                 Ok(())
             }
         }
@@ -73,8 +73,8 @@ fn print_help() {
         }
     }
 
-    host::stdout_write(out.as_bytes());
-    host::stdout_flush();
+    host_io::stdout_write(out.as_bytes());
+    host_io::stdout_flush();
 }
 
 fn report_command_error(name: &str, err: types::CommandError) {
@@ -93,8 +93,8 @@ fn report_command_error(name: &str, err: types::CommandError) {
     out.push_str(&message);
     out.push_str("Run with --help to see available commands.\n");
 
-    host::stderr_write(out.as_bytes());
-    host::stderr_flush();
+    host_io::stderr_write(out.as_bytes());
+    host_io::stderr_flush();
 
     if name == "" {
         print_help();

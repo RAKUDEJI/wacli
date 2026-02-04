@@ -3537,14 +3537,13 @@ pub mod exports {
 
 
       #[allow(dead_code, async_fn_in_trait, unused_imports, clippy::all)]
-      pub mod host {
+      pub mod host_env {
         #[used]
         #[doc(hidden)]
         static __FORCE_SECTION_REF: fn() =
         super::super::super::super::__link_custom_section_describing_imports;
         
         use super::super::super::super::_rt;
-        pub type ExitCode = super::super::super::super::exports::wacli::cli::types::ExitCode;
         #[doc(hidden)]
         #[allow(non_snake_case, unused_unsafe)]
         pub unsafe fn _export_args_cabi<T: Guest>() -> *mut u8 { unsafe {#[cfg(target_arch="wasm32")]
@@ -3641,6 +3640,54 @@ pub mod exports {
       }
       _rt::cabi_dealloc(base6, len6 * (4*::core::mem::size_of::<*const u8>()), ::core::mem::size_of::<*const u8>());
     } }
+    pub trait Guest {
+      #[allow(async_fn_in_trait)]
+      fn args() -> _rt::Vec::<_rt::String>;
+      #[allow(async_fn_in_trait)]
+      fn env() -> _rt::Vec::<(_rt::String,_rt::String,)>;
+    }
+    #[doc(hidden)]
+
+    macro_rules! __export_wacli_cli_host_env_1_0_0_cabi{
+      ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
+
+        #[unsafe(export_name = "wacli:cli/host-env@1.0.0#args")]
+        unsafe extern "C" fn export_args() -> *mut u8 {
+          unsafe { $($path_to_types)*::_export_args_cabi::<$ty>() }
+        }
+        #[unsafe(export_name = "cabi_post_wacli:cli/host-env@1.0.0#args")]
+        unsafe extern "C" fn _post_return_args(arg0: *mut u8,) {
+          unsafe { $($path_to_types)*::__post_return_args::<$ty>(arg0) }
+        }
+        #[unsafe(export_name = "wacli:cli/host-env@1.0.0#env")]
+        unsafe extern "C" fn export_env() -> *mut u8 {
+          unsafe { $($path_to_types)*::_export_env_cabi::<$ty>() }
+        }
+        #[unsafe(export_name = "cabi_post_wacli:cli/host-env@1.0.0#env")]
+        unsafe extern "C" fn _post_return_env(arg0: *mut u8,) {
+          unsafe { $($path_to_types)*::__post_return_env::<$ty>(arg0) }
+        }
+      };);
+    }
+    #[doc(hidden)]
+    pub(crate) use __export_wacli_cli_host_env_1_0_0_cabi;
+
+    #[cfg_attr(target_pointer_width="64", repr(align(8)))]
+    #[cfg_attr(target_pointer_width="32", repr(align(4)))]
+    struct _RetArea([::core::mem::MaybeUninit::<u8>; 2*::core::mem::size_of::<*const u8>()]);
+    static mut _RET_AREA: _RetArea = _RetArea([::core::mem::MaybeUninit::uninit(); 2*::core::mem::size_of::<*const u8>()]);
+
+  }
+
+
+  #[allow(dead_code, async_fn_in_trait, unused_imports, clippy::all)]
+  pub mod host_io {
+    #[used]
+    #[doc(hidden)]
+    static __FORCE_SECTION_REF: fn() =
+    super::super::super::super::__link_custom_section_describing_imports;
+    
+    use super::super::super::super::_rt;
     #[doc(hidden)]
     #[allow(non_snake_case, unused_unsafe)]
     pub unsafe fn _export_stdout_write_cabi<T: Guest>(arg0: *mut u8,arg1: usize,) { unsafe {#[cfg(target_arch="wasm32")]
@@ -3671,35 +3718,82 @@ _rt::run_ctors_once();{
   T::stderr_flush()
 };
 } }
+pub trait Guest {
+  #[allow(async_fn_in_trait)]
+  fn stdout_write(bytes: _rt::Vec::<u8>,) -> ();
+  #[allow(async_fn_in_trait)]
+  fn stderr_write(bytes: _rt::Vec::<u8>,) -> ();
+  #[allow(async_fn_in_trait)]
+  fn stdout_flush() -> ();
+  #[allow(async_fn_in_trait)]
+  fn stderr_flush() -> ();
+}
 #[doc(hidden)]
-#[allow(non_snake_case, unused_unsafe)]
-pub unsafe fn _export_read_file_cabi<T: Guest>(arg0: *mut u8,arg1: usize,) -> *mut u8 { unsafe {#[cfg(target_arch="wasm32")]
-_rt::run_ctors_once();let result1 = {
-  let len0 = arg1;
-  let bytes0 = _rt::Vec::from_raw_parts(arg0.cast(), len0, len0);
-  T::read_file(_rt::string_lift(bytes0))
-};
-let ptr2 = (&raw mut _RET_AREA.0).cast::<u8>();
-match result1 {
-  Ok(e) => { {
-    *ptr2.add(0).cast::<u8>() = (0i32) as u8;
-    let vec3 = <_ as Into<_rt::Vec<_>>>::into(e).into_boxed_slice();
-    let ptr3 = vec3.as_ptr().cast::<u8>();
-    let len3 = vec3.len();
-    ::core::mem::forget(vec3);
-    *ptr2.add(2*::core::mem::size_of::<*const u8>()).cast::<usize>() = len3;
-    *ptr2.add(::core::mem::size_of::<*const u8>()).cast::<*mut u8>() = ptr3.cast_mut();
-  } },
-  Err(e) => { {
-    *ptr2.add(0).cast::<u8>() = (1i32) as u8;
-    let vec4 = (e.into_bytes()).into_boxed_slice();
-    let ptr4 = vec4.as_ptr().cast::<u8>();
-    let len4 = vec4.len();
-    ::core::mem::forget(vec4);
-    *ptr2.add(2*::core::mem::size_of::<*const u8>()).cast::<usize>() = len4;
-    *ptr2.add(::core::mem::size_of::<*const u8>()).cast::<*mut u8>() = ptr4.cast_mut();
-  } },
-};ptr2
+
+macro_rules! __export_wacli_cli_host_io_1_0_0_cabi{
+  ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
+
+    #[unsafe(export_name = "wacli:cli/host-io@1.0.0#stdout-write")]
+    unsafe extern "C" fn export_stdout_write(arg0: *mut u8,arg1: usize,) {
+      unsafe { $($path_to_types)*::_export_stdout_write_cabi::<$ty>(arg0, arg1) }
+    }
+    #[unsafe(export_name = "wacli:cli/host-io@1.0.0#stderr-write")]
+    unsafe extern "C" fn export_stderr_write(arg0: *mut u8,arg1: usize,) {
+      unsafe { $($path_to_types)*::_export_stderr_write_cabi::<$ty>(arg0, arg1) }
+    }
+    #[unsafe(export_name = "wacli:cli/host-io@1.0.0#stdout-flush")]
+    unsafe extern "C" fn export_stdout_flush() {
+      unsafe { $($path_to_types)*::_export_stdout_flush_cabi::<$ty>() }
+    }
+    #[unsafe(export_name = "wacli:cli/host-io@1.0.0#stderr-flush")]
+    unsafe extern "C" fn export_stderr_flush() {
+      unsafe { $($path_to_types)*::_export_stderr_flush_cabi::<$ty>() }
+    }
+  };);
+}
+#[doc(hidden)]
+pub(crate) use __export_wacli_cli_host_io_1_0_0_cabi;
+
+}
+
+
+#[allow(dead_code, async_fn_in_trait, unused_imports, clippy::all)]
+pub mod host_fs {
+  #[used]
+  #[doc(hidden)]
+  static __FORCE_SECTION_REF: fn() =
+  super::super::super::super::__link_custom_section_describing_imports;
+  
+  use super::super::super::super::_rt;
+  #[doc(hidden)]
+  #[allow(non_snake_case, unused_unsafe)]
+  pub unsafe fn _export_read_file_cabi<T: Guest>(arg0: *mut u8,arg1: usize,) -> *mut u8 { unsafe {#[cfg(target_arch="wasm32")]
+  _rt::run_ctors_once();let result1 = {
+    let len0 = arg1;
+    let bytes0 = _rt::Vec::from_raw_parts(arg0.cast(), len0, len0);
+    T::read_file(_rt::string_lift(bytes0))
+  };
+  let ptr2 = (&raw mut _RET_AREA.0).cast::<u8>();
+  match result1 {
+    Ok(e) => { {
+      *ptr2.add(0).cast::<u8>() = (0i32) as u8;
+      let vec3 = <_ as Into<_rt::Vec<_>>>::into(e).into_boxed_slice();
+      let ptr3 = vec3.as_ptr().cast::<u8>();
+      let len3 = vec3.len();
+      ::core::mem::forget(vec3);
+      *ptr2.add(2*::core::mem::size_of::<*const u8>()).cast::<usize>() = len3;
+      *ptr2.add(::core::mem::size_of::<*const u8>()).cast::<*mut u8>() = ptr3.cast_mut();
+    } },
+    Err(e) => { {
+      *ptr2.add(0).cast::<u8>() = (1i32) as u8;
+      let vec4 = (e.into_bytes()).into_boxed_slice();
+      let ptr4 = vec4.as_ptr().cast::<u8>();
+      let len4 = vec4.len();
+      ::core::mem::forget(vec4);
+      *ptr2.add(2*::core::mem::size_of::<*const u8>()).cast::<usize>() = len4;
+      *ptr2.add(::core::mem::size_of::<*const u8>()).cast::<*mut u8>() = ptr4.cast_mut();
+    } },
+  };ptr2
 } }
 #[doc(hidden)]
 #[allow(non_snake_case)]
@@ -3826,109 +3920,89 @@ pub unsafe fn __post_return_list_dir<T: Guest>(arg0: *mut u8,) { unsafe {
     },
   }
 } }
-#[doc(hidden)]
-#[allow(non_snake_case, unused_unsafe)]
-pub unsafe fn _export_exit_cabi<T: Guest>(arg0: i32,) { unsafe {#[cfg(target_arch="wasm32")]
-_rt::run_ctors_once();{
-  T::exit(arg0 as u32)
-};
-} }
 pub trait Guest {
-  #[allow(async_fn_in_trait)]
-  fn args() -> _rt::Vec::<_rt::String>;
-  #[allow(async_fn_in_trait)]
-  fn env() -> _rt::Vec::<(_rt::String,_rt::String,)>;
-  #[allow(async_fn_in_trait)]
-  fn stdout_write(bytes: _rt::Vec::<u8>,) -> ();
-  #[allow(async_fn_in_trait)]
-  fn stderr_write(bytes: _rt::Vec::<u8>,) -> ();
-  #[allow(async_fn_in_trait)]
-  fn stdout_flush() -> ();
-  #[allow(async_fn_in_trait)]
-  fn stderr_flush() -> ();
   #[allow(async_fn_in_trait)]
   fn read_file(path: _rt::String,) -> Result<_rt::Vec::<u8>,_rt::String>;
   #[allow(async_fn_in_trait)]
   fn write_file(path: _rt::String,contents: _rt::Vec::<u8>,) -> Result<(),_rt::String>;
   #[allow(async_fn_in_trait)]
   fn list_dir(path: _rt::String,) -> Result<_rt::Vec::<_rt::String>,_rt::String>;
+}
+#[doc(hidden)]
+
+macro_rules! __export_wacli_cli_host_fs_1_0_0_cabi{
+  ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
+
+    #[unsafe(export_name = "wacli:cli/host-fs@1.0.0#read-file")]
+    unsafe extern "C" fn export_read_file(arg0: *mut u8,arg1: usize,) -> *mut u8 {
+      unsafe { $($path_to_types)*::_export_read_file_cabi::<$ty>(arg0, arg1) }
+    }
+    #[unsafe(export_name = "cabi_post_wacli:cli/host-fs@1.0.0#read-file")]
+    unsafe extern "C" fn _post_return_read_file(arg0: *mut u8,) {
+      unsafe { $($path_to_types)*::__post_return_read_file::<$ty>(arg0) }
+    }
+    #[unsafe(export_name = "wacli:cli/host-fs@1.0.0#write-file")]
+    unsafe extern "C" fn export_write_file(arg0: *mut u8,arg1: usize,arg2: *mut u8,arg3: usize,) -> *mut u8 {
+      unsafe { $($path_to_types)*::_export_write_file_cabi::<$ty>(arg0, arg1, arg2, arg3) }
+    }
+    #[unsafe(export_name = "cabi_post_wacli:cli/host-fs@1.0.0#write-file")]
+    unsafe extern "C" fn _post_return_write_file(arg0: *mut u8,) {
+      unsafe { $($path_to_types)*::__post_return_write_file::<$ty>(arg0) }
+    }
+    #[unsafe(export_name = "wacli:cli/host-fs@1.0.0#list-dir")]
+    unsafe extern "C" fn export_list_dir(arg0: *mut u8,arg1: usize,) -> *mut u8 {
+      unsafe { $($path_to_types)*::_export_list_dir_cabi::<$ty>(arg0, arg1) }
+    }
+    #[unsafe(export_name = "cabi_post_wacli:cli/host-fs@1.0.0#list-dir")]
+    unsafe extern "C" fn _post_return_list_dir(arg0: *mut u8,) {
+      unsafe { $($path_to_types)*::__post_return_list_dir::<$ty>(arg0) }
+    }
+  };);
+}
+#[doc(hidden)]
+pub(crate) use __export_wacli_cli_host_fs_1_0_0_cabi;
+
+#[cfg_attr(target_pointer_width="64", repr(align(8)))]
+#[cfg_attr(target_pointer_width="32", repr(align(4)))]
+struct _RetArea([::core::mem::MaybeUninit::<u8>; 3*::core::mem::size_of::<*const u8>()]);
+static mut _RET_AREA: _RetArea = _RetArea([::core::mem::MaybeUninit::uninit(); 3*::core::mem::size_of::<*const u8>()]);
+
+}
+
+
+#[allow(dead_code, async_fn_in_trait, unused_imports, clippy::all)]
+pub mod host_process {
+  #[used]
+  #[doc(hidden)]
+  static __FORCE_SECTION_REF: fn() =
+  super::super::super::super::__link_custom_section_describing_imports;
+  
+  use super::super::super::super::_rt;
+  pub type ExitCode = super::super::super::super::exports::wacli::cli::types::ExitCode;
+  #[doc(hidden)]
+  #[allow(non_snake_case, unused_unsafe)]
+  pub unsafe fn _export_exit_cabi<T: Guest>(arg0: i32,) { unsafe {#[cfg(target_arch="wasm32")]
+  _rt::run_ctors_once();{
+    T::exit(arg0 as u32)
+  };
+} }
+pub trait Guest {
   #[allow(async_fn_in_trait)]
   fn exit(code: ExitCode,) -> ();
 }
 #[doc(hidden)]
 
-macro_rules! __export_wacli_cli_host_1_0_0_cabi{
+macro_rules! __export_wacli_cli_host_process_1_0_0_cabi{
   ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
 
-    #[unsafe(export_name = "wacli:cli/host@1.0.0#args")]
-    unsafe extern "C" fn export_args() -> *mut u8 {
-      unsafe { $($path_to_types)*::_export_args_cabi::<$ty>() }
-    }
-    #[unsafe(export_name = "cabi_post_wacli:cli/host@1.0.0#args")]
-    unsafe extern "C" fn _post_return_args(arg0: *mut u8,) {
-      unsafe { $($path_to_types)*::__post_return_args::<$ty>(arg0) }
-    }
-    #[unsafe(export_name = "wacli:cli/host@1.0.0#env")]
-    unsafe extern "C" fn export_env() -> *mut u8 {
-      unsafe { $($path_to_types)*::_export_env_cabi::<$ty>() }
-    }
-    #[unsafe(export_name = "cabi_post_wacli:cli/host@1.0.0#env")]
-    unsafe extern "C" fn _post_return_env(arg0: *mut u8,) {
-      unsafe { $($path_to_types)*::__post_return_env::<$ty>(arg0) }
-    }
-    #[unsafe(export_name = "wacli:cli/host@1.0.0#stdout-write")]
-    unsafe extern "C" fn export_stdout_write(arg0: *mut u8,arg1: usize,) {
-      unsafe { $($path_to_types)*::_export_stdout_write_cabi::<$ty>(arg0, arg1) }
-    }
-    #[unsafe(export_name = "wacli:cli/host@1.0.0#stderr-write")]
-    unsafe extern "C" fn export_stderr_write(arg0: *mut u8,arg1: usize,) {
-      unsafe { $($path_to_types)*::_export_stderr_write_cabi::<$ty>(arg0, arg1) }
-    }
-    #[unsafe(export_name = "wacli:cli/host@1.0.0#stdout-flush")]
-    unsafe extern "C" fn export_stdout_flush() {
-      unsafe { $($path_to_types)*::_export_stdout_flush_cabi::<$ty>() }
-    }
-    #[unsafe(export_name = "wacli:cli/host@1.0.0#stderr-flush")]
-    unsafe extern "C" fn export_stderr_flush() {
-      unsafe { $($path_to_types)*::_export_stderr_flush_cabi::<$ty>() }
-    }
-    #[unsafe(export_name = "wacli:cli/host@1.0.0#read-file")]
-    unsafe extern "C" fn export_read_file(arg0: *mut u8,arg1: usize,) -> *mut u8 {
-      unsafe { $($path_to_types)*::_export_read_file_cabi::<$ty>(arg0, arg1) }
-    }
-    #[unsafe(export_name = "cabi_post_wacli:cli/host@1.0.0#read-file")]
-    unsafe extern "C" fn _post_return_read_file(arg0: *mut u8,) {
-      unsafe { $($path_to_types)*::__post_return_read_file::<$ty>(arg0) }
-    }
-    #[unsafe(export_name = "wacli:cli/host@1.0.0#write-file")]
-    unsafe extern "C" fn export_write_file(arg0: *mut u8,arg1: usize,arg2: *mut u8,arg3: usize,) -> *mut u8 {
-      unsafe { $($path_to_types)*::_export_write_file_cabi::<$ty>(arg0, arg1, arg2, arg3) }
-    }
-    #[unsafe(export_name = "cabi_post_wacli:cli/host@1.0.0#write-file")]
-    unsafe extern "C" fn _post_return_write_file(arg0: *mut u8,) {
-      unsafe { $($path_to_types)*::__post_return_write_file::<$ty>(arg0) }
-    }
-    #[unsafe(export_name = "wacli:cli/host@1.0.0#list-dir")]
-    unsafe extern "C" fn export_list_dir(arg0: *mut u8,arg1: usize,) -> *mut u8 {
-      unsafe { $($path_to_types)*::_export_list_dir_cabi::<$ty>(arg0, arg1) }
-    }
-    #[unsafe(export_name = "cabi_post_wacli:cli/host@1.0.0#list-dir")]
-    unsafe extern "C" fn _post_return_list_dir(arg0: *mut u8,) {
-      unsafe { $($path_to_types)*::__post_return_list_dir::<$ty>(arg0) }
-    }
-    #[unsafe(export_name = "wacli:cli/host@1.0.0#exit")]
+    #[unsafe(export_name = "wacli:cli/host-process@1.0.0#exit")]
     unsafe extern "C" fn export_exit(arg0: i32,) {
       unsafe { $($path_to_types)*::_export_exit_cabi::<$ty>(arg0) }
     }
   };);
 }
 #[doc(hidden)]
-pub(crate) use __export_wacli_cli_host_1_0_0_cabi;
-
-#[cfg_attr(target_pointer_width="64", repr(align(8)))]
-#[cfg_attr(target_pointer_width="32", repr(align(4)))]
-struct _RetArea([::core::mem::MaybeUninit::<u8>; 3*::core::mem::size_of::<*const u8>()]);
-static mut _RET_AREA: _RetArea = _RetArea([::core::mem::MaybeUninit::uninit(); 3*::core::mem::size_of::<*const u8>()]);
+pub(crate) use __export_wacli_cli_host_process_1_0_0_cabi;
 
 }
 
@@ -4199,7 +4273,10 @@ macro_rules! __export_host_provider_impl {
   ($ty:ident) => (self::export!($ty with_types_in self););
   ($ty:ident with_types_in $($path_to_types_root:tt)*) => (
   $($path_to_types_root)*::exports::wacli::cli::types::__export_wacli_cli_types_1_0_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::wacli::cli::types);
-  $($path_to_types_root)*::exports::wacli::cli::host::__export_wacli_cli_host_1_0_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::wacli::cli::host);
+  $($path_to_types_root)*::exports::wacli::cli::host_env::__export_wacli_cli_host_env_1_0_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::wacli::cli::host_env);
+  $($path_to_types_root)*::exports::wacli::cli::host_io::__export_wacli_cli_host_io_1_0_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::wacli::cli::host_io);
+  $($path_to_types_root)*::exports::wacli::cli::host_fs::__export_wacli_cli_host_fs_1_0_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::wacli::cli::host_fs);
+  $($path_to_types_root)*::exports::wacli::cli::host_process::__export_wacli_cli_host_process_1_0_0_cabi!($ty with_types_in $($path_to_types_root)*::exports::wacli::cli::host_process);
   )
 }
 #[doc(inline)]
@@ -4209,38 +4286,38 @@ pub(crate) use __export_host_provider_impl as export;
 #[unsafe(link_section = "component-type:wit-bindgen:0.52.0:wacli:cli@1.0.0:host-provider:encoded world")]
 #[doc(hidden)]
 #[allow(clippy::octal_escapes)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 5556] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xb0*\x01A\x02\x01A\x20\
-\x01B\x0a\x01o\x02ss\x01p\0\x01@\0\0\x01\x04\0\x0fget-environment\x01\x02\x01ps\x01\
-@\0\0\x03\x04\0\x0dget-arguments\x01\x04\x01ks\x01@\0\0\x05\x04\0\x0binitial-cwd\
-\x01\x06\x03\0\x1awasi:cli/environment@0.2.9\x05\0\x01B\x03\x01j\0\0\x01@\x01\x06\
-status\0\x01\0\x04\0\x04exit\x01\x01\x03\0\x13wasi:cli/exit@0.2.9\x05\x01\x01B\x04\
-\x04\0\x05error\x03\x01\x01h\0\x01@\x01\x04self\x01\0s\x04\0\x1d[method]error.to\
--debug-string\x01\x02\x03\0\x13wasi:io/error@0.2.9\x05\x02\x01B\x0a\x04\0\x08pol\
-lable\x03\x01\x01h\0\x01@\x01\x04self\x01\0\x7f\x04\0\x16[method]pollable.ready\x01\
-\x02\x01@\x01\x04self\x01\x01\0\x04\0\x16[method]pollable.block\x01\x03\x01p\x01\
-\x01py\x01@\x01\x02in\x04\0\x05\x04\0\x04poll\x01\x06\x03\0\x12wasi:io/poll@0.2.\
-9\x05\x03\x02\x03\0\x02\x05error\x02\x03\0\x03\x08pollable\x01B(\x02\x03\x02\x01\
-\x04\x04\0\x05error\x03\0\0\x02\x03\x02\x01\x05\x04\0\x08pollable\x03\0\x02\x01i\
-\x01\x01q\x02\x15last-operation-failed\x01\x04\0\x06closed\0\0\x04\0\x0cstream-e\
-rror\x03\0\x05\x04\0\x0cinput-stream\x03\x01\x04\0\x0doutput-stream\x03\x01\x01h\
-\x07\x01p}\x01j\x01\x0a\x01\x06\x01@\x02\x04self\x09\x03lenw\0\x0b\x04\0\x19[met\
-hod]input-stream.read\x01\x0c\x04\0\"[method]input-stream.blocking-read\x01\x0c\x01\
-j\x01w\x01\x06\x01@\x02\x04self\x09\x03lenw\0\x0d\x04\0\x19[method]input-stream.\
-skip\x01\x0e\x04\0\"[method]input-stream.blocking-skip\x01\x0e\x01i\x03\x01@\x01\
-\x04self\x09\0\x0f\x04\0\x1e[method]input-stream.subscribe\x01\x10\x01h\x08\x01@\
-\x01\x04self\x11\0\x0d\x04\0![method]output-stream.check-write\x01\x12\x01j\0\x01\
-\x06\x01@\x02\x04self\x11\x08contents\x0a\0\x13\x04\0\x1b[method]output-stream.w\
-rite\x01\x14\x04\0.[method]output-stream.blocking-write-and-flush\x01\x14\x01@\x01\
-\x04self\x11\0\x13\x04\0\x1b[method]output-stream.flush\x01\x15\x04\0$[method]ou\
-tput-stream.blocking-flush\x01\x15\x01@\x01\x04self\x11\0\x0f\x04\0\x1f[method]o\
-utput-stream.subscribe\x01\x16\x01@\x02\x04self\x11\x03lenw\0\x13\x04\0\"[method\
-]output-stream.write-zeroes\x01\x17\x04\05[method]output-stream.blocking-write-z\
-eroes-and-flush\x01\x17\x01@\x03\x04self\x11\x03src\x09\x03lenw\0\x0d\x04\0\x1c[\
-method]output-stream.splice\x01\x18\x04\0%[method]output-stream.blocking-splice\x01\
-\x18\x03\0\x15wasi:io/streams@0.2.9\x05\x06\x02\x03\0\x04\x0doutput-stream\x01B\x05\
-\x02\x03\x02\x01\x07\x04\0\x0doutput-stream\x03\0\0\x01i\x01\x01@\0\0\x02\x04\0\x0a\
-get-stdout\x01\x03\x03\0\x15wasi:cli/stdout@0.2.9\x05\x08\x01B\x05\x02\x03\x02\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 5664] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x9c+\x01A\x02\x01A&\x01\
+B\x0a\x01o\x02ss\x01p\0\x01@\0\0\x01\x04\0\x0fget-environment\x01\x02\x01ps\x01@\
+\0\0\x03\x04\0\x0dget-arguments\x01\x04\x01ks\x01@\0\0\x05\x04\0\x0binitial-cwd\x01\
+\x06\x03\0\x1awasi:cli/environment@0.2.9\x05\0\x01B\x03\x01j\0\0\x01@\x01\x06sta\
+tus\0\x01\0\x04\0\x04exit\x01\x01\x03\0\x13wasi:cli/exit@0.2.9\x05\x01\x01B\x04\x04\
+\0\x05error\x03\x01\x01h\0\x01@\x01\x04self\x01\0s\x04\0\x1d[method]error.to-deb\
+ug-string\x01\x02\x03\0\x13wasi:io/error@0.2.9\x05\x02\x01B\x0a\x04\0\x08pollabl\
+e\x03\x01\x01h\0\x01@\x01\x04self\x01\0\x7f\x04\0\x16[method]pollable.ready\x01\x02\
+\x01@\x01\x04self\x01\x01\0\x04\0\x16[method]pollable.block\x01\x03\x01p\x01\x01\
+py\x01@\x01\x02in\x04\0\x05\x04\0\x04poll\x01\x06\x03\0\x12wasi:io/poll@0.2.9\x05\
+\x03\x02\x03\0\x02\x05error\x02\x03\0\x03\x08pollable\x01B(\x02\x03\x02\x01\x04\x04\
+\0\x05error\x03\0\0\x02\x03\x02\x01\x05\x04\0\x08pollable\x03\0\x02\x01i\x01\x01\
+q\x02\x15last-operation-failed\x01\x04\0\x06closed\0\0\x04\0\x0cstream-error\x03\
+\0\x05\x04\0\x0cinput-stream\x03\x01\x04\0\x0doutput-stream\x03\x01\x01h\x07\x01\
+p}\x01j\x01\x0a\x01\x06\x01@\x02\x04self\x09\x03lenw\0\x0b\x04\0\x19[method]inpu\
+t-stream.read\x01\x0c\x04\0\"[method]input-stream.blocking-read\x01\x0c\x01j\x01\
+w\x01\x06\x01@\x02\x04self\x09\x03lenw\0\x0d\x04\0\x19[method]input-stream.skip\x01\
+\x0e\x04\0\"[method]input-stream.blocking-skip\x01\x0e\x01i\x03\x01@\x01\x04self\
+\x09\0\x0f\x04\0\x1e[method]input-stream.subscribe\x01\x10\x01h\x08\x01@\x01\x04\
+self\x11\0\x0d\x04\0![method]output-stream.check-write\x01\x12\x01j\0\x01\x06\x01\
+@\x02\x04self\x11\x08contents\x0a\0\x13\x04\0\x1b[method]output-stream.write\x01\
+\x14\x04\0.[method]output-stream.blocking-write-and-flush\x01\x14\x01@\x01\x04se\
+lf\x11\0\x13\x04\0\x1b[method]output-stream.flush\x01\x15\x04\0$[method]output-s\
+tream.blocking-flush\x01\x15\x01@\x01\x04self\x11\0\x0f\x04\0\x1f[method]output-\
+stream.subscribe\x01\x16\x01@\x02\x04self\x11\x03lenw\0\x13\x04\0\"[method]outpu\
+t-stream.write-zeroes\x01\x17\x04\05[method]output-stream.blocking-write-zeroes-\
+and-flush\x01\x17\x01@\x03\x04self\x11\x03src\x09\x03lenw\0\x0d\x04\0\x1c[method\
+]output-stream.splice\x01\x18\x04\0%[method]output-stream.blocking-splice\x01\x18\
+\x03\0\x15wasi:io/streams@0.2.9\x05\x06\x02\x03\0\x04\x0doutput-stream\x01B\x05\x02\
+\x03\x02\x01\x07\x04\0\x0doutput-stream\x03\0\0\x01i\x01\x01@\0\0\x02\x04\0\x0ag\
+et-stdout\x01\x03\x03\0\x15wasi:cli/stdout@0.2.9\x05\x08\x01B\x05\x02\x03\x02\x01\
 \x07\x04\0\x0doutput-stream\x03\0\0\x01i\x01\x01@\0\0\x02\x04\0\x0aget-stderr\x01\
 \x03\x03\0\x15wasi:cli/stderr@0.2.9\x05\x09\x01B\x05\x01r\x02\x07secondsw\x0bnan\
 osecondsy\x04\0\x08datetime\x03\0\0\x01@\0\0\x01\x04\0\x03now\x01\x02\x04\0\x0ar\
@@ -4311,18 +4388,20 @@ ectories\x01\x05\x03\0\x1ewasi:filesystem/preopens@0.2.9\x05\x10\x01B\x09\x01y\x
 \x02\x07versions\x06hidden\x7f\x0bdescriptions\x08examples\x02\x04\0\x0ccommand-\
 meta\x03\0\x03\x01q\x04\x0funknown-command\x01s\0\x0cinvalid-args\x01s\0\x06fail\
 ed\x01s\0\x02io\x01s\0\x04\0\x0dcommand-error\x03\0\x05\x01j\x01\x01\x01\x06\x04\
-\0\x0ecommand-result\x03\0\x07\x04\0\x15wacli:cli/types@1.0.0\x05\x11\x02\x03\0\x0a\
-\x09exit-code\x01B\x1b\x02\x03\x02\x01\x12\x04\0\x09exit-code\x03\0\0\x01ps\x01@\
-\0\0\x02\x04\0\x04args\x01\x03\x01o\x02ss\x01p\x04\x01@\0\0\x05\x04\0\x03env\x01\
-\x06\x01p}\x01@\x01\x05bytes\x07\x01\0\x04\0\x0cstdout-write\x01\x08\x04\0\x0cst\
-derr-write\x01\x08\x01@\0\x01\0\x04\0\x0cstdout-flush\x01\x09\x04\0\x0cstderr-fl\
-ush\x01\x09\x01j\x01\x07\x01s\x01@\x01\x04paths\0\x0a\x04\0\x09read-file\x01\x0b\
-\x01j\0\x01s\x01@\x02\x04paths\x08contents\x07\0\x0c\x04\0\x0awrite-file\x01\x0d\
-\x01j\x01\x02\x01s\x01@\x01\x04paths\0\x0e\x04\0\x08list-dir\x01\x0f\x01@\x01\x04\
-code\x01\x01\0\x04\0\x04exit\x01\x10\x04\0\x14wacli:cli/host@1.0.0\x05\x13\x04\0\
-\x1dwacli:cli/host-provider@1.0.0\x04\0\x0b\x13\x01\0\x0dhost-provider\x03\0\0\0\
-G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.244.0\x10wit-bindge\
-n-rust\x060.52.0";
+\0\x0ecommand-result\x03\0\x07\x04\0\x15wacli:cli/types@1.0.0\x05\x11\x01B\x07\x01\
+ps\x01@\0\0\0\x04\0\x04args\x01\x01\x01o\x02ss\x01p\x02\x01@\0\0\x03\x04\0\x03en\
+v\x01\x04\x04\0\x18wacli:cli/host-env@1.0.0\x05\x12\x01B\x07\x01p}\x01@\x01\x05b\
+ytes\0\x01\0\x04\0\x0cstdout-write\x01\x01\x04\0\x0cstderr-write\x01\x01\x01@\0\x01\
+\0\x04\0\x0cstdout-flush\x01\x02\x04\0\x0cstderr-flush\x01\x02\x04\0\x17wacli:cl\
+i/host-io@1.0.0\x05\x13\x01B\x0b\x01p}\x01j\x01\0\x01s\x01@\x01\x04paths\0\x01\x04\
+\0\x09read-file\x01\x02\x01j\0\x01s\x01@\x02\x04paths\x08contents\0\0\x03\x04\0\x0a\
+write-file\x01\x04\x01ps\x01j\x01\x05\x01s\x01@\x01\x04paths\0\x06\x04\0\x08list\
+-dir\x01\x07\x04\0\x17wacli:cli/host-fs@1.0.0\x05\x14\x02\x03\0\x0a\x09exit-code\
+\x01B\x04\x02\x03\x02\x01\x15\x04\0\x09exit-code\x03\0\0\x01@\x01\x04code\x01\x01\
+\0\x04\0\x04exit\x01\x02\x04\0\x1cwacli:cli/host-process@1.0.0\x05\x16\x04\0\x1d\
+wacli:cli/host-provider@1.0.0\x04\0\x0b\x13\x01\0\x0dhost-provider\x03\0\0\0G\x09\
+producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.244.0\x10wit-bindgen-rus\
+t\x060.52.0";
 
 #[inline(never)]
 #[doc(hidden)]

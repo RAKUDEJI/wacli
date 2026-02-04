@@ -35,14 +35,18 @@ wacli/
 ├── wit/                        # WIT定義
 │   ├── cli/                    # wacli:cli パッケージ
 │   │   ├── types.wit           # 共通型定義
-│   │   ├── host.wit            # wacli/host インターフェース
+│   │   ├── host-env.wit        # wacli/host-env インターフェース
+│   │   ├── host-io.wit         # wacli/host-io インターフェース
+│   │   ├── host-fs.wit         # wacli/host-fs インターフェース
+│   │   ├── host-process.wit    # wacli/host-process インターフェース
 │   │   ├── command.wit         # plugin world
 │   │   ├── registry.wit        # registry インターフェース
-│   │   └── wacli.wit           # worlds 定義 (WASI 0.2.9)
+│   │   ├── wasi-deps.wit       # WASI依存定義 (0.2.9)
+│   │   └── wacli.wit           # worlds 定義
 │   └── runner/                 # wacli:runner パッケージ
 │       └── wacli-runner.wit    # 最終成果物のWIT定義
 ├── components/                 # フレームワークコンポーネント (Rust)
-│   ├── host/                   # WASI → wacli/host ブリッジ
+│   ├── host/                   # WASI → wacli/host-* ブリッジ
 │   │   ├── Cargo.toml
 │   │   └── src/lib.rs
 │   └── core/                   # コマンドルーター
@@ -115,8 +119,12 @@ WASI 0.2.9 を使用。WASI は host/core 側で利用し、プラグインは�
 ### wacli/types
 共有型定義: `exit-code`, `command-meta`, `command-error`, `command-result`
 
-### wacli/host
-プラグイン向けホストAPI: `args`, `stdout-write`, `stderr-write`, `exit`, ファイルI/O など
+### wacli/host-*
+プラグイン向けホストAPIを機能別に分割:
+- `wacli/host-env` (`args`, `env`)
+- `wacli/host-io` (`stdout-write`, `stderr-write`, flush)
+- `wacli/host-fs` (ファイルI/O)
+- `wacli/host-process` (`exit`)
 
 ### wacli/command
 プラグインがエクスポート: `meta() -> command-meta`, `run(argv) -> command-result`
@@ -128,7 +136,10 @@ WASI 0.2.9 を使用。WASI は host/core 側で利用し、プラグインは�
 
 ```wit
 world plugin {
-  import host;
+  import host-env;
+  import host-io;
+  import host-fs;
+  import host-process;
   export command;
 }
 ```
@@ -165,7 +176,7 @@ wasm-tools component new components/core/core.wasm \
 
 ### 特徴
 - `Command` trait + `export!` マクロ
-- `host` モジュール（stdout, stderr, args, env, ファイルI/O）
+- `host` モジュール（host-* の集約: stdout/stderr, args/env, ファイルI/O, exit）
 - `args` モジュール（引数パース）
 - `io` モジュール（print, println, eprint, eprintln）
 

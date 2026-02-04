@@ -8,7 +8,10 @@ interface command {
 }
 
 world plugin {
-  import host;
+  import host-env;
+  import host-io;
+  import host-fs;
+  import host-process;
 
   export command;
 }

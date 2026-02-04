@@ -16,7 +16,7 @@ pub fn generate_wac(package_name: &str, commands: &[CommandInfo]) -> String {
     // Package declaration
     wac.push_str(&format!("package {};\n\n", package_name));
 
-    // Instantiate host (imports WASI, exports wacli/types and wacli/host)
+    // Instantiate host (imports WASI, exports wacli/types and host-* interfaces)
     wac.push_str("// Host component (WASI bridge)\n");
     wac.push_str("let host = new wacli:host { ... };\n\n");
 
@@ -27,7 +27,7 @@ pub fn generate_wac(package_name: &str, commands: &[CommandInfo]) -> String {
             let var_name = cmd.var_name();
             let pkg_name = cmd.package_name();
             wac.push_str(&format!(
-                "let {var_name} = new {pkg_name} {{\n  types: host.types,\n  host: host.host,\n  ...\n}};\n\n",
+                "let {var_name} = new {pkg_name} {{\n  types: host.types,\n  host-env: host.host-env,\n  host-io: host.host-io,\n  host-fs: host.host-fs,\n  host-process: host.host-process,\n  ...\n}};\n\n",
             ));
         }
     }
@@ -35,7 +35,11 @@ pub fn generate_wac(package_name: &str, commands: &[CommandInfo]) -> String {
     // Instantiate registry with all command exports
     wac.push_str("// Registry (command dispatch)\n");
     wac.push_str("let registry = new wacli:registry {\n");
-    wac.push_str("  types: host.types");
+    wac.push_str("  types: host.types,\n");
+    wac.push_str("  host-env: host.host-env,\n");
+    wac.push_str("  host-io: host.host-io,\n");
+    wac.push_str("  host-fs: host.host-fs,\n");
+    wac.push_str("  host-process: host.host-process");
     for cmd in commands {
         let var_name = cmd.var_name();
         wac.push_str(&format!(
@@ -49,7 +53,10 @@ pub fn generate_wac(package_name: &str, commands: &[CommandInfo]) -> String {
     wac.push_str("// Core (CLI router)\n");
     wac.push_str("let core = new wacli:core {\n");
     wac.push_str("  types: host.types,\n");
-    wac.push_str("  host: host.host,\n");
+    wac.push_str("  host-env: host.host-env,\n");
+    wac.push_str("  host-io: host.host-io,\n");
+    wac.push_str("  host-fs: host.host-fs,\n");
+    wac.push_str("  host-process: host.host-process,\n");
     wac.push_str("  registry: registry.registry\n");
     wac.push_str("};\n\n");
 

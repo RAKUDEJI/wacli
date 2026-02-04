@@ -25,22 +25,37 @@ interface types {
 }
 "#;
 
-pub const HOST_WIT: &str = r#"package wacli:cli@1.0.0;
+pub const HOST_ENV_WIT: &str = r#"package wacli:cli@1.0.0;
 
-interface host {
-  use types.{exit-code};
-
+interface host-env {
   args: func() -> list<string>;
   env: func() -> list<tuple<string, string>>;
+}
+"#;
 
+pub const HOST_IO_WIT: &str = r#"package wacli:cli@1.0.0;
+
+interface host-io {
   stdout-write: func(bytes: list<u8>);
   stderr-write: func(bytes: list<u8>);
   stdout-flush: func();
   stderr-flush: func();
+}
+"#;
 
+pub const HOST_FS_WIT: &str = r#"package wacli:cli@1.0.0;
+
+interface host-fs {
   read-file: func(path: string) -> result<list<u8>, string>;
   write-file: func(path: string, contents: list<u8>) -> result<_, string>;
   list-dir: func(path: string) -> result<list<string>, string>;
+}
+"#;
+
+pub const HOST_PROCESS_WIT: &str = r#"package wacli:cli@1.0.0;
+
+interface host-process {
+  use types.{exit-code};
 
   exit: func(code: exit-code);
 }
@@ -56,7 +71,10 @@ interface command {
 }
 
 world plugin {
-  import host;
+  import host-env;
+  import host-io;
+  import host-fs;
+  import host-process;
 
   export command;
 }
@@ -72,7 +90,10 @@ interface registry {
 }
 
 world registry-provider {
-  import host;
+  import host-env;
+  import host-io;
+  import host-fs;
+  import host-process;
   export registry;
 }
 "#;

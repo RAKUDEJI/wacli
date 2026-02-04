@@ -24,8 +24,16 @@
 #[doc(hidden)]
 pub mod bindings;
 
-pub use bindings::wacli::cli::host;
+pub use bindings::wacli::cli::{host_env, host_fs, host_io, host_process};
 pub use bindings::wacli::cli::types::{CommandError, CommandMeta, CommandResult};
+
+/// Convenience facade over the split host interfaces.
+pub mod host {
+    pub use super::host_env::{args, env};
+    pub use super::host_fs::{list_dir, read_file, write_file};
+    pub use super::host_io::{stderr_flush, stderr_write, stdout_flush, stdout_write};
+    pub use super::host_process::exit;
+}
 
 /// Common imports for wacli command implementations.
 pub mod prelude {
