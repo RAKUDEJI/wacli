@@ -22,7 +22,7 @@ if [ "v${version}" != "$tag" ]; then
   exit 0
 fi
 
-if cargo info "$crate" --registry crates-io | grep -q "version: ${version}"; then
+if cargo info "$crate" --registry crates-io 2>&1 | grep -q "version: ${version}"; then
   echo "already published"
   exit 0
 fi
@@ -31,7 +31,7 @@ if cargo publish -p "$crate"; then
   exit 0
 fi
 
-if cargo info "$crate" --registry crates-io | grep -q "version: ${version}"; then
+if cargo info "$crate" --registry crates-io 2>&1 | grep -q "version: ${version}"; then
   echo "already published"
   exit 0
 fi
