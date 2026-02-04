@@ -186,6 +186,11 @@ fn init(args: InitArgs) -> Result<()> {
 }
 
 const PLUGIN_WIT: &str = wit::COMMAND_WIT;
+const TYPES_WIT: &str = wit::TYPES_WIT;
+const HOST_ENV_WIT: &str = wit::HOST_ENV_WIT;
+const HOST_IO_WIT: &str = wit::HOST_IO_WIT;
+const HOST_FS_WIT: &str = wit::HOST_FS_WIT;
+const HOST_PROCESS_WIT: &str = wit::HOST_PROCESS_WIT;
 const HOST_COMPONENT_URL: &str =
     "https://github.com/RAKUDEJI/wacli/releases/latest/download/host.component.wasm";
 const CORE_COMPONENT_URL: &str =
@@ -196,14 +201,30 @@ fn write_plugin_wit(project_dir: &Path, overwrite: bool) -> Result<()> {
     fs::create_dir_all(&wit_dir)
         .with_context(|| format!("failed to create directory: {}", wit_dir.display()))?;
 
-    let dest = wit_dir.join("command.wit");
+    let files = [
+        ("types.wit", TYPES_WIT),
+        ("host-env.wit", HOST_ENV_WIT),
+        ("host-io.wit", HOST_IO_WIT),
+        ("host-fs.wit", HOST_FS_WIT),
+        ("host-process.wit", HOST_PROCESS_WIT),
+        ("command.wit", PLUGIN_WIT),
+    ];
+
+    for (name, contents) in files {
+        write_wit_file(&wit_dir, name, contents, overwrite)?;
+    }
+    Ok(())
+}
+
+fn write_wit_file(dir: &Path, name: &str, contents: &str, overwrite: bool) -> Result<()> {
+    let dest = dir.join(name);
     if dest.exists() && !overwrite {
-        tracing::info!("command.wit already exists, skipping");
+        tracing::info!("{name} already exists, skipping");
         return Ok(());
     }
 
     let tmp_path = dest.with_extension("tmp");
-    fs::write(&tmp_path, PLUGIN_WIT)
+    fs::write(&tmp_path, contents)
         .with_context(|| format!("failed to write {}", tmp_path.display()))?;
     if overwrite && dest.exists() {
         fs::remove_file(&dest)
@@ -211,7 +232,7 @@ fn write_plugin_wit(project_dir: &Path, overwrite: bool) -> Result<()> {
     }
     fs::rename(&tmp_path, &dest)
         .with_context(|| format!("failed to move {} into place", dest.display()))?;
-    tracing::info!("installed command.wit -> {}", dest.display());
+    tracing::info!("installed {} -> {}", name, dest.display());
     Ok(())
 }
 
