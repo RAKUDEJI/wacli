@@ -114,7 +114,7 @@ wacli run --dir /path/to/data::/data my-cli.component.wasm <command> [args...]
 need to pass `--dir` through to the command itself.
 
 **Note:** Direct `wasmtime run` is not supported because the composed CLI imports
-`wacli:cli/pipe-runtime@1.0.0`, which is provided by `wacli run`.
+`wacli:cli/pipe-runtime@2.0.0`, which is provided by `wacli run`.
 
 ### Compose components directly
 
@@ -272,7 +272,7 @@ world plugin {
 
 **Note:** These unqualified imports are shorthand for the same-package interfaces.
 When embedded into a component they resolve to fully-qualified names like
-`wacli:cli/host-env@1.0.0`. This is expected and matches what `wacli` provides.
+`wacli:cli/host-env@2.0.0`. This is expected and matches what `wacli` provides.
 
 ## License
 

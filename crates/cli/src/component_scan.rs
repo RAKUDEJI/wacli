@@ -31,7 +31,7 @@ impl CommandInfo {
     /// Resolve the preferred import name for a given base (e.g. "host-env").
     /// Falls back to the fully qualified name if no match is found.
     pub fn import_name(&self, base: &str) -> String {
-        let fqn = format!("wacli:cli/{base}@1.0.0");
+        let fqn = format!("wacli:cli/{base}@2.0.0");
         if self.imports.iter().any(|i| i == &fqn) {
             return fqn;
         }
@@ -133,7 +133,7 @@ fn analyze_wasm(wasm_bytes: &[u8]) -> Result<WasmKind> {
 fn exports_command_interface(exports: &[String]) -> bool {
     exports
         .iter()
-        .any(|e| e == "wacli:cli/command@1.0.0" || e == "wacli:cli/command" || e == "command")
+        .any(|e| e == "wacli:cli/command@2.0.0" || e == "wacli:cli/command" || e == "command")
 }
 
 /// Scan the commands directory and return validated command info.

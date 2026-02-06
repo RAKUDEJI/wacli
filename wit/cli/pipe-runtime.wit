@@ -1,4 +1,4 @@
-package wacli:cli@1.0.0;
+package wacli:cli@2.0.0;
 
 interface pipe-runtime {
   use types.{pipe-meta, pipe-error, pipe-info};

@@ -226,9 +226,10 @@ fn parse_package_name(name: &str) -> Result<PackageName> {
 }
 
 fn build_list_commands_body(commands: &[CommandInfo], name_offsets: &[(u32, u32)]) -> String {
-    const RECORD_SIZE: i32 = 60;
-    const ZERO_FIELDS: [i32; 12] = [8, 12, 16, 20, 24, 28, 32, 36, 44, 48, 52, 56];
-    const META_COPY_FIELDS: [i32; 12] = [8, 12, 16, 20, 24, 28, 32, 36, 44, 48, 52, 56];
+    const RECORD_SIZE: i32 = 68;
+    const ZERO_FIELDS: [i32; 14] = [8, 12, 16, 20, 24, 28, 32, 36, 44, 48, 52, 56, 60, 64];
+    const META_COPY_FIELDS: [i32; 14] =
+        [8, 12, 16, 20, 24, 28, 32, 36, 44, 48, 52, 56, 60, 64];
 
     let count = commands.len() as i32;
     let list_bytes = count * RECORD_SIZE;
@@ -283,7 +284,7 @@ fn build_list_commands_body(commands: &[CommandInfo], name_offsets: &[(u32, u32)
         push_line(&mut body, 4, "i32.const 0");
         push_line(&mut body, 4, "i32.store8 offset=40");
 
-        push_line(&mut body, 4, "i32.const 60");
+        push_line(&mut body, 4, "i32.const 68");
         push_line(&mut body, 4, "call $alloc");
         push_line(&mut body, 4, "local.set $meta_ptr");
         push_line(&mut body, 4, "local.get $meta_ptr");

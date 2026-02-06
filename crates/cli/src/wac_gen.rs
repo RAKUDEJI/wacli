@@ -12,11 +12,11 @@ use crate::component_scan::CommandInfo;
 /// 5. Exports the CLI entry point (wasi:cli/run)
 pub fn generate_wac(package_name: &str, commands: &[CommandInfo]) -> String {
     let mut wac = String::new();
-    let host_env_import = "\"wacli:cli/host-env@1.0.0\"";
-    let host_io_import = "\"wacli:cli/host-io@1.0.0\"";
-    let host_process_import = "\"wacli:cli/host-process@1.0.0\"";
-    let registry_import = "\"wacli:cli/registry@1.0.0\"";
-    let types_import = "\"wacli:cli/types@1.0.0\"";
+    let host_env_import = "\"wacli:cli/host-env@2.0.0\"";
+    let host_io_import = "\"wacli:cli/host-io@2.0.0\"";
+    let host_process_import = "\"wacli:cli/host-process@2.0.0\"";
+    let registry_import = "\"wacli:cli/registry@2.0.0\"";
+    let types_import = "\"wacli:cli/types@2.0.0\"";
 
     // Package declaration
     wac.push_str(&format!("package {};\n\n", package_name));

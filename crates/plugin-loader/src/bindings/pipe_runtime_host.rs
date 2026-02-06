@@ -222,6 +222,49 @@ pub mod wacli {
             )]
             #[component(record)]
             #[derive(Clone)]
+            pub struct ArgDef {
+                #[component(name = "name")]
+                pub name: wasmtime::component::__internal::String,
+                #[component(name = "short")]
+                pub short: Option<wasmtime::component::__internal::String>,
+                #[component(name = "long")]
+                pub long: Option<wasmtime::component::__internal::String>,
+                #[component(name = "help")]
+                pub help: wasmtime::component::__internal::String,
+                #[component(name = "required")]
+                pub required: bool,
+                #[component(name = "default-value")]
+                pub default_value: Option<wasmtime::component::__internal::String>,
+                #[component(name = "value-name")]
+                pub value_name: Option<wasmtime::component::__internal::String>,
+                #[component(name = "takes-value")]
+                pub takes_value: bool,
+            }
+            impl core::fmt::Debug for ArgDef {
+                fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                    f.debug_struct("ArgDef")
+                        .field("name", &self.name)
+                        .field("short", &self.short)
+                        .field("long", &self.long)
+                        .field("help", &self.help)
+                        .field("required", &self.required)
+                        .field("default-value", &self.default_value)
+                        .field("value-name", &self.value_name)
+                        .field("takes-value", &self.takes_value)
+                        .finish()
+                }
+            }
+            const _: () = {
+                assert!(72 == <ArgDef as wasmtime::component::ComponentType>::SIZE32);
+                assert!(4 == <ArgDef as wasmtime::component::ComponentType>::ALIGN32);
+            };
+            #[derive(
+                wasmtime::component::ComponentType,
+                wasmtime::component::Lift,
+                wasmtime::component::Lower,
+            )]
+            #[component(record)]
+            #[derive(Clone)]
             pub struct CommandMeta {
                 #[component(name = "name")]
                 pub name: wasmtime::component::__internal::String,
@@ -241,6 +284,8 @@ pub mod wacli {
                 #[component(name = "examples")]
                 pub examples:
                     wasmtime::component::__internal::Vec<wasmtime::component::__internal::String>,
+                #[component(name = "args")]
+                pub args: wasmtime::component::__internal::Vec<ArgDef>,
             }
             impl core::fmt::Debug for CommandMeta {
                 fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -253,11 +298,12 @@ pub mod wacli {
                         .field("hidden", &self.hidden)
                         .field("description", &self.description)
                         .field("examples", &self.examples)
+                        .field("args", &self.args)
                         .finish()
                 }
             }
             const _: () = {
-                assert!(60 == <CommandMeta as wasmtime::component::ComponentType>::SIZE32);
+                assert!(68 == <CommandMeta as wasmtime::component::ComponentType>::SIZE32);
                 assert!(4 == <CommandMeta as wasmtime::component::ComponentType>::ALIGN32);
             };
             #[derive(
@@ -421,7 +467,7 @@ pub mod wacli {
                 for<'a> D::Data<'a>: Host,
                 T: 'static,
             {
-                let mut inst = linker.instance("wacli:cli/types@1.0.0")?;
+                let mut inst = linker.instance("wacli:cli/types@2.0.0")?;
                 Ok(())
             }
         }
@@ -523,7 +569,7 @@ pub mod wacli {
                 for<'a> D::Data<'a>: Host,
                 T: 'static,
             {
-                let mut inst = linker.instance("wacli:cli/pipe-runtime@1.0.0")?;
+                let mut inst = linker.instance("wacli:cli/pipe-runtime@2.0.0")?;
                 inst.resource(
                     "pipe",
                     wasmtime::component::ResourceType::host::<Pipe>(),

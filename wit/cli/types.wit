@@ -1,7 +1,18 @@
-package wacli:cli@1.0.0;
+package wacli:cli@2.0.0;
 
 interface types {
   type exit-code = u32;
+
+  record arg-def {
+    name: string,
+    short: option<string>,
+    long: option<string>,
+    help: string,
+    required: bool,
+    default-value: option<string>,
+    value-name: option<string>,
+    takes-value: bool,
+  }
 
   record command-meta {
     name: string,
@@ -12,6 +23,7 @@ interface types {
     hidden: bool,
     description: string,
     examples: list<string>,
+    args: list<arg-def>,
   }
 
   variant command-error {

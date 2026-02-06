@@ -1,7 +1,18 @@
-pub const TYPES_WIT: &str = r#"package wacli:cli@1.0.0;
+pub const TYPES_WIT: &str = r#"package wacli:cli@2.0.0;
 
 interface types {
   type exit-code = u32;
+
+  record arg-def {
+    name: string,
+    short: option<string>,
+    long: option<string>,
+    help: string,
+    required: bool,
+    default-value: option<string>,
+    value-name: option<string>,
+    takes-value: bool,
+  }
 
   record command-meta {
     name: string,
@@ -12,6 +23,7 @@ interface types {
     hidden: bool,
     description: string,
     examples: list<string>,
+    args: list<arg-def>,
   }
 
   variant command-error {
@@ -45,7 +57,7 @@ interface types {
 }
 "#;
 
-pub const HOST_ENV_WIT: &str = r#"package wacli:cli@1.0.0;
+pub const HOST_ENV_WIT: &str = r#"package wacli:cli@2.0.0;
 
 interface host-env {
   args: func() -> list<string>;
@@ -53,7 +65,7 @@ interface host-env {
 }
 "#;
 
-pub const HOST_IO_WIT: &str = r#"package wacli:cli@1.0.0;
+pub const HOST_IO_WIT: &str = r#"package wacli:cli@2.0.0;
 
 interface host-io {
   stdout-write: func(bytes: list<u8>);
@@ -63,7 +75,7 @@ interface host-io {
 }
 "#;
 
-pub const HOST_FS_WIT: &str = r#"package wacli:cli@1.0.0;
+pub const HOST_FS_WIT: &str = r#"package wacli:cli@2.0.0;
 
 interface host-fs {
   read-file: func(path: string) -> result<list<u8>, string>;
@@ -73,7 +85,7 @@ interface host-fs {
 }
 "#;
 
-pub const HOST_PROCESS_WIT: &str = r#"package wacli:cli@1.0.0;
+pub const HOST_PROCESS_WIT: &str = r#"package wacli:cli@2.0.0;
 
 interface host-process {
   use types.{exit-code};
@@ -82,7 +94,7 @@ interface host-process {
 }
 "#;
 
-pub const HOST_PIPES_WIT: &str = r#"package wacli:cli@1.0.0;
+pub const HOST_PIPES_WIT: &str = r#"package wacli:cli@2.0.0;
 
 interface host-pipes {
   use types.{pipe-meta, pipe-error, pipe-info};
@@ -97,7 +109,7 @@ interface host-pipes {
 }
 "#;
 
-pub const PIPE_RUNTIME_WIT: &str = r#"package wacli:cli@1.0.0;
+pub const PIPE_RUNTIME_WIT: &str = r#"package wacli:cli@2.0.0;
 
 interface pipe-runtime {
   use types.{pipe-meta, pipe-error, pipe-info};
@@ -116,7 +128,7 @@ world pipe-runtime-host {
 }
 "#;
 
-pub const COMMAND_WIT: &str = r#"package wacli:cli@1.0.0;
+pub const COMMAND_WIT: &str = r#"package wacli:cli@2.0.0;
 
 interface command {
   use types.{command-meta, command-result};
@@ -128,7 +140,7 @@ interface command {
 world plugin {
   /// These are unqualified because they live in the same package.
   /// When embedded into a component, they resolve to:
-  ///   wacli:cli/host-<name>@1.0.0
+  ///   wacli:cli/host-<name>@2.0.0
   import host-env;
   import host-io;
   import host-fs;
@@ -139,7 +151,7 @@ world plugin {
 }
 "#;
 
-pub const PIPE_WIT: &str = r#"package wacli:cli@1.0.0;
+pub const PIPE_WIT: &str = r#"package wacli:cli@2.0.0;
 
 interface pipe {
   use types.{pipe-meta, pipe-error};
@@ -153,7 +165,7 @@ world pipe-plugin {
 }
 "#;
 
-pub const REGISTRY_WIT: &str = r#"package wacli:cli@1.0.0;
+pub const REGISTRY_WIT: &str = r#"package wacli:cli@2.0.0;
 
 interface registry {
   use types.{command-meta, command-result};

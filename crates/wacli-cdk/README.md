@@ -33,7 +33,7 @@ edition = "2024"
 crate-type = ["cdylib"]
 
 [dependencies]
-wacli-cdk = "0.0.36"
+wacli-cdk = "0.0.37"
 ```
 
 ## Quick Start
@@ -417,7 +417,7 @@ wacli run my-cli.component.wasm my-command --help
 ```
 
 **Note:** Direct `wasmtime run` will fail because the composed CLI imports
-`wacli:cli/pipe-runtime@1.0.0`, which is provided by `wacli run`.
+`wacli:cli/pipe-runtime@2.0.0`, which is provided by `wacli run`.
 
 **Tip:** The file name (without `.component.wasm`) becomes the command name.
 Keep it in sync with `meta("...")` to avoid confusion.

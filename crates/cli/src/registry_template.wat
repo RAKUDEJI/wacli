@@ -109,8 +109,8 @@
     local.get $align
     call $alloc-align)
 
-  (export "wacli:cli/registry@1.0.0#list-commands" (func $list-commands))
-  (export "wacli:cli/registry@1.0.0#run" (func $run))
+  (export "wacli:cli/registry@2.0.0#list-commands" (func $list-commands))
+  (export "wacli:cli/registry@2.0.0#run" (func $run))
   (export "cabi_realloc" (func $cabi_realloc))
 
   (data (i32.const 0) "{{NAME_DATA}}")

@@ -25,7 +25,7 @@
 pub mod bindings;
 
 pub use bindings::wacli::cli::types::{
-    CommandError, CommandMeta, CommandResult, PipeError, PipeInfo, PipeMeta,
+    ArgDef, CommandError, CommandMeta, CommandResult, PipeError, PipeInfo, PipeMeta,
 };
 pub use bindings::wacli::cli::{host_env, host_fs, host_io, host_pipes, host_process};
 
@@ -142,7 +142,7 @@ pub mod host {
 /// Common imports for wacli command implementations.
 pub mod prelude {
     pub use super::{
-        Command, CommandError, CommandMeta, CommandResult, Context, args, fs, io, meta, pipes,
+        Command, CommandError, CommandMeta, CommandResult, Context, arg, args, fs, io, meta, pipes,
     };
 }
 
@@ -255,14 +255,14 @@ macro_rules! export {
                 }
             }
 
-            #[unsafe(export_name = "wacli:cli/command@1.0.0#meta")]
+            #[unsafe(export_name = "wacli:cli/command@2.0.0#meta")]
             unsafe extern "C" fn __export_meta() -> *mut u8 {
                 unsafe {
                     $crate::bindings::exports::wacli::cli::command::_export_meta_cabi::<__WacliShim>()
                 }
             }
 
-            #[unsafe(export_name = "wacli:cli/command@1.0.0#run")]
+            #[unsafe(export_name = "wacli:cli/command@2.0.0#run")]
             unsafe extern "C" fn __export_run(arg0: *mut u8, arg1: usize) -> *mut u8 {
                 unsafe {
                     $crate::bindings::exports::wacli::cli::command::_export_run_cabi::<__WacliShim>(
@@ -271,7 +271,7 @@ macro_rules! export {
                 }
             }
 
-            #[unsafe(export_name = "cabi_post_wacli:cli/command@1.0.0#meta")]
+            #[unsafe(export_name = "cabi_post_wacli:cli/command@2.0.0#meta")]
             unsafe extern "C" fn __post_return_meta(arg0: *mut u8) {
                 unsafe {
                     $crate::bindings::exports::wacli::cli::command::__post_return_meta::<__WacliShim>(
@@ -280,7 +280,7 @@ macro_rules! export {
                 }
             }
 
-            #[unsafe(export_name = "cabi_post_wacli:cli/command@1.0.0#run")]
+            #[unsafe(export_name = "cabi_post_wacli:cli/command@2.0.0#run")]
             unsafe extern "C" fn __post_return_run(arg0: *mut u8) {
                 unsafe {
                     $crate::bindings::exports::wacli::cli::command::__post_return_run::<__WacliShim>(
@@ -305,6 +305,27 @@ macro_rules! export {
 /// ```
 pub fn meta(name: impl Into<String>) -> MetaBuilder {
     MetaBuilder::new(name)
+}
+
+/// Create an argument definition builder.
+///
+/// This is used to declaratively describe accepted flags and positional arguments
+/// in `CommandMeta`.
+///
+/// # Example
+///
+/// ```rust,ignore
+/// use wacli_cdk::{arg, meta};
+///
+/// fn meta() -> wacli_cdk::CommandMeta {
+///     meta("show")
+///         .arg(arg("file").required(true).value_name("FILE").help("File to display"))
+///         .arg(arg("verbose").short("-v").long("--verbose").help("Verbose output"))
+///         .build()
+/// }
+/// ```
+pub fn arg(name: impl Into<String>) -> ArgBuilder {
+    ArgBuilder::new(name)
 }
 
 /// Minimal argument helpers (no extra dependencies).
@@ -590,6 +611,7 @@ pub struct MetaBuilder {
     hidden: bool,
     description: String,
     examples: Vec<String>,
+    args: Vec<ArgDef>,
 }
 
 impl MetaBuilder {
@@ -635,6 +657,11 @@ impl MetaBuilder {
         self
     }
 
+    pub fn arg(mut self, arg: ArgBuilder) -> Self {
+        self.args.push(arg.build());
+        self
+    }
+
     pub fn build(self) -> CommandMeta {
         CommandMeta {
             name: self.name,
@@ -645,6 +672,78 @@ impl MetaBuilder {
             hidden: self.hidden,
             description: self.description,
             examples: self.examples,
+            args: self.args,
+        }
+    }
+}
+
+/// Builder for `ArgDef`.
+#[derive(Default)]
+pub struct ArgBuilder {
+    name: String,
+    short: Option<String>,
+    long: Option<String>,
+    help: String,
+    required: bool,
+    default_value: Option<String>,
+    value_name: Option<String>,
+    takes_value: Option<bool>,
+}
+
+impl ArgBuilder {
+    pub fn new(name: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            ..Default::default()
+        }
+    }
+
+    pub fn short(mut self, short: impl Into<String>) -> Self {
+        self.short = Some(short.into());
+        self
+    }
+
+    pub fn long(mut self, long: impl Into<String>) -> Self {
+        self.long = Some(long.into());
+        self
+    }
+
+    pub fn help(mut self, help: impl Into<String>) -> Self {
+        self.help = help.into();
+        self
+    }
+
+    pub fn required(mut self, required: bool) -> Self {
+        self.required = required;
+        self
+    }
+
+    pub fn default_value(mut self, value: impl Into<String>) -> Self {
+        self.default_value = Some(value.into());
+        self
+    }
+
+    pub fn value_name(mut self, value_name: impl Into<String>) -> Self {
+        self.value_name = Some(value_name.into());
+        self
+    }
+
+    pub fn takes_value(mut self, takes_value: bool) -> Self {
+        self.takes_value = Some(takes_value);
+        self
+    }
+
+    pub fn build(self) -> ArgDef {
+        let inferred_takes_value = self.short.is_none() && self.long.is_none();
+        ArgDef {
+            name: self.name,
+            short: self.short,
+            long: self.long,
+            help: self.help,
+            required: self.required,
+            default_value: self.default_value,
+            value_name: self.value_name,
+            takes_value: self.takes_value.unwrap_or(inferred_takes_value),
         }
     }
 }
