@@ -148,24 +148,30 @@ jobs:
           #
           # `wacli` pulls the WASM layer with media type application/wasm.
           #
-          # Note: some registries reject `application/vnd.oci.empty.v1+json`, so provide a
-          # minimal OCI image config explicitly.
-          config_file="$(mktemp)"
-          printf '{}' > "$config_file"
+          # Note: the Molt registry requires a WASM-aware config:
+          # - mediaType: application/vnd.wasm.config.v0+json
+          # - JSON includes os, layer digests, and component imports/exports.
+          host_config_file="$(mktemp)"
+          python3 scripts/gen_wasm_oci_config.py components/host.component.wasm > "$host_config_file"
 
           oras push "${headers[@]}" \
-            --config "$config_file:application/vnd.oci.image.config.v1+json" \
+            --config "$host_config_file:application/vnd.wasm.config.v0+json" \
             --artifact-type application/vnd.wasm.component.v1+wasm \
             "$registry_host/wacli/host:$TAG" \
             components/host.component.wasm:application/wasm
 
+          rm -f "$host_config_file"
+
+          core_config_file="$(mktemp)"
+          python3 scripts/gen_wasm_oci_config.py components/core.component.wasm > "$core_config_file"
+
           oras push "${headers[@]}" \
-            --config "$config_file:application/vnd.oci.image.config.v1+json" \
+            --config "$core_config_file:application/vnd.wasm.config.v0+json" \
             --artifact-type application/vnd.wasm.component.v1+wasm \
             "$registry_host/wacli/core:$TAG" \
             components/core.component.wasm:application/wasm
 
-          rm -f "$config_file"
+          rm -f "$core_config_file"
 
       - name: Upload components
         uses: actions/upload-artifact@v4
