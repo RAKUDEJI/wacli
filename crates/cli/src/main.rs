@@ -106,7 +106,7 @@ struct InitArgs {
     #[arg(value_name = "DIR")]
     dir: Option<PathBuf>,
 
-    /// Download framework components (host/core) into defaults/
+    /// Download framework components (host/core) into defaults/ (requires MOLT_REGISTRY)
     #[arg(long)]
     with_components: bool,
 
@@ -289,10 +289,6 @@ const HOST_PROCESS_WIT: &str = wit::HOST_PROCESS_WIT;
 const HOST_PIPES_WIT: &str = wit::HOST_PIPES_WIT;
 const PIPE_RUNTIME_WIT: &str = wit::PIPE_RUNTIME_WIT;
 const PIPE_WIT: &str = wit::PIPE_WIT;
-const HOST_COMPONENT_URL: &str =
-    "https://github.com/RAKUDEJI/wacli/releases/latest/download/host.component.wasm";
-const CORE_COMPONENT_URL: &str =
-    "https://github.com/RAKUDEJI/wacli/releases/latest/download/core.component.wasm";
 
 fn write_plugin_wit(project_dir: &Path, overwrite: bool) -> Result<()> {
     let wit_dir = project_dir.join("wit");
@@ -340,91 +336,50 @@ fn download_framework_components(defaults_dir: &Path, overwrite: bool) -> Result
     let host_path = defaults_dir.join("host.component.wasm");
     let core_path = defaults_dir.join("core.component.wasm");
 
-    if let Some(client) = molt_registry_client::OciWasmClient::from_env()? {
-        let version_tag = format!("v{}", env!("CARGO_PKG_VERSION"));
-        let host_repo =
-            std::env::var("WACLI_HOST_REPO").unwrap_or_else(|_| "wacli/host".to_string());
-        let core_repo =
-            std::env::var("WACLI_CORE_REPO").unwrap_or_else(|_| "wacli/core".to_string());
-        let host_ref =
-            std::env::var("WACLI_HOST_REFERENCE").unwrap_or_else(|_| version_tag.clone());
-        let core_ref = std::env::var("WACLI_CORE_REFERENCE").unwrap_or_else(|_| version_tag);
-
-        tracing::info!(
-            "downloading framework components from registry {}",
-            std::env::var("MOLT_REGISTRY").unwrap_or_default()
-        );
-
-        if host_path.exists() && !overwrite {
-            tracing::info!("host.component.wasm already exists, skipping download");
-        } else {
-            crate::registry_pull::pull_component_wasm_to_file(
-                &client, &host_repo, &host_ref, &host_path, overwrite,
-            )
-            .context("failed to pull host.component.wasm from registry")?;
-            tracing::info!("downloaded host.component.wasm -> {}", host_path.display());
-        }
-
-        if core_path.exists() && !overwrite {
-            tracing::info!("core.component.wasm already exists, skipping download");
-        } else {
-            crate::registry_pull::pull_component_wasm_to_file(
-                &client, &core_repo, &core_ref, &core_path, overwrite,
-            )
-            .context("failed to pull core.component.wasm from registry")?;
-            tracing::info!("downloaded core.component.wasm -> {}", core_path.display());
-        }
-
+    let needs_host = overwrite || !host_path.exists();
+    let needs_core = overwrite || !core_path.exists();
+    if !needs_host && !needs_core {
         return Ok(());
     }
 
-    download_component(
-        HOST_COMPONENT_URL,
-        &host_path,
-        overwrite,
-        "host.component.wasm",
-    )?;
-    download_component(
-        CORE_COMPONENT_URL,
-        &core_path,
-        overwrite,
-        "core.component.wasm",
-    )?;
-    Ok(())
-}
-
-fn download_component(url: &str, dest: &Path, overwrite: bool, label: &str) -> Result<()> {
-    if dest.exists() && !overwrite {
-        tracing::info!("{} already exists, skipping download", label);
-        return Ok(());
-    }
-
-    let tmp_path = dest.with_extension("download");
-    let response = ureq::get(url)
-        .set("User-Agent", concat!("wacli/", env!("CARGO_PKG_VERSION")))
-        .call()
-        .with_context(|| format!("failed to download {}", url))?;
-
-    if response.status() >= 400 {
+    let Some(client) = molt_registry_client::OciWasmClient::from_env()? else {
         bail!(
-            "failed to download {} (status {})",
-            label,
-            response.status()
+            "MOLT_REGISTRY is not configured.\n\n\
+Set MOLT_REGISTRY (and auth) to download framework components, or omit --with-components and provide defaults/host.component.wasm + defaults/core.component.wasm manually."
         );
+    };
+
+    let version_tag = format!("v{}", env!("CARGO_PKG_VERSION"));
+    let host_repo = std::env::var("WACLI_HOST_REPO").unwrap_or_else(|_| "wacli/host".to_string());
+    let core_repo = std::env::var("WACLI_CORE_REPO").unwrap_or_else(|_| "wacli/core".to_string());
+    let host_ref = std::env::var("WACLI_HOST_REFERENCE").unwrap_or_else(|_| version_tag.clone());
+    let core_ref = std::env::var("WACLI_CORE_REFERENCE").unwrap_or_else(|_| version_tag);
+
+    tracing::info!(
+        "downloading framework components from registry {}",
+        std::env::var("MOLT_REGISTRY").unwrap_or_default()
+    );
+
+    if !needs_host {
+        tracing::info!("host.component.wasm already exists, skipping download");
+    } else {
+        crate::registry_pull::pull_component_wasm_to_file(
+            &client, &host_repo, &host_ref, &host_path, overwrite,
+        )
+        .context("failed to pull host.component.wasm from registry")?;
+        tracing::info!("downloaded host.component.wasm -> {}", host_path.display());
     }
 
-    let mut reader = response.into_reader();
-    let mut tmp_file = fs::File::create(&tmp_path)
-        .with_context(|| format!("failed to create {}", tmp_path.display()))?;
-    std::io::copy(&mut reader, &mut tmp_file)
-        .with_context(|| format!("failed to write {}", tmp_path.display()))?;
-
-    if overwrite && dest.exists() {
-        fs::remove_file(dest).with_context(|| format!("failed to remove {}", dest.display()))?;
+    if !needs_core {
+        tracing::info!("core.component.wasm already exists, skipping download");
+    } else {
+        crate::registry_pull::pull_component_wasm_to_file(
+            &client, &core_repo, &core_ref, &core_path, overwrite,
+        )
+        .context("failed to pull core.component.wasm from registry")?;
+        tracing::info!("downloaded core.component.wasm -> {}", core_path.display());
     }
 
-    fs::rename(&tmp_path, dest).with_context(|| format!("failed to move {} into place", label))?;
-    tracing::info!("downloaded {} -> {}", label, dest.display());
     Ok(())
 }
 
