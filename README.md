@@ -61,9 +61,8 @@ Download framework components in one step:
 wacli init my-cli --with-components
 ```
 
-If `MOLT_REGISTRY` is set, `--with-components` pulls `host.component.wasm` and
-`core.component.wasm` from the registry via `/v2` instead of GitHub Releases.
-By default it uses:
+`--with-components` pulls `host.component.wasm` and `core.component.wasm` from
+an OCI registry via `/v2` (**requires `MOLT_REGISTRY`**). By default it uses:
 
 - `WACLI_HOST_REPO` (default `wacli/host`) with `WACLI_HOST_REFERENCE` (default `v<cli-version>`)
 - `WACLI_CORE_REPO` (default `wacli/core`) with `WACLI_CORE_REFERENCE` (default `v<cli-version>`)
