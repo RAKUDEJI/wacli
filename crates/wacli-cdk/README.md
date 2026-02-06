@@ -13,6 +13,7 @@ Command Development Kit for building [wacli](https://github.com/RAKUDEJI/wacli) 
 - **`Command` trait** - Define your command's metadata and execution logic
 - **`export!` macro** - Generate required WIT exports automatically
 - **`meta()` builder** - Fluent API for command metadata
+- **`arg()` builder + `parse()`** - Declarative argument definitions (auto `--help`/`--version`, validation)
 - **`Context`** - Access arguments and environment variables
 - **`args` module** - Lightweight argument parsing helpers
 - **`io` module** - stdout/stderr utilities
@@ -33,7 +34,7 @@ edition = "2024"
 crate-type = ["cdylib"]
 
 [dependencies]
-wacli-cdk = "0.0.38"
+wacli-cdk = "0.0.39"
 ```
 
 ## Quick Start
@@ -99,8 +100,7 @@ Wrap `argv` with `Context` to access environment variables and convenient argume
 `argv` contains only arguments (the command name is not included).
 Example: `my-cli greet Alice` -> `argv = ["Alice"]`.
 
-**Note:** Positional parsing does not guess which flags take values. If you have value-taking
-flags like `--output out.txt`, declare them with a schema and use `*_with_schema` helpers.
+**Tip:** For real commands, prefer declarative args via `meta().arg(...)` + `parse(...)`.
 
 ```rust
 fn run(argv: Vec<String>) -> CommandResult {
@@ -133,7 +133,41 @@ fn run(argv: Vec<String>) -> CommandResult {
 }
 ```
 
-### Argument Helpers
+### Declarative Arguments (Recommended)
+
+Define args in `meta()` and parse with `parse()`:
+
+```rust
+use wacli_cdk::{CommandError, CommandResult, Context, arg, meta, parse};
+
+fn meta() -> wacli_cdk::CommandMeta {
+    meta("show")
+        .summary("Display a file")
+        .usage("show [OPTIONS] <FILE>")
+        .arg(arg("file").required(true).value_name("FILE").help("File to display"))
+        .arg(arg("verbose").short("-v").long("--verbose").help("Verbose output"))
+        .build()
+}
+
+fn run(argv: Vec<String>) -> CommandResult {
+    let ctx = Context::new(argv);
+    let m = parse(&meta(), &ctx.argv)?;
+
+    let file = m.get("file").unwrap();
+    let verbose = m.is_present("verbose");
+
+    // ... do work ...
+    let _ = (file, verbose);
+    Ok(0)
+}
+```
+
+`parse()` automatically:
+- validates unknown flags
+- checks required args
+- handles `-h/--help` and `-V/--version` (prints and exits 0 when running under `wacli run`)
+
+### Legacy Argument Helpers
 
 Use `args` module functions directly for more control:
 
@@ -141,12 +175,6 @@ Use `args` module functions directly for more control:
 use wacli_cdk::args;
 
 fn run(argv: Vec<String>) -> CommandResult {
-    // Check for flags
-    if args::flag(&argv, "--help") {
-        print_help();
-        return Ok(0);
-    }
-
     // Get flag values
     let count = args::value(&argv, "--count")
         .and_then(|s| s.parse().ok())
