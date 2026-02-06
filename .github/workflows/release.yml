@@ -173,12 +173,6 @@ jobs:
 
           rm -f "$core_config_file"
 
-      - name: Upload components
-        uses: actions/upload-artifact@v4
-        with:
-          name: components
-          path: components/*.component.wasm
-
   publish-cdk:
     runs-on: ubuntu-latest
 
@@ -306,8 +300,7 @@ jobs:
         run: |
           mkdir -p release
           release_dir="$(pwd)/release"
-          find artifacts/components -type f -exec cp {} release/ \;
-          find artifacts -type f ! -path "artifacts/components/*" -exec cp {} release/ \;
+          find artifacts -type f -exec cp {} release/ \;
           tmp_dir="$(mktemp -d)"
           while IFS= read -r file; do
             base="$(basename "$file")"
@@ -319,7 +312,7 @@ jobs:
             cp "$file" "$tmp_dir/$bin_name"
             zip -q -j "${release_dir}/${base}.zip" "$tmp_dir/$bin_name"
             rm -f "$tmp_dir/$bin_name"
-          done < <(find artifacts -type f ! -path "artifacts/components/*")
+          done < <(find artifacts -type f)
           rm -rf "$tmp_dir"
           ls -la release/
 
