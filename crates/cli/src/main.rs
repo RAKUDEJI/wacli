@@ -368,7 +368,7 @@ Set MOLT_REGISTRY (and auth) to download framework components, or omit --with-co
     let host_repo = std::env::var("WACLI_HOST_REPO").unwrap_or_else(|_| "wacli/host".to_string());
     let core_repo = std::env::var("WACLI_CORE_REPO").unwrap_or_else(|_| "wacli/core".to_string());
     let host_ref = std::env::var("WACLI_HOST_REFERENCE").unwrap_or_else(|_| version_tag.clone());
-    let core_ref = std::env::var("WACLI_CORE_REFERENCE").unwrap_or_else(|_| version_tag);
+    let core_ref = std::env::var("WACLI_CORE_REFERENCE").unwrap_or(version_tag);
 
     tracing::info!(
         "downloading framework components from registry {}",
@@ -691,7 +691,7 @@ fn resolve_framework_components(
         std::env::var("WACLI_CORE_REPO").unwrap_or_else(|_| "wacli/core".to_string());
     let desired_host_ref =
         std::env::var("WACLI_HOST_REFERENCE").unwrap_or_else(|_| version_tag.clone());
-    let desired_core_ref = std::env::var("WACLI_CORE_REFERENCE").unwrap_or_else(|_| version_tag);
+    let desired_core_ref = std::env::var("WACLI_CORE_REFERENCE").unwrap_or(version_tag);
 
     let cache_dir = base_dir.join(".wacli").join("framework");
     fs::create_dir_all(&cache_dir)
@@ -708,98 +708,46 @@ fn resolve_framework_components(
     // then fall back to resolving from the registry.
     let host_path = if host_local.exists() {
         host_local
-    } else {
-        if !update_lock {
-            if let Some(locked) = lock.framework_host() {
-                let digest = locked.digest.trim();
-                if digest.is_empty() {
-                    bail!("wacli.lock has an empty digest for framework host");
-                }
+    } else if !update_lock {
+        if let Some(locked) = lock.framework_host() {
+            let digest = locked.digest.trim();
+            if digest.is_empty() {
+                bail!("wacli.lock has an empty digest for framework host");
+            }
 
-                let dest = cache_path(&locked.repo, digest, "host.component.wasm");
-                if dest.exists() {
-                    tracing::info!("using cached host (locked): {}", dest.display());
-                    dest
-                } else {
-                    let Some(client) = client.as_ref() else {
-                        bail!(
-                            "framework host is not available locally, and MOLT_REGISTRY is not configured.\n\n\
+            let dest = cache_path(&locked.repo, digest, "host.component.wasm");
+            if dest.exists() {
+                tracing::info!("using cached host (locked): {}", dest.display());
+                dest
+            } else {
+                let Some(client) = client.as_ref() else {
+                    bail!(
+                        "framework host is not available locally, and MOLT_REGISTRY is not configured.\n\n\
 Expected cached host at: {}\n\n\
 Set MOLT_REGISTRY (and auth) to download framework components.",
-                            dest.display()
-                        );
-                    };
-                    tracing::info!(
-                        "defaults host.component.wasm missing; pulling locked digest from registry: {}@{}",
-                        locked.repo,
-                        digest
+                        dest.display()
                     );
-                    crate::registry_pull::pull_component_wasm_to_file(
-                        client,
-                        &locked.repo,
-                        digest,
-                        &dest,
-                        false,
-                    )
-                    .context("failed to pull host.component.wasm from registry (locked)")?;
-                    tracing::info!("cached host: {}", dest.display());
-                    dest
-                }
-            } else {
-                // No lock entry; resolve via registry.
-                let Some(client) = client.as_ref() else {
-                    return crate::component_scan::verify_defaults(defaults_dir);
                 };
-
-                let rt = tokio::runtime::Builder::new_current_thread()
-                    .enable_all()
-                    .build()
-                    .context("failed to initialize async runtime")?;
-                let (manifest_digest, layer_digest) = rt
-                    .block_on(
-                        client.resolve_component_digests(&desired_host_repo, &desired_host_ref),
-                    )
-                    .with_context(|| {
-                        format!(
-                            "failed to resolve host digest from registry: {}:{}",
-                            desired_host_repo, desired_host_ref
-                        )
-                    })?;
-
-                lock.set_framework_host(crate::lock::LockedComponent {
-                    repo: desired_host_repo.clone(),
-                    reference: desired_host_ref.clone(),
-                    digest: manifest_digest.clone(),
-                    layer_digest: Some(layer_digest),
-                });
-                *lock_dirty = true;
-
-                let dest = cache_path(&desired_host_repo, &manifest_digest, "host.component.wasm");
-                if dest.exists() {
-                    tracing::info!("using cached host: {}", dest.display());
-                    dest
-                } else {
-                    tracing::info!(
-                        "defaults host.component.wasm missing; pulling from registry: {}@{} (resolved from {})",
-                        desired_host_repo,
-                        manifest_digest,
-                        desired_host_ref
-                    );
-                    crate::registry_pull::pull_component_wasm_to_file(
-                        client,
-                        &desired_host_repo,
-                        &manifest_digest,
-                        &dest,
-                        false,
-                    )
-                    .context("failed to pull host.component.wasm from registry")?;
-                    tracing::info!("cached host: {}", dest.display());
-                    dest
-                }
+                tracing::info!(
+                    "defaults host.component.wasm missing; pulling locked digest from registry: {}@{}",
+                    locked.repo,
+                    digest
+                );
+                crate::registry_pull::pull_component_wasm_to_file(
+                    client,
+                    &locked.repo,
+                    digest,
+                    &dest,
+                    false,
+                )
+                .context("failed to pull host.component.wasm from registry (locked)")?;
+                tracing::info!("cached host: {}", dest.display());
+                dest
             }
         } else {
+            // No lock entry; resolve via registry.
             let Some(client) = client.as_ref() else {
-                bail!("--update-lock requires MOLT_REGISTRY to be configured");
+                return crate::component_scan::verify_defaults(defaults_dir);
             };
 
             let rt = tokio::runtime::Builder::new_current_thread()
@@ -846,101 +794,97 @@ Set MOLT_REGISTRY (and auth) to download framework components.",
                 dest
             }
         }
+    } else {
+        let Some(client) = client.as_ref() else {
+            bail!("--update-lock requires MOLT_REGISTRY to be configured");
+        };
+
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .context("failed to initialize async runtime")?;
+        let (manifest_digest, layer_digest) = rt
+            .block_on(client.resolve_component_digests(&desired_host_repo, &desired_host_ref))
+            .with_context(|| {
+                format!(
+                    "failed to resolve host digest from registry: {}:{}",
+                    desired_host_repo, desired_host_ref
+                )
+            })?;
+
+        lock.set_framework_host(crate::lock::LockedComponent {
+            repo: desired_host_repo.clone(),
+            reference: desired_host_ref.clone(),
+            digest: manifest_digest.clone(),
+            layer_digest: Some(layer_digest),
+        });
+        *lock_dirty = true;
+
+        let dest = cache_path(&desired_host_repo, &manifest_digest, "host.component.wasm");
+        if dest.exists() {
+            tracing::info!("using cached host: {}", dest.display());
+            dest
+        } else {
+            tracing::info!(
+                "defaults host.component.wasm missing; pulling from registry: {}@{} (resolved from {})",
+                desired_host_repo,
+                manifest_digest,
+                desired_host_ref
+            );
+            crate::registry_pull::pull_component_wasm_to_file(
+                client,
+                &desired_host_repo,
+                &manifest_digest,
+                &dest,
+                false,
+            )
+            .context("failed to pull host.component.wasm from registry")?;
+            tracing::info!("cached host: {}", dest.display());
+            dest
+        }
     };
 
     let core_path = if core_local.exists() {
         core_local
-    } else {
-        if !update_lock {
-            if let Some(locked) = lock.framework_core() {
-                let digest = locked.digest.trim();
-                if digest.is_empty() {
-                    bail!("wacli.lock has an empty digest for framework core");
-                }
+    } else if !update_lock {
+        if let Some(locked) = lock.framework_core() {
+            let digest = locked.digest.trim();
+            if digest.is_empty() {
+                bail!("wacli.lock has an empty digest for framework core");
+            }
 
-                let dest = cache_path(&locked.repo, digest, "core.component.wasm");
-                if dest.exists() {
-                    tracing::info!("using cached core (locked): {}", dest.display());
-                    dest
-                } else {
-                    let Some(client) = client.as_ref() else {
-                        bail!(
-                            "framework core is not available locally, and MOLT_REGISTRY is not configured.\n\n\
-Expected cached core at: {}\n\n\
-Set MOLT_REGISTRY (and auth) to download framework components.",
-                            dest.display()
-                        );
-                    };
-                    tracing::info!(
-                        "defaults core.component.wasm missing; pulling locked digest from registry: {}@{}",
-                        locked.repo,
-                        digest
-                    );
-                    crate::registry_pull::pull_component_wasm_to_file(
-                        client,
-                        &locked.repo,
-                        digest,
-                        &dest,
-                        false,
-                    )
-                    .context("failed to pull core.component.wasm from registry (locked)")?;
-                    tracing::info!("cached core: {}", dest.display());
-                    dest
-                }
+            let dest = cache_path(&locked.repo, digest, "core.component.wasm");
+            if dest.exists() {
+                tracing::info!("using cached core (locked): {}", dest.display());
+                dest
             } else {
                 let Some(client) = client.as_ref() else {
-                    return crate::component_scan::verify_defaults(defaults_dir);
-                };
-
-                let rt = tokio::runtime::Builder::new_current_thread()
-                    .enable_all()
-                    .build()
-                    .context("failed to initialize async runtime")?;
-                let (manifest_digest, layer_digest) = rt
-                    .block_on(
-                        client.resolve_component_digests(&desired_core_repo, &desired_core_ref),
-                    )
-                    .with_context(|| {
-                        format!(
-                            "failed to resolve core digest from registry: {}:{}",
-                            desired_core_repo, desired_core_ref
-                        )
-                    })?;
-
-                lock.set_framework_core(crate::lock::LockedComponent {
-                    repo: desired_core_repo.clone(),
-                    reference: desired_core_ref.clone(),
-                    digest: manifest_digest.clone(),
-                    layer_digest: Some(layer_digest),
-                });
-                *lock_dirty = true;
-
-                let dest = cache_path(&desired_core_repo, &manifest_digest, "core.component.wasm");
-                if dest.exists() {
-                    tracing::info!("using cached core: {}", dest.display());
-                    dest
-                } else {
-                    tracing::info!(
-                        "defaults core.component.wasm missing; pulling from registry: {}@{} (resolved from {})",
-                        desired_core_repo,
-                        manifest_digest,
-                        desired_core_ref
+                    bail!(
+                        "framework core is not available locally, and MOLT_REGISTRY is not configured.\n\n\
+Expected cached core at: {}\n\n\
+Set MOLT_REGISTRY (and auth) to download framework components.",
+                        dest.display()
                     );
-                    crate::registry_pull::pull_component_wasm_to_file(
-                        client,
-                        &desired_core_repo,
-                        &manifest_digest,
-                        &dest,
-                        false,
-                    )
-                    .context("failed to pull core.component.wasm from registry")?;
-                    tracing::info!("cached core: {}", dest.display());
-                    dest
-                }
+                };
+                tracing::info!(
+                    "defaults core.component.wasm missing; pulling locked digest from registry: {}@{}",
+                    locked.repo,
+                    digest
+                );
+                crate::registry_pull::pull_component_wasm_to_file(
+                    client,
+                    &locked.repo,
+                    digest,
+                    &dest,
+                    false,
+                )
+                .context("failed to pull core.component.wasm from registry (locked)")?;
+                tracing::info!("cached core: {}", dest.display());
+                dest
             }
         } else {
             let Some(client) = client.as_ref() else {
-                bail!("--update-lock requires MOLT_REGISTRY to be configured");
+                return crate::component_scan::verify_defaults(defaults_dir);
             };
 
             let rt = tokio::runtime::Builder::new_current_thread()
@@ -986,6 +930,54 @@ Set MOLT_REGISTRY (and auth) to download framework components.",
                 tracing::info!("cached core: {}", dest.display());
                 dest
             }
+        }
+    } else {
+        let Some(client) = client.as_ref() else {
+            bail!("--update-lock requires MOLT_REGISTRY to be configured");
+        };
+
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .context("failed to initialize async runtime")?;
+        let (manifest_digest, layer_digest) = rt
+            .block_on(client.resolve_component_digests(&desired_core_repo, &desired_core_ref))
+            .with_context(|| {
+                format!(
+                    "failed to resolve core digest from registry: {}:{}",
+                    desired_core_repo, desired_core_ref
+                )
+            })?;
+
+        lock.set_framework_core(crate::lock::LockedComponent {
+            repo: desired_core_repo.clone(),
+            reference: desired_core_ref.clone(),
+            digest: manifest_digest.clone(),
+            layer_digest: Some(layer_digest),
+        });
+        *lock_dirty = true;
+
+        let dest = cache_path(&desired_core_repo, &manifest_digest, "core.component.wasm");
+        if dest.exists() {
+            tracing::info!("using cached core: {}", dest.display());
+            dest
+        } else {
+            tracing::info!(
+                "defaults core.component.wasm missing; pulling from registry: {}@{} (resolved from {})",
+                desired_core_repo,
+                manifest_digest,
+                desired_core_ref
+            );
+            crate::registry_pull::pull_component_wasm_to_file(
+                client,
+                &desired_core_repo,
+                &manifest_digest,
+                &dest,
+                false,
+            )
+            .context("failed to pull core.component.wasm from registry")?;
+            tracing::info!("cached core: {}", dest.display());
+            dest
         }
     };
 

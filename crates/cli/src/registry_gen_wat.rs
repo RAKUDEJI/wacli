@@ -110,11 +110,11 @@ fn append_wit_base(dst: &mut String) {
 }
 
 fn append_without_package(dst: &mut String, wit: &str) {
-    let mut lines = wit.lines();
+    let lines = wit.lines();
     let mut saw_package = false;
     let mut started = false;
 
-    while let Some(line) = lines.next() {
+    for line in lines {
         if !started {
             if !saw_package && line.trim_start().starts_with("package ") {
                 saw_package = true;

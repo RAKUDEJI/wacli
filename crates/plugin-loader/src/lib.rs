@@ -320,7 +320,7 @@ impl HostState {
         let component = Component::from_binary(&self.engine, &bytes)
             .map_err(|e| format!("failed to parse pipe {}: {e}", path.display()))?;
         let linker = Linker::new(&self.engine);
-        let mut store = Store::new(&self.engine, PipeState::default());
+        let mut store = Store::new(&self.engine, PipeState);
         let instance =
             pipe_plugin_bindings::PipePlugin::instantiate(&mut store, &component, &linker)
                 .map_err(|e| format!("failed to instantiate pipe {}: {e}", path.display()))?;

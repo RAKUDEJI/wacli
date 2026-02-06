@@ -30,8 +30,10 @@ pub struct PulledComponentWasm {
 
 impl OciWasmClient {
     pub fn new(endpoint: RegistryEndpoint, auth: RegistryAuth) -> Result<Self> {
-        let mut cfg = ClientConfig::default();
-        cfg.user_agent = concat!("molt-registry-client/", env!("CARGO_PKG_VERSION"));
+        let cfg = ClientConfig {
+            user_agent: concat!("molt-registry-client/", env!("CARGO_PKG_VERSION")),
+            ..Default::default()
+        };
         let client = Client::try_from(cfg).context("failed to create oci-client")?;
 
         Ok(Self {
@@ -217,6 +219,7 @@ impl OciWasmClient {
     /// subject digest and uses that in the referrer manifest's `subject` field.
     ///
     /// Note: The referrer itself is pushed under `wit_tag` in the same repository.
+    #[allow(clippy::too_many_arguments)]
     pub async fn push_wit_referrer(
         &self,
         repo: &str,
