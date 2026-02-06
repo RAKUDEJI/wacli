@@ -328,8 +328,288 @@ pub fn arg(name: impl Into<String>) -> ArgBuilder {
     ArgBuilder::new(name)
 }
 
+/// Parse `argv` according to the declarative argument definitions in `meta`.
+pub fn parse<'a>(meta: &CommandMeta, argv: &'a [String]) -> Result<args::Matches<'a>, CommandError> {
+    args::parse(meta, argv)
+}
+
 /// Minimal argument helpers (no extra dependencies).
 pub mod args {
+    use super::{ArgDef, CommandError, CommandMeta};
+    use std::borrow::Cow;
+    use std::collections::{HashMap, HashSet};
+
+    #[derive(Debug, Clone)]
+    struct ArgInfo {
+        name: String,
+        short: Option<String>,
+        long: Option<String>,
+        takes_value: bool,
+        default_value: Option<String>,
+    }
+
+    /// Parsed arguments and values.
+    ///
+    /// This is intentionally minimal (clap-like features are built on top).
+    #[derive(Debug, Clone, Default)]
+    pub struct Matches<'a> {
+        values: HashMap<String, Vec<Cow<'a, str>>>,
+        present: HashSet<String>,
+        rest: Vec<&'a str>,
+    }
+
+    impl<'a> Matches<'a> {
+        /// Get the last value for an argument (positional or value-taking flag).
+        pub fn get(&self, name: &str) -> Option<&str> {
+            self.values
+                .get(name)
+                .and_then(|v| v.last().map(|s| s.as_ref()))
+        }
+
+        /// Get all values for an argument (if it occurs multiple times).
+        pub fn get_all(&self, name: &str) -> Option<&[Cow<'a, str>]> {
+            self.values.get(name).map(|v| v.as_slice())
+        }
+
+        /// Whether an argument was present (boolean flag) or has a value.
+        pub fn is_present(&self, name: &str) -> bool {
+            self.present.contains(name) || self.values.contains_key(name)
+        }
+
+        /// Extra positional arguments not covered by declared positional arg defs.
+        pub fn rest(&self) -> &[&'a str] {
+            self.rest.as_slice()
+        }
+    }
+
+    fn normalize_short(raw: &str) -> String {
+        let trimmed = raw.trim();
+        if trimmed.starts_with('-') {
+            trimmed.to_string()
+        } else {
+            format!("-{trimmed}")
+        }
+    }
+
+    fn normalize_long(raw: &str) -> String {
+        let trimmed = raw.trim();
+        if trimmed.starts_with("--") {
+            trimmed.to_string()
+        } else if trimmed.starts_with('-') {
+            trimmed.to_string()
+        } else {
+            format!("--{trimmed}")
+        }
+    }
+
+    fn build_arg_info(def: &ArgDef) -> ArgInfo {
+        let short = def.short.as_deref().map(normalize_short);
+        let long = def.long.as_deref().map(normalize_long);
+        ArgInfo {
+            name: def.name.clone(),
+            short,
+            long,
+            takes_value: def.takes_value,
+            default_value: def.default_value.clone(),
+        }
+    }
+
+    /// Parse `argv` based on the `meta.args` schema.
+    ///
+    /// This does not yet implement clap-level behavior (auto help, required checks, etc).
+    pub fn parse<'a>(meta: &CommandMeta, argv: &'a [String]) -> Result<Matches<'a>, CommandError> {
+        let infos: Vec<ArgInfo> = meta.args.iter().map(build_arg_info).collect();
+        let mut long_map: HashMap<String, usize> = HashMap::new();
+        let mut short_map: HashMap<String, usize> = HashMap::new();
+        let mut positional_defs: Vec<usize> = Vec::new();
+
+        for (idx, info) in infos.iter().enumerate() {
+            if info.short.is_none() && info.long.is_none() {
+                positional_defs.push(idx);
+                continue;
+            }
+
+            if let Some(short) = &info.short {
+                if let Some(prev) = short_map.insert(short.clone(), idx) {
+                    if infos[prev].name != info.name {
+                        return Err(CommandError::Failed(format!(
+                            "arg definition conflict: {short} maps to both '{}' and '{}'",
+                            infos[prev].name, info.name
+                        )));
+                    }
+                }
+            }
+            if let Some(long) = &info.long {
+                if let Some(prev) = long_map.insert(long.clone(), idx) {
+                    if infos[prev].name != info.name {
+                        return Err(CommandError::Failed(format!(
+                            "arg definition conflict: {long} maps to both '{}' and '{}'",
+                            infos[prev].name, info.name
+                        )));
+                    }
+                }
+            }
+        }
+
+        let mut m = Matches::default();
+        let mut positionals: Vec<&'a str> = Vec::new();
+
+        let mut i = 0usize;
+        let mut after_separator = false;
+        while i < argv.len() {
+            let arg = argv[i].as_str();
+
+            if !after_separator && arg == "--" {
+                after_separator = true;
+                i += 1;
+                continue;
+            }
+
+            if !after_separator && arg.starts_with("--") && arg != "--" {
+                // --key=value
+                if let Some((flag, value)) = arg.split_once('=') {
+                    if let Some(&idx) = long_map.get(flag) {
+                        let info = &infos[idx];
+                        if !info.takes_value {
+                            return Err(CommandError::InvalidArgs(format!(
+                                "flag does not take a value: {flag}"
+                            )));
+                        }
+                        m.values
+                            .entry(info.name.clone())
+                            .or_default()
+                            .push(Cow::Borrowed(value));
+                        i += 1;
+                        continue;
+                    }
+                    return Err(CommandError::InvalidArgs(format!("unknown flag: {flag}")));
+                }
+
+                // --key value? (only if declared)
+                if let Some(&idx) = long_map.get(arg) {
+                    let info = &infos[idx];
+                    if info.takes_value {
+                        let value = argv.get(i + 1).ok_or_else(|| {
+                            CommandError::InvalidArgs(format!("missing value for {arg}"))
+                        })?;
+                        m.values
+                            .entry(info.name.clone())
+                            .or_default()
+                            .push(Cow::Borrowed(value.as_str()));
+                        i += 2;
+                    } else {
+                        m.present.insert(info.name.clone());
+                        i += 1;
+                    }
+                    continue;
+                }
+
+                return Err(CommandError::InvalidArgs(format!("unknown flag: {arg}")));
+            }
+
+            if !after_separator && arg.starts_with('-') && arg != "-" {
+                // Short flags: -v, -o value, -abc, -ofile
+                if arg.len() == 2 {
+                    if let Some(&idx) = short_map.get(arg) {
+                        let info = &infos[idx];
+                        if info.takes_value {
+                            let value = argv.get(i + 1).ok_or_else(|| {
+                                CommandError::InvalidArgs(format!("missing value for {arg}"))
+                            })?;
+                            m.values
+                                .entry(info.name.clone())
+                                .or_default()
+                                .push(Cow::Borrowed(value.as_str()));
+                            i += 2;
+                        } else {
+                            m.present.insert(info.name.clone());
+                            i += 1;
+                        }
+                        continue;
+                    }
+                    return Err(CommandError::InvalidArgs(format!("unknown flag: {arg}")));
+                }
+
+                // Combined short flags.
+                let bytes = arg.as_bytes();
+                if !bytes.is_ascii() {
+                    return Err(CommandError::InvalidArgs(format!(
+                        "invalid short flags: {arg}"
+                    )));
+                }
+
+                let mut k = 1usize;
+                let mut consumed_next = false;
+                while k < bytes.len() {
+                    let c = bytes[k] as char;
+                    let flag = format!("-{c}");
+                    let Some(&idx) = short_map.get(&flag) else {
+                        return Err(CommandError::InvalidArgs(format!("unknown flag: {flag}")));
+                    };
+                    let info = &infos[idx];
+                    if info.takes_value {
+                        let rest = &arg[k + 1..];
+                        if !rest.is_empty() {
+                            m.values
+                                .entry(info.name.clone())
+                                .or_default()
+                                .push(Cow::Borrowed(rest));
+                        } else {
+                            let value = argv.get(i + 1).ok_or_else(|| {
+                                CommandError::InvalidArgs(format!("missing value for {flag}"))
+                            })?;
+                            m.values
+                                .entry(info.name.clone())
+                                .or_default()
+                                .push(Cow::Borrowed(value.as_str()));
+                            consumed_next = true;
+                        }
+                        break;
+                    } else {
+                        m.present.insert(info.name.clone());
+                    }
+                    k += 1;
+                }
+
+                i += if consumed_next { 2 } else { 1 };
+                continue;
+            }
+
+            positionals.push(arg);
+            i += 1;
+        }
+
+        // Assign positional args by declaration order.
+        let mut pos_iter = positionals.into_iter();
+        for &idx in &positional_defs {
+            let info = &infos[idx];
+            if let Some(v) = pos_iter.next() {
+                m.values
+                    .entry(info.name.clone())
+                    .or_default()
+                    .push(Cow::Borrowed(v));
+            }
+        }
+        m.rest.extend(pos_iter);
+
+        // Apply defaults for missing value-taking args.
+        for info in &infos {
+            if info.takes_value
+                && info.default_value.is_some()
+                && !m.values.contains_key(&info.name)
+            {
+                if let Some(default_value) = info.default_value.clone() {
+                    m.values
+                        .entry(info.name.clone())
+                        .or_default()
+                        .push(Cow::Owned(default_value));
+                }
+            }
+        }
+
+        Ok(m)
+    }
+
     /// Declare which flags take a value in the *next* argument (e.g. `--output out.txt`).
     ///
     /// Without a schema, parsing cannot reliably distinguish between:
@@ -519,7 +799,7 @@ pub mod args {
 
 #[cfg(test)]
 mod tests {
-    use super::args;
+    use super::{arg, args, meta, parse};
 
     #[test]
     fn positional_skips_flags() {
@@ -597,6 +877,69 @@ mod tests {
             args::positional_args_with_schema(&argv, &schema),
             vec!["file.txt"]
         );
+    }
+
+    #[test]
+    fn parse_does_not_consume_positional_for_boolean_flag() {
+        let meta = meta("show")
+            .arg(arg("verbose").long("--verbose").help("Verbose output"))
+            .arg(arg("file").required(true).value_name("FILE").help("File to show"))
+            .build();
+        let argv = vec!["--verbose".to_string(), "hello.txt".to_string()];
+        let m = parse(&meta, &argv).unwrap();
+        assert!(m.is_present("verbose"));
+        assert_eq!(m.get("file"), Some("hello.txt"));
+    }
+
+    #[test]
+    fn parse_consumes_value_for_value_flag_even_if_it_starts_with_dash() {
+        let meta = meta("show")
+            .arg(
+                arg("output")
+                    .long("--output")
+                    .value_name("FILE")
+                    .help("Output file"),
+            )
+            .arg(arg("file").required(true).value_name("FILE").help("Input file"))
+            .build();
+        let argv = vec![
+            "--output".to_string(),
+            "-".to_string(),
+            "in.txt".to_string(),
+        ];
+        let m = parse(&meta, &argv).unwrap();
+        assert_eq!(m.get("output"), Some("-"));
+        assert_eq!(m.get("file"), Some("in.txt"));
+    }
+
+    #[test]
+    fn parse_supports_combined_short_flags_and_attached_value() {
+        let meta = meta("show")
+            .arg(arg("verbose").short("-v").help("Verbose output"))
+            .arg(arg("output").short("-o").value_name("FILE").help("Output file"))
+            .arg(arg("file").required(true).value_name("FILE").help("Input file"))
+            .build();
+        let argv = vec!["-voout.txt".to_string(), "in.txt".to_string()];
+        let m = parse(&meta, &argv).unwrap();
+        assert!(m.is_present("verbose"));
+        assert_eq!(m.get("output"), Some("out.txt"));
+        assert_eq!(m.get("file"), Some("in.txt"));
+    }
+
+    #[test]
+    fn parse_applies_default_value_for_missing_value_flag() {
+        let meta = meta("show")
+            .arg(
+                arg("format")
+                    .long("--format")
+                    .value_name("PIPE")
+                    .default_value("plain")
+                    .help("Format pipe"),
+            )
+            .build();
+        let argv: Vec<String> = Vec::new();
+        let m = parse(&meta, &argv).unwrap();
+        assert_eq!(m.get("format"), Some("plain"));
     }
 }
 
@@ -734,11 +1077,35 @@ impl ArgBuilder {
     }
 
     pub fn build(self) -> ArgDef {
-        let inferred_takes_value = self.short.is_none() && self.long.is_none();
+        let short = self.short.map(|s| {
+            let s = s.trim().to_string();
+            if s.starts_with('-') {
+                s
+            } else {
+                format!("-{s}")
+            }
+        });
+        let long = self.long.map(|s| {
+            let s = s.trim().to_string();
+            if s.starts_with("--") {
+                s
+            } else if s.starts_with('-') {
+                s
+            } else {
+                format!("--{s}")
+            }
+        });
+
+        let positional = short.is_none() && long.is_none();
+        let inferred_takes_value = if positional {
+            true
+        } else {
+            self.value_name.is_some() || self.default_value.is_some()
+        };
         ArgDef {
             name: self.name,
-            short: self.short,
-            long: self.long,
+            short,
+            long,
             help: self.help,
             required: self.required,
             default_value: self.default_value,

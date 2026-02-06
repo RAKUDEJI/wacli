@@ -1,4 +1,4 @@
-use wacli_cdk::{args, meta, pipes, Command, CommandError, CommandMeta, CommandResult, Context};
+use wacli_cdk::{arg, meta, parse, pipes, Command, CommandError, CommandMeta, CommandResult, Context};
 
 struct Show;
 
@@ -7,14 +7,21 @@ impl Command for Show {
         meta("show")
             .summary("Show text with optional pipe formatting")
             .usage("show [--format <PIPE>] [TEXT]")
+            .arg(
+                arg("format")
+                    .long("--format")
+                    .value_name("PIPE")
+                    .help("Pipe to apply to the input"),
+            )
+            .arg(arg("text").value_name("TEXT").help("Text to show"))
             .build()
     }
 
     fn run(argv: Vec<String>) -> CommandResult {
         let ctx = Context::new(argv);
-        let schema = args::Schema::new().value_flag("--format");
-        let format = ctx.value("--format");
-        let input = ctx.arg_with_schema(0, &schema).unwrap_or("hello world");
+        let matches = parse(&Self::meta(), &ctx.argv)?;
+        let format = matches.get("format");
+        let input = matches.get("text").unwrap_or("hello world");
 
         if let Some(pipe_name) = format {
             let pipe = pipes::load(pipe_name)
