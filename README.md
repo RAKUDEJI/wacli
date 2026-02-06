@@ -43,6 +43,9 @@ cargo install wacli --no-default-features
 
 ## Usage
 
+`wacli` reads registry settings from environment variables. For local/dev usage
+you can put them in a `.env` file (loaded automatically if present).
+
 ### Initialize a new project
 
 ```bash
@@ -54,6 +57,13 @@ Download framework components in one step:
 ```bash
 wacli init my-cli --with-components
 ```
+
+If `MOLT_REGISTRY` is set, `--with-components` pulls `host.component.wasm` and
+`core.component.wasm` from the registry via `/v2` instead of GitHub Releases.
+By default it uses:
+
+- `WACLI_HOST_REPO` (default `wacli/host`) with `WACLI_HOST_REFERENCE` (default `v<cli-version>`)
+- `WACLI_CORE_REPO` (default `wacli/core`) with `WACLI_CORE_REFERENCE` (default `v<cli-version>`)
 
 This creates the directory structure:
 ```
@@ -72,6 +82,10 @@ cd my-cli
 wacli build
 ```
 
+If `defaults/host.component.wasm` or `defaults/core.component.wasm` is missing
+and `MOLT_REGISTRY` is set, `wacli build` will pull the missing framework
+components from the registry into `.wacli/framework/` and use the cached files.
+
 `wacli init` creates a `wacli.json` manifest so you don't need to repeat build flags.
 
 Example `wacli.json`:
@@ -88,6 +102,30 @@ Example `wacli.json`:
 }
 ```
 
+Optional: resolve command plugins from an OCI registry (instead of requiring
+local `commands/*.component.wasm` files):
+
+```json
+{
+  "schemaVersion": 1,
+  "build": {
+    "name": "example:my-cli",
+    "version": "0.1.0",
+    "output": "my-cli.component.wasm",
+    "defaultsDir": "defaults",
+    "commandsDir": "commands",
+    "commands": [
+      { "name": "greet", "repo": "example/greet", "reference": "1.0.0" }
+    ]
+  }
+}
+```
+
+This requires `MOLT_REGISTRY` and auth via either `MOLT_AUTH_HEADER` or
+`USERNAME`/`PASSWORD` (Basic). Pulled
+components are cached under `.wacli/commands/`. Set `WACLI_REGISTRY_REFRESH=1`
+to force re-pull.
+
 Options:
 - `--manifest`: Path to a wacli manifest (defaults to `./wacli.json` if present)
 - `--name`: Package name (default: "example:my-cli")
@@ -100,7 +138,8 @@ Options:
 - `--print-wac`: Print generated WAC without composing
 - `--use-prebuilt-registry`: Use `defaults/registry.component.wasm` instead of generating a registry
 
-**Note:** `wacli build` scans `commands/**/*.component.wasm` recursively.
+**Note:** `wacli build` scans `commands/**/*.component.wasm` recursively, and
+also resolves any registry plugins configured in `build.commands`.
 
 ### Run the composed CLI (native host)
 
@@ -132,6 +171,43 @@ wacli plug socket.wasm --plug a.wasm --plug b.wasm -o out.wasm
 
 ```bash
 wacli self-update
+```
+
+### Molt WASM-aware registry helper commands (/wasm/v1)
+
+These commands call the registry's `/wasm/v1` endpoints to fetch WIT and query
+the WASM index.
+
+Set `MOLT_REGISTRY` or pass `--registry` on each command:
+
+```bash
+export MOLT_REGISTRY="https://registry.example.com"
+
+# Optional auth
+# export USERNAME="..."
+# export PASSWORD="..."
+# export MOLT_AUTH_HEADER="Authorization: Bearer $TOKEN"
+# wacli wasm wit ... --header "Authorization: Bearer $TOKEN"   # per-command override
+```
+
+Fetch WIT for a repo + tag (prints WIT text to stdout):
+
+```bash
+wacli wasm wit example/repo 1.0.0 > component.wit
+```
+
+By default `wacli wasm wit` uses `--artifact-type application/vnd.wasm.wit.v1+text`.
+
+Fetch indexed imports/exports:
+
+```bash
+wacli wasm interfaces example/repo 1.0.0
+```
+
+Search by imports/exports (AND semantics):
+
+```bash
+wacli wasm search --export "wacli:cli/command@2.0.0" --os wasip2
 ```
 
 ## Project Structure

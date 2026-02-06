@@ -88,6 +88,23 @@ wacli plug socket.wasm --plug a.wasm --plug b.wasm -o out.wasm
 
 # ランタイム実行
 wacli run <component.wasm> [args...]
+
+# Molt WASM-aware registry helper (/wasm/v1)
+export MOLT_REGISTRY="https://registry.example.com"
+# .env があれば自動で読み込み（開発用途）
+export USERNAME="..."   # optional (Basic auth)
+export PASSWORD="..."   # optional (Basic auth)
+export MOLT_AUTH_HEADER="Authorization: Bearer $TOKEN"   # optional (explicit header)
+
+# Framework components (host/core) can be pulled from the registry on init/build.
+# Defaults:
+#   WACLI_HOST_REPO=wacli/host, WACLI_CORE_REPO=wacli/core
+#   WACLI_HOST_REFERENCE=v<cli-version>, WACLI_CORE_REFERENCE=v<cli-version>
+
+wacli wasm wit <repo> <tag-or-digest>
+wacli wasm interfaces <repo> <tag-or-digest>
+wacli wasm dependencies <repo> <tag-or-digest>
+wacli wasm search --export "<iface>" --import "<iface>" [--os wasip2]
 ```
 
 ### ビルドオプション
@@ -123,8 +140,9 @@ my-project/
 `wacli build` の動作:
 1. `defaults/` からフレームワークコンポーネント（host, core）を読み込み
 2. `commands/` から `*.component.wasm` をスキャン
-3. レジストリコンポーネントを毎回 `.wacli/registry.component.wasm` に生成（`--use-prebuilt-registry` の場合は `defaults/registry.component.wasm` を使用）
-4. WAC言語で合成し、最終CLIを出力
+3. `wacli.json` の `build.commands` が設定されていて `MOLT_REGISTRY` があれば、OCIレジストリからコマンドコンポーネントを pull して `.wacli/commands/` にキャッシュ（`WACLI_REGISTRY_REFRESH=1` で再pull）
+4. レジストリコンポーネントを毎回 `.wacli/registry.component.wasm` に生成（`--use-prebuilt-registry` の場合は `defaults/registry.component.wasm` を使用）
+5. WAC言語で合成し、最終CLIを出力
 
 ## WIT インターフェース
 

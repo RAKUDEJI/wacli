@@ -1,0 +1,24 @@
+[package]
+name = "molt-registry-client"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Molt WASM-aware registry client built on oci-client (OCI /v2 + /wasm/v1)"
+repository = "https://github.com/RAKUDEJI/wacli"
+keywords = ["oci", "registry", "wasm", "component", "wit"]
+categories = ["api-bindings", "web-programming"]
+
+[dependencies]
+anyhow.workspace = true
+base64.workspace = true
+oci-client.workspace = true
+reqwest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+url.workspace = true
+futures-util.workspace = true
+
+[dev-dependencies]
+tokio.workspace = true
+

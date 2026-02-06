@@ -329,7 +329,10 @@ pub fn arg(name: impl Into<String>) -> ArgBuilder {
 }
 
 /// Parse `argv` according to the declarative argument definitions in `meta`.
-pub fn parse<'a>(meta: &CommandMeta, argv: &'a [String]) -> Result<args::Matches<'a>, CommandError> {
+pub fn parse<'a>(
+    meta: &CommandMeta,
+    argv: &'a [String],
+) -> Result<args::Matches<'a>, CommandError> {
     args::parse(meta, argv)
 }
 
@@ -686,9 +689,8 @@ pub mod args {
                         continue;
                     }
                     if parse_error.is_none() {
-                        parse_error = Some(CommandError::InvalidArgs(format!(
-                            "unknown flag: {flag}"
-                        )));
+                        parse_error =
+                            Some(CommandError::InvalidArgs(format!("unknown flag: {flag}")));
                     }
                     i += 1;
                     continue;
@@ -719,9 +721,7 @@ pub mod args {
                 }
 
                 if parse_error.is_none() {
-                    parse_error = Some(CommandError::InvalidArgs(format!(
-                        "unknown flag: {arg}"
-                    )));
+                    parse_error = Some(CommandError::InvalidArgs(format!("unknown flag: {arg}")));
                 }
                 i += 1;
                 continue;
@@ -753,9 +753,8 @@ pub mod args {
                         continue;
                     }
                     if parse_error.is_none() {
-                        parse_error = Some(CommandError::InvalidArgs(format!(
-                            "unknown flag: {arg}"
-                        )));
+                        parse_error =
+                            Some(CommandError::InvalidArgs(format!("unknown flag: {arg}")));
                     }
                     i += 1;
                     continue;
@@ -1209,7 +1208,12 @@ mod tests {
     fn parse_does_not_consume_positional_for_boolean_flag() {
         let meta = meta("show")
             .arg(arg("verbose").long("--verbose").help("Verbose output"))
-            .arg(arg("file").required(true).value_name("FILE").help("File to show"))
+            .arg(
+                arg("file")
+                    .required(true)
+                    .value_name("FILE")
+                    .help("File to show"),
+            )
             .build();
         let argv = vec!["--verbose".to_string(), "hello.txt".to_string()];
         let m = parse(&meta, &argv).unwrap();
@@ -1226,7 +1230,12 @@ mod tests {
                     .value_name("FILE")
                     .help("Output file"),
             )
-            .arg(arg("file").required(true).value_name("FILE").help("Input file"))
+            .arg(
+                arg("file")
+                    .required(true)
+                    .value_name("FILE")
+                    .help("Input file"),
+            )
             .build();
         let argv = vec![
             "--output".to_string(),
@@ -1242,8 +1251,18 @@ mod tests {
     fn parse_supports_combined_short_flags_and_attached_value() {
         let meta = meta("show")
             .arg(arg("verbose").short("-v").help("Verbose output"))
-            .arg(arg("output").short("-o").value_name("FILE").help("Output file"))
-            .arg(arg("file").required(true).value_name("FILE").help("Input file"))
+            .arg(
+                arg("output")
+                    .short("-o")
+                    .value_name("FILE")
+                    .help("Output file"),
+            )
+            .arg(
+                arg("file")
+                    .required(true)
+                    .value_name("FILE")
+                    .help("Input file"),
+            )
             .build();
         let argv = vec!["-voout.txt".to_string(), "in.txt".to_string()];
         let m = parse(&meta, &argv).unwrap();
@@ -1271,7 +1290,12 @@ mod tests {
     #[test]
     fn parse_errors_on_missing_required_positional() {
         let meta = meta("show")
-            .arg(arg("file").required(true).value_name("FILE").help("File to show"))
+            .arg(
+                arg("file")
+                    .required(true)
+                    .value_name("FILE")
+                    .help("File to show"),
+            )
             .build();
         let argv: Vec<String> = Vec::new();
         let err = parse(&meta, &argv).unwrap_err();
@@ -1311,8 +1335,18 @@ mod tests {
             .usage("show [OPTIONS] <FILE>")
             .description("Display a file to stdout.")
             .example("show hello.txt")
-            .arg(arg("file").required(true).value_name("FILE").help("File to show"))
-            .arg(arg("verbose").short("-v").long("--verbose").help("Verbose output"))
+            .arg(
+                arg("file")
+                    .required(true)
+                    .value_name("FILE")
+                    .help("File to show"),
+            )
+            .arg(
+                arg("verbose")
+                    .short("-v")
+                    .long("--verbose")
+                    .help("Verbose output"),
+            )
             .build();
         let text = args::help(&meta);
         assert!(text.contains("Usage: show [OPTIONS] <FILE>"));

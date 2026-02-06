@@ -17,6 +17,7 @@ wac-types = "0.9.0"
 
 # Workspace crates
 plugin-loader = { path = "crates/plugin-loader", version = "0.0.39" }
+molt-registry-client = { path = "crates/molt-registry-client", version = "0.0.39" }
 
 # CLI and error handling
 clap = { version = "4.5", features = ["derive"] }
@@ -25,6 +26,13 @@ anyhow = "1.0"
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+dotenvy = "0.15"
+base64 = "0.22"
+oci-client = { version = "0.16.0", default-features = false, features = ["rustls-tls"] }
+reqwest = { version = "0.13", default-features = false, features = ["rustls", "json"] }
+url = "2.5"
+futures-util = "0.3"
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 
 # WASM parsing and encoding
 wasmparser = "0.244"

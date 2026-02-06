@@ -40,6 +40,24 @@ pub struct BuildManifest {
         alias = "commands_dir"
     )]
     pub commands_dir: Option<PathBuf>,
+
+    /// Optional list of command plugins to pull from an OCI registry.
+    ///
+    /// Each entry resolves to a `<name>.component.wasm` and is treated the same
+    /// as a file found under `commandsDir`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub commands: Option<Vec<RegistryCommand>>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RegistryCommand {
+    /// Command name (must match [a-z][a-z0-9-]*)
+    pub name: String,
+    /// OCI repository name (may include '/')
+    pub repo: String,
+    /// Tag or manifest digest
+    pub reference: String,
 }
 
 #[derive(Debug, Clone)]
@@ -89,6 +107,7 @@ pub fn write_default_manifest(project_dir: &Path, overwrite: bool) -> Result<Pat
             output: Some(PathBuf::from(format!("{project_name}.component.wasm"))),
             defaults_dir: Some(PathBuf::from("defaults")),
             commands_dir: Some(PathBuf::from("commands")),
+            commands: None,
         }),
     };
 
@@ -157,7 +176,10 @@ mod tests {
     "version": "0.1.0",
     "output": "out.component.wasm",
     "defaultsDir": "defaults",
-    "commandsDir": "commands"
+    "commandsDir": "commands",
+    "commands": [
+      { "name": "greet", "repo": "example/greet", "reference": "1.0.0" }
+    ]
   }
 }"#;
         let m: Manifest = serde_json::from_str(json).unwrap();
@@ -171,6 +193,11 @@ mod tests {
         );
         assert_eq!(build.defaults_dir.as_deref(), Some(Path::new("defaults")));
         assert_eq!(build.commands_dir.as_deref(), Some(Path::new("commands")));
+        let cmds = build.commands.unwrap();
+        assert_eq!(cmds.len(), 1);
+        assert_eq!(cmds[0].name, "greet");
+        assert_eq!(cmds[0].repo, "example/greet");
+        assert_eq!(cmds[0].reference, "1.0.0");
     }
 
     #[test]

@@ -47,7 +47,7 @@ impl CommandInfo {
 }
 
 /// Validate that a command name matches the required pattern: [a-z][a-z0-9-]*
-fn is_valid_command_name(name: &str) -> bool {
+pub fn is_valid_command_name(name: &str) -> bool {
     if name.is_empty() {
         return false;
     }
@@ -69,6 +69,71 @@ fn is_valid_command_name(name: &str) -> bool {
 
     // Cannot end with hyphen
     !name.ends_with('-')
+}
+
+/// Inspect a single `*.component.wasm` file and return validated command info.
+///
+/// This is useful when the command component was resolved outside of `commandsDir`
+/// (e.g. pulled from a registry cache).
+pub fn inspect_command_component(path: &Path) -> Result<CommandInfo> {
+    if !path.exists() {
+        bail!("command component not found: {}", path.display());
+    }
+    if !path.is_file() {
+        bail!("command component path is not a file: {}", path.display());
+    }
+
+    let file_name = path
+        .file_name()
+        .context("command component path has no filename")?
+        .to_string_lossy();
+    if !file_name.ends_with(".component.wasm") {
+        bail!(
+            "command component filename must end with .component.wasm: {}",
+            path.display()
+        );
+    }
+
+    let name = file_name
+        .strip_suffix(".component.wasm")
+        .unwrap()
+        .to_string();
+    if !is_valid_command_name(&name) {
+        bail!(
+            "invalid command name '{}': must match pattern [a-z][a-z0-9-]* (file: {})",
+            name,
+            path.display()
+        );
+    }
+
+    let wasm_bytes =
+        fs::read(path).with_context(|| format!("failed to read component: {}", path.display()))?;
+
+    let (exports, imports) = match analyze_wasm(&wasm_bytes)? {
+        WasmKind::CoreModule => {
+            bail!(
+                "'{}' is a core WebAssembly module, not a component.\n\
+                 Hint: run `wasm-tools component new {} -o {}`",
+                path.display(),
+                path.display(),
+                path.display()
+            );
+        }
+        WasmKind::Component { exports, imports } => (exports, imports),
+    };
+
+    if !exports_command_interface(&exports) {
+        bail!(
+            "'{}' does not export wacli:cli/command interface",
+            path.display()
+        );
+    }
+
+    Ok(CommandInfo {
+        name,
+        path: path.to_path_buf(),
+        imports,
+    })
 }
 
 /// Result of analyzing a WASM binary.
@@ -164,6 +229,32 @@ pub fn scan_commands(commands_dir: &Path) -> Result<Vec<CommandInfo>> {
     Ok(commands)
 }
 
+/// Scan the commands directory if it exists.
+///
+/// Unlike `scan_commands`, this returns an empty list when the directory is
+/// missing or contains no `*.component.wasm` files.
+pub fn scan_commands_optional(commands_dir: &Path) -> Result<Vec<CommandInfo>> {
+    if !commands_dir.exists() {
+        return Ok(Vec::new());
+    }
+
+    if !commands_dir.is_dir() {
+        bail!(
+            "commands path is not a directory: {}",
+            commands_dir.display()
+        );
+    }
+
+    let mut commands = Vec::new();
+    let mut seen = HashMap::new();
+    collect_commands(commands_dir, &mut commands, &mut seen)?;
+
+    // Sort by name for deterministic output
+    commands.sort_by(|a, b| a.name.cmp(&b.name));
+
+    Ok(commands)
+}
+
 fn collect_commands(
     dir: &Path,
     out: &mut Vec<CommandInfo>,
@@ -255,11 +346,11 @@ pub fn verify_defaults(defaults_dir: &Path) -> Result<(PathBuf, PathBuf)> {
     let core_path = defaults_dir.join("core.component.wasm");
 
     if !host_path.exists() {
-        bail!("defaults/host.component.wasm not found");
+        bail!("host.component.wasm not found: {}", host_path.display());
     }
 
     if !core_path.exists() {
-        bail!("defaults/core.component.wasm not found");
+        bail!("core.component.wasm not found: {}", core_path.display());
     }
 
     Ok((host_path, core_path))

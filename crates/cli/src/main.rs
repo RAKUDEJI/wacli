@@ -1,7 +1,9 @@
 mod component_scan;
 mod manifest;
 mod registry_gen_wat;
+mod registry_pull;
 mod wac_gen;
+mod wasm_registry;
 mod wit;
 
 use anyhow::{Context, Result, bail};
@@ -20,7 +22,7 @@ use wac_parser::Document;
 use wac_resolver::{FileSystemPackageResolver, packages};
 use wac_types::{BorrowedPackageKey, Package};
 
-use crate::component_scan::{scan_commands, verify_defaults};
+use crate::component_scan::{scan_commands, scan_commands_optional};
 use crate::registry_gen_wat::{generate_registry_wat, get_prebuilt_registry};
 use crate::wac_gen::generate_wac;
 
@@ -45,6 +47,9 @@ enum Commands {
 
     /// Plug exports of components into imports of another component
     Plug(PlugArgs),
+
+    /// Molt WASM-aware registry helper commands (/wasm/v1)
+    Wasm(wasm_registry::WasmArgs),
 
     #[cfg(feature = "runtime")]
     /// Run a composed CLI component with dynamic pipes
@@ -172,6 +177,10 @@ struct SelfUpdateArgs {
 }
 
 fn main() {
+    // Best-effort: load `.env` from the current working directory for local/dev usage.
+    // This is a no-op if the file is missing.
+    let _ = dotenvy::dotenv();
+
     init_tracing();
     let cli = Cli::parse();
 
@@ -187,6 +196,7 @@ fn dispatch(cli: Cli) -> Result<()> {
         Commands::Build(args) => build(args),
         Commands::Compose(args) => compose(args),
         Commands::Plug(args) => plug(args),
+        Commands::Wasm(args) => wasm_registry::wasm(args),
         #[cfg(feature = "runtime")]
         Commands::Run(args) => run(args),
         Commands::SelfUpdate(args) => self_update(args),
@@ -258,8 +268,12 @@ fn init(args: InitArgs) -> Result<()> {
         eprintln!("  1. Place your command components in commands/");
         eprintln!("  2. Run: wacli build");
     } else {
-        eprintln!("  1. Place host.component.wasm and core.component.wasm in defaults/");
-        eprintln!("  2. Place your command components in commands/");
+        eprintln!(
+            "  1. Place host.component.wasm and core.component.wasm in defaults/ (or set MOLT_REGISTRY to pull them)"
+        );
+        eprintln!(
+            "  2. Place your command components in commands/ (or set build.commands in wacli.json to pull them)"
+        );
         eprintln!("  3. Run: wacli build");
     }
 
@@ -325,6 +339,44 @@ fn write_wit_file(dir: &Path, name: &str, contents: &str, overwrite: bool) -> Re
 fn download_framework_components(defaults_dir: &Path, overwrite: bool) -> Result<()> {
     let host_path = defaults_dir.join("host.component.wasm");
     let core_path = defaults_dir.join("core.component.wasm");
+
+    if let Some(client) = molt_registry_client::OciWasmClient::from_env()? {
+        let version_tag = format!("v{}", env!("CARGO_PKG_VERSION"));
+        let host_repo =
+            std::env::var("WACLI_HOST_REPO").unwrap_or_else(|_| "wacli/host".to_string());
+        let core_repo =
+            std::env::var("WACLI_CORE_REPO").unwrap_or_else(|_| "wacli/core".to_string());
+        let host_ref =
+            std::env::var("WACLI_HOST_REFERENCE").unwrap_or_else(|_| version_tag.clone());
+        let core_ref = std::env::var("WACLI_CORE_REFERENCE").unwrap_or_else(|_| version_tag);
+
+        tracing::info!(
+            "downloading framework components from registry {}",
+            std::env::var("MOLT_REGISTRY").unwrap_or_default()
+        );
+
+        if host_path.exists() && !overwrite {
+            tracing::info!("host.component.wasm already exists, skipping download");
+        } else {
+            crate::registry_pull::pull_component_wasm_to_file(
+                &client, &host_repo, &host_ref, &host_path, overwrite,
+            )
+            .context("failed to pull host.component.wasm from registry")?;
+            tracing::info!("downloaded host.component.wasm -> {}", host_path.display());
+        }
+
+        if core_path.exists() && !overwrite {
+            tracing::info!("core.component.wasm already exists, skipping download");
+        } else {
+            crate::registry_pull::pull_component_wasm_to_file(
+                &client, &core_repo, &core_ref, &core_path, overwrite,
+            )
+            .context("failed to pull core.component.wasm from registry")?;
+            tracing::info!("downloaded core.component.wasm -> {}", core_path.display());
+        }
+
+        return Ok(());
+    }
 
     download_component(
         HOST_COMPONENT_URL,
@@ -448,11 +500,41 @@ fn build(args: BuildArgs) -> Result<()> {
     };
     let output_path = resolve_path(output_origin, output_raw);
 
-    // Verify required defaults exist
-    let (host_path, core_path) = verify_defaults(&defaults_dir)?;
+    // Resolve framework components (host/core).
+    //
+    // Prefer local defaults/, but fall back to pulling from an OCI registry if configured.
+    let (host_path, core_path) = resolve_framework_components(&defaults_dir, base_dir)?;
 
-    // Scan and validate commands
-    let commands = scan_commands(&commands_dir)?;
+    // Resolve command plugins (local + optional registry sources).
+    let registry_commands = m_build.and_then(|m| m.commands.clone()).unwrap_or_default();
+
+    let mut commands = if registry_commands.is_empty() {
+        scan_commands(&commands_dir)?
+    } else {
+        scan_commands_optional(&commands_dir)?
+    };
+
+    let mut registry_resolved = resolve_registry_commands(base_dir, &registry_commands)
+        .context("failed to resolve registry commands")?;
+    commands.append(&mut registry_resolved);
+
+    // Enforce global uniqueness and deterministic ordering.
+    commands.sort_by(|a, b| a.name.cmp(&b.name));
+    let mut seen: HashMap<String, PathBuf> = HashMap::new();
+    for cmd in &commands {
+        if let Some(prev) = seen.insert(cmd.name.clone(), cmd.path.clone()) {
+            bail!(
+                "duplicate command name '{}':\n  {}\n  {}",
+                cmd.name,
+                prev.display(),
+                cmd.path.display()
+            );
+        }
+    }
+
+    if commands.is_empty() {
+        bail!("no commands configured (commandsDir empty/missing, and build.commands is not set)");
+    }
 
     tracing::info!("found {} command(s)", commands.len());
     for cmd in &commands {
@@ -554,6 +636,171 @@ fn build(args: BuildArgs) -> Result<()> {
     eprintln!("Built: {}", output_path.display());
 
     Ok(())
+}
+
+fn resolve_framework_components(
+    defaults_dir: &Path,
+    base_dir: &Path,
+) -> Result<(PathBuf, PathBuf)> {
+    let host_local = defaults_dir.join("host.component.wasm");
+    let core_local = defaults_dir.join("core.component.wasm");
+
+    let have_local = host_local.exists() && core_local.exists();
+    if have_local {
+        return Ok((host_local, core_local));
+    }
+
+    let Some(client) = molt_registry_client::OciWasmClient::from_env()? else {
+        // Keep the original defaults/ semantics if the user didn't configure a registry.
+        return crate::component_scan::verify_defaults(defaults_dir);
+    };
+
+    let version_tag = format!("v{}", env!("CARGO_PKG_VERSION"));
+    let host_repo = std::env::var("WACLI_HOST_REPO").unwrap_or_else(|_| "wacli/host".to_string());
+    let core_repo = std::env::var("WACLI_CORE_REPO").unwrap_or_else(|_| "wacli/core".to_string());
+    let host_ref = std::env::var("WACLI_HOST_REFERENCE").unwrap_or_else(|_| version_tag.clone());
+    let core_ref = std::env::var("WACLI_CORE_REFERENCE").unwrap_or_else(|_| version_tag);
+
+    let cache_dir = base_dir.join(".wacli").join("framework");
+    fs::create_dir_all(&cache_dir)
+        .with_context(|| format!("failed to create directory: {}", cache_dir.display()))?;
+
+    let host_dest = cache_dir
+        .join(molt_registry_client::sanitize_path_segment(&host_repo))
+        .join(molt_registry_client::sanitize_path_segment(&host_ref))
+        .join("host.component.wasm");
+    let core_dest = cache_dir
+        .join(molt_registry_client::sanitize_path_segment(&core_repo))
+        .join(molt_registry_client::sanitize_path_segment(&core_ref))
+        .join("core.component.wasm");
+
+    // Only pull what we need. Prefer local defaults if present; otherwise use cache.
+    let host_path = if host_local.exists() {
+        host_local
+    } else {
+        if host_dest.exists() {
+            tracing::info!("using cached host: {}", host_dest.display());
+        } else {
+            tracing::info!(
+                "defaults host.component.wasm missing; pulling from registry: {}:{}",
+                host_repo,
+                host_ref
+            );
+            crate::registry_pull::pull_component_wasm_to_file(
+                &client, &host_repo, &host_ref, &host_dest, false,
+            )
+            .context("failed to pull host.component.wasm from registry")?;
+            tracing::info!("cached host: {}", host_dest.display());
+        }
+        host_dest
+    };
+
+    let core_path = if core_local.exists() {
+        core_local
+    } else {
+        if core_dest.exists() {
+            tracing::info!("using cached core: {}", core_dest.display());
+        } else {
+            tracing::info!(
+                "defaults core.component.wasm missing; pulling from registry: {}:{}",
+                core_repo,
+                core_ref
+            );
+            crate::registry_pull::pull_component_wasm_to_file(
+                &client, &core_repo, &core_ref, &core_dest, false,
+            )
+            .context("failed to pull core.component.wasm from registry")?;
+            tracing::info!("cached core: {}", core_dest.display());
+        }
+        core_dest
+    };
+
+    if !host_path.exists() {
+        bail!("failed to resolve host.component.wasm (local missing, cache missing)");
+    }
+    if !core_path.exists() {
+        bail!("failed to resolve core.component.wasm (local missing, cache missing)");
+    }
+
+    Ok((host_path, core_path))
+}
+
+fn resolve_registry_commands(
+    base_dir: &Path,
+    commands: &[manifest::RegistryCommand],
+) -> Result<Vec<crate::component_scan::CommandInfo>> {
+    if commands.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let Some(client) = molt_registry_client::OciWasmClient::from_env()? else {
+        bail!("build.commands is set but MOLT_REGISTRY is not configured");
+    };
+
+    let cache_dir = base_dir.join(".wacli").join("commands");
+    fs::create_dir_all(&cache_dir)
+        .with_context(|| format!("failed to create directory: {}", cache_dir.display()))?;
+
+    let refresh = std::env::var("WACLI_REGISTRY_REFRESH")
+        .map(|v| !v.trim().is_empty() && v.trim() != "0")
+        .unwrap_or(false);
+
+    let mut out = Vec::with_capacity(commands.len());
+    for cmd in commands {
+        if cmd.repo.trim().is_empty() {
+            bail!("build.commands entry for '{}' has an empty repo", cmd.name);
+        }
+        if cmd.reference.trim().is_empty() {
+            bail!(
+                "build.commands entry for '{}' has an empty reference",
+                cmd.name
+            );
+        }
+        if !crate::component_scan::is_valid_command_name(cmd.name.trim()) {
+            bail!(
+                "invalid command name '{}' in build.commands (must match [a-z][a-z0-9-]*)",
+                cmd.name
+            );
+        }
+
+        let repo = cmd.repo.trim();
+        let reference = cmd.reference.trim();
+        let name = cmd.name.trim();
+
+        let dest = cache_dir
+            .join(molt_registry_client::sanitize_path_segment(repo))
+            .join(molt_registry_client::sanitize_path_segment(reference))
+            .join(format!("{name}.component.wasm"));
+
+        if dest.exists() && !refresh {
+            tracing::info!("using cached command {} from {}:{}", name, repo, reference);
+        } else {
+            tracing::info!(
+                "pulling command {} from registry {}:{}",
+                name,
+                repo,
+                reference
+            );
+            crate::registry_pull::pull_component_wasm_to_file(
+                &client, repo, reference, &dest, refresh,
+            )
+            .with_context(|| format!("failed to pull command {name} from {repo}:{reference}"))?;
+        }
+
+        let info = crate::component_scan::inspect_command_component(&dest)
+            .with_context(|| format!("invalid command component for '{name}'"))?;
+        if info.name != name {
+            bail!(
+                "registry command name mismatch: expected '{}', got '{}' (file: {})",
+                name,
+                info.name,
+                dest.display()
+            );
+        }
+        out.push(info);
+    }
+
+    Ok(out)
 }
 
 fn fmt_err(e: impl std::fmt::Display, path: &Path) -> anyhow::Error {

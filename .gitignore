@@ -26,3 +26,8 @@ wac.md
 wit.md
 abi.md
 linking.md
+
+# Local environment
+.env
+.env.*
+!.env.example
