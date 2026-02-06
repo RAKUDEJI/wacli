@@ -1824,7 +1824,7 @@ dependencies = [
 
 [[package]]
 name = "molt-registry-client"
-version = "0.0.41"
+version = "0.0.42"
 dependencies = [
  "anyhow",
  "base64",
@@ -1997,7 +1997,7 @@ checksum = "7edddbd0b52d732b21ad9a5fab5c704c14cd949e5e9a1ec5929a24fded1b904c"
 
 [[package]]
 name = "plugin-loader"
-version = "0.0.41"
+version = "0.0.42"
 dependencies = [
  "anyhow",
  "wasmtime",
@@ -3429,7 +3429,7 @@ dependencies = [
 
 [[package]]
 name = "wacli"
-version = "0.0.41"
+version = "0.0.42"
 dependencies = [
  "anyhow",
  "clap",
@@ -3458,7 +3458,7 @@ dependencies = [
 
 [[package]]
 name = "wacli-cdk"
-version = "0.0.41"
+version = "0.0.42"
 dependencies = [
  "wit-bindgen 0.52.0",
 ]

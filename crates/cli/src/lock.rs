@@ -47,7 +47,7 @@ pub struct FrameworkLock {
 #[serde(rename_all = "camelCase")]
 pub struct LockedComponent {
     pub repo: String,
-    /// Tag or digest the user asked for (e.g. `v0.0.41`).
+    /// Tag or digest the user asked for (e.g. `v0.0.42`).
     pub reference: String,
     /// Resolved manifest digest (e.g. `sha256:...`). Used for deterministic pulls.
     pub digest: String,
@@ -161,7 +161,7 @@ mod tests {
         lock.molt_registry = Some("https://registry.example.com".to_string());
         lock.set_framework_host(LockedComponent {
             repo: "wacli/host".to_string(),
-            reference: "v0.0.41".to_string(),
+            reference: "v0.0.42".to_string(),
             digest: "sha256:deadbeef".to_string(),
             layer_digest: Some("sha256:cafebabe".to_string()),
         });
