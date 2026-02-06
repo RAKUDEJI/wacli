@@ -33,7 +33,7 @@ edition = "2024"
 crate-type = ["cdylib"]
 
 [dependencies]
-wacli-cdk = "0.0.35"
+wacli-cdk = "0.0.36"
 ```
 
 ## Quick Start
@@ -99,15 +99,17 @@ Wrap `argv` with `Context` to access environment variables and convenient argume
 `argv` contains only arguments (the command name is not included).
 Example: `my-cli greet Alice` -> `argv = ["Alice"]`.
 
-**Note:** If you need positional arguments after boolean flags, use `--` to end flag parsing.
+**Note:** Positional parsing does not guess which flags take values. If you have value-taking
+flags like `--output out.txt`, declare them with a schema and use `*_with_schema` helpers.
 
 ```rust
 fn run(argv: Vec<String>) -> CommandResult {
     let ctx = wacli_cdk::Context::new(argv);
 
-    // Positional arguments (flags and their values are skipped)
-    let name = ctx.arg(0).unwrap_or("default");
-    let rest = ctx.positional_args();
+    // Positional arguments (flags are skipped; value-taking flags are skipped via schema)
+    let schema = wacli_cdk::args::Schema::new().value_flag("--output");
+    let name = ctx.arg_with_schema(0, &schema).unwrap_or("default");
+    let rest = ctx.positional_args_with_schema(&schema);
 
     // Boolean flags
     if ctx.flag(["-v", "--verbose"]) {
@@ -150,11 +152,15 @@ fn run(argv: Vec<String>) -> CommandResult {
         .and_then(|s| s.parse().ok())
         .unwrap_or(1);
 
-    // Get positional argument (flags and their values are skipped; `--` ends flag parsing)
+    // Get positional argument (flags are skipped; `--` ends flag parsing)
     let target = args::positional(&argv, 0).unwrap_or("default");
 
-    // Get all positional arguments
-    let args_only = args::positional_args(&argv);
+    // By default, positional parsing does not guess which flags take values.
+    // If you want `--key value` to skip the value, declare it with a schema:
+    let schema = args::Schema::new()
+        .value_flag("--count")
+        .value_flag("--output");
+    let args_only = args::positional_args_with_schema(&argv, &schema);
 
     // Tip: use `--` to pass positional args that start with `-`
 
@@ -185,14 +191,13 @@ io::eprintln("something went wrong");
 #### Reading files
 
 ```rust
-use wacli_cdk::{fs, CommandError};
+use wacli_cdk::fs;
 
 // Read entire file as bytes
 let bytes = fs::read("config.json")?;
 
 // Convert to string
-let text = String::from_utf8(bytes)
-    .map_err(|e| CommandError::Failed(e.to_string()))?;
+let text = String::from_utf8(bytes)?;
 ```
 
 #### Writing files

@@ -1,4 +1,4 @@
-use wacli_cdk::{meta, pipes, Command, CommandError, CommandMeta, CommandResult, Context};
+use wacli_cdk::{args, meta, pipes, Command, CommandError, CommandMeta, CommandResult, Context};
 
 struct Show;
 
@@ -12,8 +12,9 @@ impl Command for Show {
 
     fn run(argv: Vec<String>) -> CommandResult {
         let ctx = Context::new(argv);
+        let schema = args::Schema::new().value_flag("--format");
         let format = ctx.value("--format");
-        let input = extract_input(&ctx).unwrap_or("hello world");
+        let input = ctx.arg_with_schema(0, &schema).unwrap_or("hello world");
 
         if let Some(pipe_name) = format {
             let pipe = pipes::load(pipe_name)
@@ -31,25 +32,3 @@ impl Command for Show {
 }
 
 wacli_cdk::export!(Show);
-
-fn extract_input(ctx: &Context) -> Option<&str> {
-    let mut after_separator = false;
-    let mut iter = ctx.argv.iter();
-    while let Some(arg) = iter.next() {
-        if !after_separator {
-            if arg == "--" {
-                after_separator = true;
-                continue;
-            }
-            if arg == "--format" {
-                iter.next();
-                continue;
-            }
-            if arg.starts_with('-') {
-                continue;
-            }
-        }
-        return Some(arg.as_str());
-    }
-    None
-}

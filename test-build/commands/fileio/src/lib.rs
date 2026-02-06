@@ -22,7 +22,7 @@ impl Command for FileIo {
                 let path = argv.get(1).ok_or_else(|| {
                     CommandError::InvalidArgs("usage: fileio read <path>".into())
                 })?;
-                let bytes = wacli_cdk::fs::read(path).map_err(CommandError::Io)?;
+                let bytes = wacli_cdk::fs::read(path)?;
                 let text = String::from_utf8_lossy(&bytes);
                 wacli_cdk::io::println(text);
                 Ok(0)
@@ -37,13 +37,13 @@ impl Command for FileIo {
                         "usage: fileio write <path> <text>".into(),
                     ));
                 }
-                wacli_cdk::fs::write(path, text.as_bytes()).map_err(CommandError::Io)?;
+                wacli_cdk::fs::write(path, text.as_bytes())?;
                 wacli_cdk::io::println("ok");
                 Ok(0)
             }
             "list" => {
                 let path = argv.get(1).map(|s| s.as_str()).unwrap_or(".");
-                let entries = wacli_cdk::fs::list_dir(path).map_err(CommandError::Io)?;
+                let entries = wacli_cdk::fs::list_dir(path)?;
                 for entry in entries {
                     wacli_cdk::io::println(entry);
                 }

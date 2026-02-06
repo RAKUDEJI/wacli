@@ -24,20 +24,58 @@
 #[doc(hidden)]
 pub mod bindings;
 
-pub use bindings::wacli::cli::{host_env, host_fs, host_io, host_pipes, host_process};
 pub use bindings::wacli::cli::types::{
     CommandError, CommandMeta, CommandResult, PipeError, PipeInfo, PipeMeta,
 };
+pub use bindings::wacli::cli::{host_env, host_fs, host_io, host_pipes, host_process};
 
 impl From<String> for CommandError {
     fn from(s: String) -> Self {
-        CommandError::Io(s)
+        // A plain String is an unclassified error message.
+        // Treat it as a generic failure instead of an I/O error.
+        CommandError::Failed(s)
     }
 }
 
 impl From<&str> for CommandError {
     fn from(s: &str) -> Self {
-        CommandError::Io(s.to_string())
+        CommandError::Failed(s.to_string())
+    }
+}
+
+impl From<std::io::Error> for CommandError {
+    fn from(e: std::io::Error) -> Self {
+        CommandError::Io(e.to_string())
+    }
+}
+
+impl From<std::string::FromUtf8Error> for CommandError {
+    fn from(e: std::string::FromUtf8Error) -> Self {
+        CommandError::Failed(e.to_string())
+    }
+}
+
+impl From<std::str::Utf8Error> for CommandError {
+    fn from(e: std::str::Utf8Error) -> Self {
+        CommandError::Failed(e.to_string())
+    }
+}
+
+impl From<std::num::ParseIntError> for CommandError {
+    fn from(e: std::num::ParseIntError) -> Self {
+        CommandError::InvalidArgs(e.to_string())
+    }
+}
+
+impl From<std::num::ParseFloatError> for CommandError {
+    fn from(e: std::num::ParseFloatError) -> Self {
+        CommandError::InvalidArgs(e.to_string())
+    }
+}
+
+impl From<std::str::ParseBoolError> for CommandError {
+    fn from(e: std::str::ParseBoolError) -> Self {
+        CommandError::InvalidArgs(e.to_string())
     }
 }
 
@@ -97,14 +135,14 @@ pub mod host {
     pub use super::host_env::{args, env};
     pub use super::host_fs::{create_dir, list_dir, read_file, write_file};
     pub use super::host_io::{stderr_flush, stderr_write, stdout_flush, stdout_write};
-    pub use super::host_pipes::{list_pipes, load_pipe, Pipe};
+    pub use super::host_pipes::{Pipe, list_pipes, load_pipe};
     pub use super::host_process::exit;
 }
 
 /// Common imports for wacli command implementations.
 pub mod prelude {
     pub use super::{
-        args, fs, io, meta, pipes, Command, CommandError, CommandMeta, CommandResult, Context,
+        Command, CommandError, CommandMeta, CommandResult, Context, args, fs, io, meta, pipes,
     };
 }
 
@@ -131,9 +169,22 @@ impl Context {
         args::positional(&self.argv, index)
     }
 
-    /// Get all positional arguments (flags and their values are skipped).
+    /// Get all positional arguments.
+    ///
+    /// This does not guess which flags take a value, so values for `--key value`
+    /// are not skipped unless you use `positional_args_with_schema`.
     pub fn positional_args(&self) -> Vec<&str> {
         args::positional_args(&self.argv)
+    }
+
+    /// Get the positional argument at the given index using a schema.
+    pub fn arg_with_schema(&self, index: usize, schema: &args::Schema) -> Option<&str> {
+        args::positional_with_schema(&self.argv, index, schema)
+    }
+
+    /// Get all positional arguments using a schema to skip values of declared flags.
+    pub fn positional_args_with_schema(&self, schema: &args::Schema) -> Vec<&str> {
+        args::positional_args_with_schema(&self.argv, schema)
     }
 
     /// Check if a flag like `--help` exists.
@@ -153,9 +204,8 @@ impl Context {
 
     /// Require a positional argument by index.
     pub fn require_arg(&self, index: usize, name: &str) -> Result<&str, CommandError> {
-        self.arg(index).ok_or_else(|| {
-            CommandError::InvalidArgs(format!("missing required argument: {name}"))
-        })
+        self.arg(index)
+            .ok_or_else(|| CommandError::InvalidArgs(format!("missing required argument: {name}")))
     }
 }
 
@@ -259,6 +309,39 @@ pub fn meta(name: impl Into<String>) -> MetaBuilder {
 
 /// Minimal argument helpers (no extra dependencies).
 pub mod args {
+    /// Declare which flags take a value in the *next* argument (e.g. `--output out.txt`).
+    ///
+    /// Without a schema, parsing cannot reliably distinguish between:
+    /// - a boolean flag followed by a positional (`--verbose file.txt`)
+    /// - a value flag followed by its value (`--output out.txt`)
+    ///
+    /// `Schema` lets you declare value-taking flags so helpers like
+    /// `positional_args_with_schema` can skip those values correctly.
+    #[derive(Debug, Clone, Default)]
+    pub struct Schema {
+        value_flags: Vec<String>,
+    }
+
+    impl Schema {
+        /// Create an empty schema.
+        pub fn new() -> Self {
+            Self::default()
+        }
+
+        /// Declare a flag that takes a value (e.g. `--output`, `-o`).
+        pub fn value_flag(mut self, name: impl Into<String>) -> Self {
+            let name = name.into();
+            if !self.value_flags.iter().any(|s| s == &name) {
+                self.value_flags.push(name);
+            }
+            self
+        }
+
+        fn takes_value(&self, flag: &str) -> bool {
+            self.value_flags.iter().any(|s| s == flag)
+        }
+    }
+
     /// Argument name collection for flag matching.
     pub trait FlagNames<'a> {
         type Iter: Iterator<Item = &'a str>;
@@ -330,10 +413,25 @@ pub mod args {
 
     /// Get all positional arguments.
     ///
-    /// Flags (arguments starting with `-`) are skipped. If a flag looks like it
-    /// takes a value (`--key value` or `-k value`), the value is also skipped.
+    /// Flags (arguments starting with `-`) are skipped. `--key=value` is treated
+    /// as a single flag token and skipped.
+    ///
+    /// This function does *not* guess whether `--key value` is a value-taking
+    /// flag or a boolean flag followed by a positional argument.
+    ///
+    /// If you want `--key value` to skip the value, use
+    /// `positional_args_with_schema` and declare value-taking flags.
+    ///
     /// Use `--` to stop flag parsing and treat everything after as positional.
     pub fn positional_args<'a>(argv: &'a [String]) -> Vec<&'a str> {
+        positional_args_with_schema(argv, &Schema::default())
+    }
+
+    /// Get all positional arguments using a schema to skip values of declared flags.
+    ///
+    /// Any flag listed in `schema` is treated as taking a value in the next
+    /// argument (e.g. `--output out.txt`), and that value is skipped.
+    pub fn positional_args_with_schema<'a>(argv: &'a [String], schema: &Schema) -> Vec<&'a str> {
         let mut positionals = Vec::new();
         let mut i = 0;
         let mut after_separator = false;
@@ -351,24 +449,14 @@ pub mod args {
                         i += 1;
                         continue;
                     }
-                    let next = argv.get(i + 1);
-                    if arg.starts_with("--") {
-                        if let Some(next) = next {
-                            if !next.starts_with('-') {
-                                i += 2;
-                                continue;
-                            }
-                        }
+                    if schema.takes_value(arg) {
+                        // Skip the flag itself.
                         i += 1;
-                        continue;
-                    }
-                    if arg.len() == 2 {
-                        if let Some(next) = next {
-                            if !next.starts_with('-') {
-                                i += 2;
-                                continue;
-                            }
+                        // Skip the value if present. `--` remains a separator.
+                        if i < argv.len() && argv[i] != "--" {
+                            i += 1;
                         }
+                        continue;
                     }
                     i += 1;
                     continue;
@@ -385,6 +473,17 @@ pub mod args {
     /// Get a positional argument by index.
     pub fn positional<'a>(argv: &'a [String], index: usize) -> Option<&'a str> {
         positional_args(argv).get(index).copied()
+    }
+
+    /// Get a positional argument by index using a schema.
+    pub fn positional_with_schema<'a>(
+        argv: &'a [String],
+        index: usize,
+        schema: &Schema,
+    ) -> Option<&'a str> {
+        positional_args_with_schema(argv, schema)
+            .get(index)
+            .copied()
     }
 
     /// Get the remaining arguments from a start index.
@@ -408,19 +507,19 @@ mod tests {
     }
 
     #[test]
-    fn positional_skips_flag_values() {
+    fn positional_does_not_guess_long_flag_values() {
         let argv = vec![
             "--format".to_string(),
             "json".to_string(),
             "file.txt".to_string(),
         ];
-        assert_eq!(args::positional(&argv, 0), Some("file.txt"));
+        assert_eq!(args::positional(&argv, 0), Some("json"));
     }
 
     #[test]
-    fn positional_skips_short_flag_values() {
+    fn positional_does_not_guess_short_flag_values() {
         let argv = vec!["-o".to_string(), "out.txt".to_string(), "file".to_string()];
-        assert_eq!(args::positional(&argv, 0), Some("file"));
+        assert_eq!(args::positional(&argv, 0), Some("out.txt"));
     }
 
     #[test]
@@ -432,6 +531,15 @@ mod tests {
         ];
         assert_eq!(args::positional(&argv, 0), Some("--not-a-flag"));
         assert_eq!(args::positional(&argv, 1), Some("Bob"));
+    }
+
+    #[test]
+    fn positional_keeps_positional_after_boolean_flags() {
+        let argv = vec!["--verbose".to_string(), "hello.txt".to_string()];
+        assert_eq!(args::positional(&argv, 0), Some("hello.txt"));
+
+        let argv = vec!["-v".to_string(), "hello.txt".to_string()];
+        assert_eq!(args::positional(&argv, 0), Some("hello.txt"));
     }
 
     #[test]
@@ -450,6 +558,24 @@ mod tests {
     fn value_stops_at_separator() {
         let argv = vec!["--".to_string(), "--name".to_string(), "Bob".to_string()];
         assert_eq!(args::value(&argv, "--name"), None);
+    }
+
+    #[test]
+    fn positional_with_schema_skips_known_value_flags() {
+        let argv = vec![
+            "--format".to_string(),
+            "json".to_string(),
+            "file.txt".to_string(),
+        ];
+        let schema = args::Schema::new().value_flag("--format");
+        assert_eq!(
+            args::positional_with_schema(&argv, 0, &schema),
+            Some("file.txt")
+        );
+        assert_eq!(
+            args::positional_args_with_schema(&argv, &schema),
+            vec!["file.txt"]
+        );
     }
 }
 
@@ -559,33 +685,33 @@ pub mod io {
 
 /// File system helpers via the host interface.
 pub mod fs {
-    use super::host;
+    use super::{CommandError, host};
 
     /// Read an entire file into memory.
-    pub fn read(path: impl AsRef<str>) -> Result<Vec<u8>, String> {
-        host::read_file(path.as_ref())
+    pub fn read(path: impl AsRef<str>) -> Result<Vec<u8>, CommandError> {
+        host::read_file(path.as_ref()).map_err(CommandError::Io)
     }
 
     /// Write a file, creating or truncating it.
-    pub fn write(path: impl AsRef<str>, contents: impl AsRef<[u8]>) -> Result<(), String> {
-        host::write_file(path.as_ref(), contents.as_ref())
+    pub fn write(path: impl AsRef<str>, contents: impl AsRef<[u8]>) -> Result<(), CommandError> {
+        host::write_file(path.as_ref(), contents.as_ref()).map_err(CommandError::Io)
     }
 
     /// Create a directory.
-    pub fn create_dir(path: impl AsRef<str>) -> Result<(), String> {
-        host::create_dir(path.as_ref())
+    pub fn create_dir(path: impl AsRef<str>) -> Result<(), CommandError> {
+        host::create_dir(path.as_ref()).map_err(CommandError::Io)
     }
 
     /// List entries in a directory.
-    pub fn list_dir(path: impl AsRef<str>) -> Result<Vec<String>, String> {
-        host::list_dir(path.as_ref())
+    pub fn list_dir(path: impl AsRef<str>) -> Result<Vec<String>, CommandError> {
+        host::list_dir(path.as_ref()).map_err(CommandError::Io)
     }
 }
 
 /// Pipe loader helpers via the host-pipes interface.
 pub mod pipes {
-    use super::host_pipes;
     use super::PipeInfo;
+    use super::host_pipes;
 
     /// List available pipes.
     pub fn list() -> Vec<PipeInfo> {

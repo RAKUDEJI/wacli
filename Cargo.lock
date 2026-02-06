@@ -1655,7 +1655,7 @@ checksum = "7edddbd0b52d732b21ad9a5fab5c704c14cd949e5e9a1ec5929a24fded1b904c"
 
 [[package]]
 name = "plugin-loader"
-version = "0.0.35"
+version = "0.0.36"
 dependencies = [
  "anyhow",
  "wasmtime",
@@ -2906,7 +2906,7 @@ dependencies = [
 
 [[package]]
 name = "wacli"
-version = "0.0.35"
+version = "0.0.36"
 dependencies = [
  "anyhow",
  "clap",
@@ -2932,7 +2932,7 @@ dependencies = [
 
 [[package]]
 name = "wacli-cdk"
-version = "0.0.35"
+version = "0.0.36"
 dependencies = [
  "wit-bindgen 0.52.0",
 ]
