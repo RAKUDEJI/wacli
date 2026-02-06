@@ -94,20 +94,27 @@ wacli run <component.wasm> [args...]
 
 | オプション | デフォルト | 説明 |
 |-----------|-----------|------|
+| `--manifest` | (自動検出) | `wacli.json` マニフェスト（指定しない場合は `./wacli.json` があれば使用） |
 | `--name` | "example:my-cli" | パッケージ名 |
 | `--version` | "0.1.0" | パッケージバージョン |
 | `-o, --output` | "my-cli.component.wasm" | 出力ファイルパス |
+| `--defaults-dir` | "defaults" | フレームワークコンポーネントのディレクトリ |
+| `--commands-dir` | "commands" | コマンドプラグインのディレクトリ |
 | `--no-validate` | false | 検証をスキップ |
 | `--print-wac` | false | 生成されたWACを表示（合成しない） |
+| `--use-prebuilt-registry` | false | `defaults/registry.component.wasm` を使用（レジストリを自動生成しない） |
 
 ### ディレクトリ構成（ビルド時）
 
 ```
 my-project/
+├── wacli.json                  # ビルド用マニフェスト（`wacli init` が生成）
 ├── defaults/
 │   ├── host.component.wasm       # 必須: WASIブリッジ
 │   ├── core.component.wasm       # 必須: コマンドルーター
-│   └── registry.component.wasm   # オプション: 未指定時は自動生成
+│   └── registry.component.wasm   # オプション: --use-prebuilt-registry 時のみ使用
+├── .wacli/
+│   └── registry.component.wasm   # 自動生成キャッシュ（編集しない）
 └── commands/
     ├── greet.component.wasm      # コマンドプラグイン
     └── hello.component.wasm
@@ -116,7 +123,7 @@ my-project/
 `wacli build` の動作:
 1. `defaults/` からフレームワークコンポーネント（host, core）を読み込み
 2. `commands/` から `*.component.wasm` をスキャン
-3. `registry.component.wasm` がなければWATテンプレートから自動生成
+3. レジストリコンポーネントを毎回 `.wacli/registry.component.wasm` に生成（`--use-prebuilt-registry` の場合は `defaults/registry.component.wasm` を使用）
 4. WAC言語で合成し、最終CLIを出力
 
 ## WIT インターフェース

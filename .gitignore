@@ -1,6 +1,7 @@
 # MoonBit build artifacts
 _build/
 target/
+.wacli/
 
 # WASM binaries (except framework components)
 *.wasm

@@ -46,16 +46,21 @@ impl host_fs::Guest for HostProvider {
         if path.is_empty() {
             return Err("path is empty".to_string());
         }
-        let dir = pick_preopen()?;
+        let (dir, rel_path) = resolve_preopen_path(&path)?;
         let file = dir
-            .open_at(PathFlags::SYMLINK_FOLLOW, &path, OpenFlags::empty(), DescriptorFlags::READ)
-            .map_err(fs_error)?;
+            .open_at(
+                PathFlags::SYMLINK_FOLLOW,
+                &rel_path,
+                OpenFlags::empty(),
+                DescriptorFlags::READ,
+            )
+            .map_err(|e| fs_error("read", &path, e))?;
         let mut out = Vec::new();
         let mut offset = 0u64;
         loop {
             let (chunk, eof) = file
                 .read(64 * 1024, offset)
-                .map_err(fs_error)?;
+                .map_err(|e| fs_error("read", &path, e))?;
             if chunk.is_empty() {
                 break;
             }
@@ -72,20 +77,20 @@ impl host_fs::Guest for HostProvider {
         if path.is_empty() {
             return Err("path is empty".to_string());
         }
-        let dir = pick_preopen()?;
+        let (dir, rel_path) = resolve_preopen_path(&path)?;
         let file = dir
             .open_at(
                 PathFlags::SYMLINK_FOLLOW,
-                &path,
+                &rel_path,
                 OpenFlags::CREATE | OpenFlags::TRUNCATE,
                 DescriptorFlags::WRITE,
             )
-            .map_err(fs_error)?;
+            .map_err(|e| fs_error("write", &path, e))?;
         let mut offset = 0u64;
         while offset < contents.len() as u64 {
             let written = file
                 .write(&contents[offset as usize..], offset)
-                .map_err(fs_error)?;
+                .map_err(|e| fs_error("write", &path, e))?;
             if written == 0 {
                 return Err("write returned 0 bytes".to_string());
             }
@@ -98,28 +103,39 @@ impl host_fs::Guest for HostProvider {
         if path.is_empty() {
             return Err("path is empty".to_string());
         }
-        let dir = pick_preopen()?;
-        dir.create_directory_at(&path).map_err(fs_error)?;
+        let (dir, rel_path) = resolve_preopen_path(&path)?;
+        if rel_path == "." {
+            return Err(format!(
+                "cannot create the preopened directory itself: {path}"
+            ));
+        }
+        dir.create_directory_at(&rel_path)
+            .map_err(|e| fs_error("create-dir", &path, e))?;
         Ok(())
     }
 
     fn list_dir(path: String) -> Result<Vec<String>, String> {
-        let dir = pick_preopen()?;
-        let target = if path.is_empty() || path == "." {
+        let requested = if path.is_empty() { "." } else { path.as_str() };
+        let (dir, rel_path) = resolve_preopen_path(requested)?;
+        let target = if rel_path == "." {
             dir
         } else {
             dir.open_at(
                 PathFlags::SYMLINK_FOLLOW,
-                &path,
+                &rel_path,
                 OpenFlags::DIRECTORY,
                 DescriptorFlags::READ,
             )
-            .map_err(fs_error)?
+            .map_err(|e| fs_error("list-dir", requested, e))?
         };
-        let stream = target.read_directory().map_err(fs_error)?;
+        let stream = target
+            .read_directory()
+            .map_err(|e| fs_error("list-dir", requested, e))?;
         let mut out = Vec::new();
         loop {
-            let entry = stream.read_directory_entry().map_err(fs_error)?;
+            let entry = stream
+                .read_directory_entry()
+                .map_err(|e| fs_error("list-dir", requested, e))?;
             match entry {
                 Some(entry) => out.push(entry.name),
                 None => break,
@@ -150,8 +166,7 @@ impl host_pipes::Guest for HostProvider {
     }
 
     fn load_pipe(name: String) -> Result<host_pipes::Pipe, String> {
-        pipe_runtime::load_pipe(&name)
-            .map(|pipe| host_pipes::Pipe::new(HostPipe { inner: pipe }))
+        pipe_runtime::load_pipe(&name).map(|pipe| host_pipes::Pipe::new(HostPipe { inner: pipe }))
     }
 }
 
@@ -208,21 +223,105 @@ fn flush_output(target: StreamTarget) {
     }
 }
 
-fn pick_preopen() -> Result<Descriptor, String> {
+fn resolve_preopen_path(path: &str) -> Result<(Descriptor, String), String> {
+    let path = path.trim();
+    if path.is_empty() {
+        return Err("path is empty".to_string());
+    }
+
     let mut dirs = wasi::filesystem::preopens::get_directories();
     if dirs.is_empty() {
         return Err("no preopened directories available".to_string());
     }
-    let idx = dirs
-        .iter()
-        .position(|(_, name)| name == ".")
-        .unwrap_or(0);
-    let (dir, _) = dirs.swap_remove(idx);
-    Ok(dir)
+
+    // Relative paths always resolve against "." (current directory) if present.
+    if !path.starts_with('/') {
+        let idx = dirs.iter().position(|(_, name)| name == ".").unwrap_or(0);
+        let (dir, _) = dirs.swap_remove(idx);
+        return Ok((dir, path.to_string()));
+    }
+
+    // Absolute guest paths are resolved against a matching preopen name such as "/data".
+    // We choose the longest matching mount point.
+    let mut best: Option<(usize, usize, String)> = None;
+    for (idx, (_, name)) in dirs.iter().enumerate() {
+        let mount = normalize_mount(name);
+        if mount == "." {
+            continue;
+        }
+        if let Some(rel) = strip_mount(path, mount) {
+            let score = mount.len();
+            match &best {
+                Some((_, best_score, _)) if *best_score >= score => {}
+                _ => best = Some((idx, score, rel)),
+            }
+        }
+    }
+
+    if let Some((idx, _score, rel)) = best {
+        let (dir, _) = dirs.swap_remove(idx);
+        return Ok((dir, rel));
+    }
+
+    let available: Vec<&str> = dirs.iter().map(|(_, name)| name.as_str()).collect();
+    Err(format!(
+        "path is outside preopened directories: {path} (available: {})",
+        available.join(", ")
+    ))
 }
 
-fn fs_error(err: ErrorCode) -> String {
-    format!("filesystem error: {err:?}")
+fn normalize_mount(name: &str) -> &str {
+    let trimmed = name.trim();
+    if trimmed == "/" || trimmed == "." {
+        return trimmed;
+    }
+    trimmed.trim_end_matches('/')
+}
+
+fn strip_mount(path: &str, mount: &str) -> Option<String> {
+    if mount == "." {
+        return None;
+    }
+
+    // Root mount.
+    if mount == "/" {
+        let rest = path.strip_prefix('/')?;
+        let rest = rest.trim_start_matches('/');
+        if rest.is_empty() {
+            return Some(".".to_string());
+        }
+        return Some(rest.to_string());
+    }
+
+    if path == mount {
+        return Some(".".to_string());
+    }
+
+    if path.starts_with(mount) {
+        let bytes = path.as_bytes();
+        if bytes.get(mount.len()) == Some(&b'/') {
+            let rest = path[mount.len() + 1..].trim_start_matches('/');
+            if rest.is_empty() {
+                return Some(".".to_string());
+            }
+            return Some(rest.to_string());
+        }
+    }
+
+    None
+}
+
+fn fs_error(op: &str, path: &str, err: ErrorCode) -> String {
+    match err {
+        ErrorCode::Access | ErrorCode::NotPermitted => {
+            format!("{op}: permission denied: {path} ({})", err.name())
+        }
+        ErrorCode::NoEntry => format!("{op}: not found: {path} ({})", err.name()),
+        ErrorCode::NotDirectory => format!("{op}: not a directory: {path} ({})", err.name()),
+        ErrorCode::IsDirectory => format!("{op}: is a directory: {path} ({})", err.name()),
+        ErrorCode::ReadOnly => format!("{op}: read-only filesystem: {path} ({})", err.name()),
+        _ => format!("{op}: filesystem error: {path} ({})", err.name()),
+    }
 }
 
 fn convert_pipe_info(info: pipe_runtime::PipeInfo) -> host_pipes::PipeInfo {
@@ -246,11 +345,7 @@ fn convert_pipe_meta(meta: pipe_runtime::PipeMeta) -> host_pipes::PipeMeta {
 fn convert_pipe_error(err: pipe_runtime::PipeError) -> host_pipes::PipeError {
     match err {
         pipe_runtime::PipeError::ParseError(msg) => host_pipes::PipeError::ParseError(msg),
-        pipe_runtime::PipeError::TransformError(msg) => {
-            host_pipes::PipeError::TransformError(msg)
-        }
-        pipe_runtime::PipeError::InvalidOption(msg) => {
-            host_pipes::PipeError::InvalidOption(msg)
-        }
+        pipe_runtime::PipeError::TransformError(msg) => host_pipes::PipeError::TransformError(msg),
+        pipe_runtime::PipeError::InvalidOption(msg) => host_pipes::PipeError::InvalidOption(msg),
     }
 }

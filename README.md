@@ -58,6 +58,7 @@ wacli init my-cli --with-components
 This creates the directory structure:
 ```
 my-cli/
+  wacli.json
   defaults/
   commands/
   wit/
@@ -68,15 +69,36 @@ my-cli/
 
 ```bash
 cd my-cli
-wacli build --name "example:my-cli"
+wacli build
+```
+
+`wacli init` creates a `wacli.json` manifest so you don't need to repeat build flags.
+
+Example `wacli.json`:
+```json
+{
+  "schemaVersion": 1,
+  "build": {
+    "name": "example:my-cli",
+    "version": "0.1.0",
+    "output": "my-cli.component.wasm",
+    "defaultsDir": "defaults",
+    "commandsDir": "commands"
+  }
+}
 ```
 
 Options:
+- `--manifest`: Path to a wacli manifest (defaults to `./wacli.json` if present)
 - `--name`: Package name (default: "example:my-cli")
 - `--version`: Package version (default: "0.1.0")
+- Package name and version are combined as `name@version` unless `name` already contains `@`.
 - `-o, --output`: Output file path (default: "my-cli.component.wasm")
+- `--defaults-dir`: Defaults directory (default: "defaults")
+- `--commands-dir`: Commands directory (default: "commands")
 - `--no-validate`: Skip validation of the composed component
 - `--print-wac`: Print generated WAC without composing
+- `--use-prebuilt-registry`: Use `defaults/registry.component.wasm` instead of generating a registry
 
 **Note:** `wacli build` scans `commands/**/*.component.wasm` recursively.
 
@@ -116,16 +138,21 @@ wacli self-update
 
 ```
 my-cli/
+  wacli.json                  # Build manifest (created by `wacli init`)
   defaults/
     host.component.wasm       # Required: WASI to wacli bridge
     core.component.wasm       # Required: Command router
-    registry.component.wasm   # Optional: Auto-generated if missing
+    registry.component.wasm   # Optional: Used only with --use-prebuilt-registry
   commands/
     greet.component.wasm      # Command plugins (*.component.wasm)
     show.component.wasm
+  .wacli/
+    registry.component.wasm   # Auto-generated build cache (do not edit)
   wit/
     *.wit                     # Installed by `wacli init` (types/host/command/pipe, etc.)
 ```
+
+**Note:** `.wacli/` contains build cache artifacts. It's safe to add it to `.gitignore`.
 
 Runtime layout (for `wacli run`):
 ```
@@ -137,9 +164,9 @@ plugins/
 ```
 
 The `wacli build` command:
-1. Scans `defaults/` for framework components (host, core, registry)
+1. Scans `defaults/` for framework components (host, core)
 2. Scans `commands/` for command plugins (`*.component.wasm`)
-3. Auto-generates `registry.component.wasm` if not present
+3. Generates a registry component into `.wacli/registry.component.wasm` (or uses `defaults/registry.component.wasm` with `--use-prebuilt-registry`)
 4. Composes all components into the final CLI
 
 The `wacli run` command:
@@ -223,7 +250,7 @@ Download from [Releases](https://github.com/RAKUDEJI/wacli/releases).
 | `wacli:cli/types` | Shared types (`exit-code`, `command-meta`, `command-error`) |
 | `wacli:cli/host-env` | Host environment (`args`, `env`) |
 | `wacli:cli/host-io` | Host I/O (`stdout-write`, `stderr-write`, flush) |
-| `wacli:cli/host-fs` | Host filesystem (`read-file`, `write-file`, `list-dir`) |
+| `wacli:cli/host-fs` | Host filesystem (`read-file`, `write-file`, `create-dir`, `list-dir`) |
 | `wacli:cli/host-process` | Host process (`exit`) |
 | `wacli:cli/host-pipes` | Pipe loader (`list-pipes`, `load-pipe`) |
 | `wacli:cli/command` | Plugin export interface (`meta`, `run`) |

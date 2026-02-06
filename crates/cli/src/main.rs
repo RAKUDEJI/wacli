@@ -1,4 +1,5 @@
 mod component_scan;
+mod manifest;
 mod registry_gen_wat;
 mod wac_gen;
 mod wit;
@@ -20,9 +21,7 @@ use wac_resolver::{FileSystemPackageResolver, packages};
 use wac_types::{BorrowedPackageKey, Package};
 
 use crate::component_scan::{scan_commands, verify_defaults};
-use crate::registry_gen_wat::{
-    generate_registry_wat, get_prebuilt_registry, should_use_prebuilt_registry,
-};
+use crate::registry_gen_wat::{generate_registry_wat, get_prebuilt_registry};
 use crate::wac_gen::generate_wac;
 
 #[derive(Parser)]
@@ -57,17 +56,29 @@ enum Commands {
 
 #[derive(Parser)]
 struct BuildArgs {
-    /// Package name (e.g., "example:my-cli")
-    #[arg(long, default_value = "example:my-cli")]
-    name: String,
+    /// Path to a wacli manifest (defaults to ./wacli.json if present)
+    #[arg(long, value_name = "FILE")]
+    manifest: Option<PathBuf>,
 
-    /// Package version
-    #[arg(long, default_value = "0.1.0")]
-    version: String,
+    /// Package name (e.g., "example:my-cli") [default: example:my-cli]
+    #[arg(long)]
+    name: Option<String>,
 
-    /// Output file path
-    #[arg(short, long, default_value = "my-cli.component.wasm")]
-    output: PathBuf,
+    /// Package version [default: 0.1.0]
+    #[arg(long)]
+    version: Option<String>,
+
+    /// Output file path [default: my-cli.component.wasm]
+    #[arg(short, long, value_name = "FILE")]
+    output: Option<PathBuf>,
+
+    /// Defaults directory containing framework components [default: defaults]
+    #[arg(long = "defaults-dir", value_name = "DIR")]
+    defaults_dir: Option<PathBuf>,
+
+    /// Commands directory containing plugin components [default: commands]
+    #[arg(long = "commands-dir", value_name = "DIR")]
+    commands_dir: Option<PathBuf>,
 
     /// Skip validation of the composed component
     #[arg(long)]
@@ -76,6 +87,12 @@ struct BuildArgs {
     /// Print generated WAC without composing
     #[arg(long)]
     print_wac: bool,
+
+    /// Use `defaults/registry.component.wasm` instead of generating a registry
+    ///
+    /// By default, wacli generates a fresh registry component on every build.
+    #[arg(long)]
+    use_prebuilt_registry: bool,
 }
 
 #[derive(Parser)]
@@ -228,10 +245,13 @@ fn init(args: InitArgs) -> Result<()> {
         download_framework_components(&defaults_dir, args.overwrite)?;
     }
 
+    manifest::write_default_manifest(&dir, args.overwrite)?;
+
     eprintln!("Created:");
     eprintln!("  {}", defaults_dir.display());
     eprintln!("  {}", commands_dir.display());
     eprintln!("  {}", dir.join("wit").display());
+    eprintln!("  {}", dir.join(manifest::DEFAULT_MANIFEST_NAME).display());
     eprintln!();
     eprintln!("Next steps:");
     if args.with_components {
@@ -359,8 +379,74 @@ fn download_component(url: &str, dest: &Path, overwrite: bool, label: &str) -> R
 fn build(args: BuildArgs) -> Result<()> {
     tracing::debug!("executing build command");
 
-    let defaults_dir = PathBuf::from("defaults");
-    let commands_dir = PathBuf::from("commands");
+    let cwd = std::env::current_dir().context("failed to get current directory")?;
+    let loaded = manifest::load_manifest(args.manifest.as_deref())?;
+    let base_dir = loaded
+        .as_ref()
+        .map(|m| m.base_dir.as_path())
+        .unwrap_or(cwd.as_path());
+    let m_build = loaded.as_ref().and_then(|m| m.manifest.build.as_ref());
+
+    let name = args
+        .name
+        .or_else(|| m_build.and_then(|m| m.name.clone()))
+        .unwrap_or_else(|| "example:my-cli".to_string());
+
+    let version = args
+        .version
+        .or_else(|| m_build.and_then(|m| m.version.clone()))
+        .unwrap_or_else(|| "0.1.0".to_string());
+
+    // If the user already provided a version in `--name`, don't append another one.
+    let package_name = if name.contains('@') {
+        name.clone()
+    } else {
+        format!("{name}@{version}")
+    };
+
+    #[derive(Clone, Copy)]
+    enum PathOrigin {
+        Cli,
+        Manifest,
+        Default,
+    }
+
+    let resolve_path = |origin: PathOrigin, p: PathBuf| -> PathBuf {
+        if p.is_absolute() {
+            return p;
+        }
+        match origin {
+            PathOrigin::Cli => cwd.join(p),
+            PathOrigin::Manifest | PathOrigin::Default => base_dir.join(p),
+        }
+    };
+
+    let (defaults_raw, defaults_origin) = match args.defaults_dir {
+        Some(p) => (p, PathOrigin::Cli),
+        None => match m_build.and_then(|m| m.defaults_dir.clone()) {
+            Some(p) => (p, PathOrigin::Manifest),
+            None => (PathBuf::from("defaults"), PathOrigin::Default),
+        },
+    };
+    let defaults_dir = resolve_path(defaults_origin, defaults_raw);
+
+    let (commands_raw, commands_origin) = match args.commands_dir {
+        Some(p) => (p, PathOrigin::Cli),
+        None => match m_build.and_then(|m| m.commands_dir.clone()) {
+            Some(p) => (p, PathOrigin::Manifest),
+            None => (PathBuf::from("commands"), PathOrigin::Default),
+        },
+    };
+    let commands_dir = resolve_path(commands_origin, commands_raw);
+
+    let (output_raw, output_origin) = match args.output {
+        Some(p) => (p, PathOrigin::Cli),
+        None => match m_build.and_then(|m| m.output.clone()) {
+            Some(p) => (p, PathOrigin::Manifest),
+            None => (PathBuf::from("my-cli.component.wasm"), PathOrigin::Default),
+        },
+    };
+    let output_path = resolve_path(output_origin, output_raw);
 
     // Verify required defaults exist
     let (host_path, core_path) = verify_defaults(&defaults_dir)?;
@@ -373,19 +459,26 @@ fn build(args: BuildArgs) -> Result<()> {
         tracing::debug!("  - {}: {}", cmd.name, cmd.path.display());
     }
 
-    // Get registry (pre-built or generate)
-    // Use the minimal registry.wit that doesn't have WASI dependencies
-    let registry_path = if should_use_prebuilt_registry(&defaults_dir) {
-        get_prebuilt_registry(&defaults_dir).unwrap()
+    // Get registry component.
+    //
+    // By default, generate a fresh registry on every build and keep the build
+    // artifact out of defaults/. Use a pre-built defaults/registry.component.wasm
+    // only with --use-prebuilt-registry.
+    let registry_path = if args.use_prebuilt_registry {
+        get_prebuilt_registry(&defaults_dir)
+            .context("defaults/registry.component.wasm not found (remove --use-prebuilt-registry or add the file)")?
     } else {
-        // Generate registry component
+        // Generate registry component on every build. Keep build artifacts out of defaults/.
         tracing::info!("generating registry component...");
         tracing::info!("using WAT template registry generator");
         let registry_bytes =
             generate_registry_wat(&commands).context("failed to generate registry (WAT)")?;
 
-        // Write to defaults directory
-        let generated_path = defaults_dir.join("registry.component.wasm");
+        // Write to a local build cache directory.
+        let cache_dir = base_dir.join(".wacli");
+        fs::create_dir_all(&cache_dir)
+            .with_context(|| format!("failed to create directory: {}", cache_dir.display()))?;
+        let generated_path = cache_dir.join("registry.component.wasm");
         fs::write(&generated_path, &registry_bytes)
             .context("failed to write generated registry")?;
         tracing::info!("generated: {}", generated_path.display());
@@ -394,7 +487,7 @@ fn build(args: BuildArgs) -> Result<()> {
     };
 
     // Generate WAC
-    let wac_source = generate_wac(&args.name, &commands);
+    let wac_source = generate_wac(&package_name, &commands);
 
     if args.print_wac {
         println!("{}", wac_source);
@@ -419,7 +512,7 @@ fn build(args: BuildArgs) -> Result<()> {
     let document = Document::parse(&wac_source).map_err(|e| fmt_err(e, &wac_path))?;
 
     // Resolve packages
-    let resolver = FileSystemPackageResolver::new(".", deps, false);
+    let resolver = FileSystemPackageResolver::new(base_dir, deps, false);
     let keys = packages(&document).map_err(|e| fmt_err(e, &wac_path))?;
     let resolved_packages: IndexMap<BorrowedPackageKey<'_>, Vec<u8>> = resolver.resolve(&keys)?;
 
@@ -447,7 +540,7 @@ fn build(args: BuildArgs) -> Result<()> {
     })?;
 
     // Create output directory if needed
-    if let Some(parent) = args.output.parent()
+    if let Some(parent) = output_path.parent()
         && !parent.as_os_str().is_empty()
     {
         fs::create_dir_all(parent)
@@ -455,10 +548,10 @@ fn build(args: BuildArgs) -> Result<()> {
     }
 
     // Write output
-    fs::write(&args.output, &bytes)
-        .with_context(|| format!("failed to write output file: {}", args.output.display()))?;
+    fs::write(&output_path, &bytes)
+        .with_context(|| format!("failed to write output file: {}", output_path.display()))?;
 
-    eprintln!("Built: {}", args.output.display());
+    eprintln!("Built: {}", output_path.display());
 
     Ok(())
 }

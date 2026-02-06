@@ -22,12 +22,7 @@ struct NameTable {
     offsets: Vec<(u32, u32)>,
 }
 
-/// Check if we should use a pre-built registry instead of generating one.
-pub fn should_use_prebuilt_registry(defaults_dir: &Path) -> bool {
-    defaults_dir.join("registry.component.wasm").exists()
-}
-
-/// Get the path to the pre-built registry if it exists.
+/// Get the path to a pre-built registry in `defaults/` if it exists.
 pub fn get_prebuilt_registry(defaults_dir: &Path) -> Option<PathBuf> {
     let path = defaults_dir.join("registry.component.wasm");
     if path.exists() { Some(path) } else { None }
