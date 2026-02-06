@@ -104,6 +104,58 @@ jobs:
       - name: Build components
         run: bash scripts/build_components.sh
 
+      - name: Install ORAS
+        if: ${{ secrets.MOLT_REGISTRY != '' }}
+        uses: oras-project/setup-oras@v1
+        with:
+          version: 1.3.0
+
+      - name: Push components to registry
+        if: ${{ secrets.MOLT_REGISTRY != '' && (secrets.MOLT_AUTH_HEADER != '' || ((secrets.MOLT_USERNAME != '' || secrets.USERNAME != '') && (secrets.MOLT_PASSWORD != '' || secrets.PASSWORD != ''))) }}
+        env:
+          TAG: ${{ github.ref_name }}
+          MOLT_REGISTRY: ${{ secrets.MOLT_REGISTRY }}
+          MOLT_AUTH_HEADER: ${{ secrets.MOLT_AUTH_HEADER }}
+          MOLT_USERNAME: ${{ secrets.MOLT_USERNAME || secrets.USERNAME }}
+          MOLT_PASSWORD: ${{ secrets.MOLT_PASSWORD || secrets.PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          registry_host="$MOLT_REGISTRY"
+          registry_host="${registry_host#https://}"
+          registry_host="${registry_host#http://}"
+          registry_host="${registry_host%/}"
+          if [[ -z "$registry_host" || "$registry_host" == */* ]]; then
+            echo "Invalid MOLT_REGISTRY (expected https://registry.example.com): $MOLT_REGISTRY" >&2
+            exit 2
+          fi
+
+          # Prefer explicit Authorization header (e.g. Bearer token) if provided.
+          headers=()
+          if [[ -n "${MOLT_AUTH_HEADER:-}" ]]; then
+            headers+=(--header "$MOLT_AUTH_HEADER")
+          elif [[ -n "${MOLT_USERNAME:-}" && -n "${MOLT_PASSWORD:-}" ]]; then
+            echo "$MOLT_PASSWORD" | oras login "$registry_host" -u "$MOLT_USERNAME" --password-stdin
+          else
+            echo "Missing auth: set MOLT_AUTH_HEADER or MOLT_USERNAME+MOLT_PASSWORD secrets" >&2
+            exit 2
+          fi
+
+          # Publish framework components under the default repos/refs that `wacli` expects:
+          # - wacli/host:<tag>
+          # - wacli/core:<tag>
+          #
+          # `wacli` pulls the WASM layer with media type application/wasm.
+          oras push "${headers[@]}" \
+            --artifact-type application/vnd.wasm.component.v1+wasm \
+            "$registry_host/wacli/host:$TAG" \
+            components/host.component.wasm:application/wasm
+
+          oras push "${headers[@]}" \
+            --artifact-type application/vnd.wasm.component.v1+wasm \
+            "$registry_host/wacli/core:$TAG" \
+            components/core.component.wasm:application/wasm
+
       - name: Upload components
         uses: actions/upload-artifact@v4
         with:
@@ -137,6 +189,33 @@ jobs:
         run: |
           ./scripts/publish_if_tag.sh wacli-cdk crates/wacli-cdk/Cargo.toml
 
+  publish-molt-registry-client:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-publish-molt-registry-client-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Publish molt-registry-client to crates.io
+        env:
+          TAG: ${{ github.ref_name }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          ./scripts/publish_if_tag.sh molt-registry-client crates/molt-registry-client/Cargo.toml
+
   publish-plugin-loader:
     runs-on: ubuntu-latest
 
@@ -165,7 +244,7 @@ jobs:
           ./scripts/publish_if_tag.sh plugin-loader crates/plugin-loader/Cargo.toml
 
   publish:
-    needs: [publish-plugin-loader]
+    needs: [publish-molt-registry-client, publish-plugin-loader]
     runs-on: ubuntu-latest
 
     steps:
@@ -193,7 +272,7 @@ jobs:
           ./scripts/publish_if_tag.sh wacli crates/cli/Cargo.toml
 
   release:
-    needs: [build, components, publish-cdk, publish-plugin-loader, publish]
+    needs: [build, components, publish-cdk, publish-molt-registry-client, publish-plugin-loader, publish]
     runs-on: ubuntu-latest
     permissions:
       contents: write
