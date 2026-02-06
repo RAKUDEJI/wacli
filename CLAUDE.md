@@ -25,11 +25,21 @@ wacli/
 │   │   └── src/
 │   │       ├── main.rs         # CLIエントリポイント
 │   │       ├── component_scan.rs   # コンポーネントスキャン
+│   │       ├── registry_pull.rs    # OCIレジストリから component.wasm を pull（薄い同期ラッパ）
 │   │       ├── registry_gen_wat.rs # Registry自動生成（WAT）
+│   │       ├── wasm_registry.rs    # Molt /wasm/v1 クライアント（molt-registry-client 経由）
 │   │       └── wac_gen.rs      # WAC生成
 │   ├── plugin-loader/          # ランタイム用プラグインローダー
 │   │   ├── Cargo.toml
 │   │   └── src/lib.rs
+│   ├── molt-registry-client/   # Molt WASM-aware registry client（oci-client + /wasm/v1）
+│   │   ├── Cargo.toml
+│   │   └── src/
+│   │       ├── lib.rs
+│   │       ├── oci.rs          # OCI /v2 helpers (pull/push + referrers)
+│   │       ├── wasm_v1.rs      # /wasm/v1 helpers (wit/index/search)
+│   │       ├── util.rs
+│   │       └── media_types.rs
 │   └── wacli-cdk/              # プラグイン開発キット (crates.io公開)
 │       ├── Cargo.toml
 │       └── src/
@@ -131,7 +141,9 @@ my-project/
 │   ├── core.component.wasm       # 必須: コマンドルーター
 │   └── registry.component.wasm   # オプション: --use-prebuilt-registry 時のみ使用
 ├── .wacli/
-│   └── registry.component.wasm   # 自動生成キャッシュ（編集しない）
+│   ├── registry.component.wasm   # 自動生成キャッシュ（編集しない）
+│   ├── framework/                # defaults が不足している場合の host/core pull キャッシュ
+│   └── commands/                 # build.commands で指定した plugin pull キャッシュ
 └── commands/
     ├── greet.component.wasm      # コマンドプラグイン
     └── hello.component.wasm
@@ -139,10 +151,17 @@ my-project/
 
 `wacli build` の動作:
 1. `defaults/` からフレームワークコンポーネント（host, core）を読み込み
-2. `commands/` から `*.component.wasm` をスキャン
-3. `wacli.json` の `build.commands` が設定されていて `MOLT_REGISTRY` があれば、OCIレジストリからコマンドコンポーネントを pull して `.wacli/commands/` にキャッシュ（`WACLI_REGISTRY_REFRESH=1` で再pull）
-4. レジストリコンポーネントを毎回 `.wacli/registry.component.wasm` に生成（`--use-prebuilt-registry` の場合は `defaults/registry.component.wasm` を使用）
-5. WAC言語で合成し、最終CLIを出力
+2. `defaults/` が不足していて `MOLT_REGISTRY` があれば、OCIレジストリから host/core を pull して `.wacli/framework/` にキャッシュして使用
+3. `commands/` から `*.component.wasm` をスキャン
+4. `wacli.json` の `build.commands` が設定されていて `MOLT_REGISTRY` があれば、OCIレジストリからコマンドコンポーネントを pull して `.wacli/commands/` にキャッシュ（`WACLI_REGISTRY_REFRESH=1` で再pull）
+5. レジストリコンポーネントを毎回 `.wacli/registry.component.wasm` に生成（`--use-prebuilt-registry` の場合は `defaults/registry.component.wasm` を使用）
+6. WAC言語で合成し、最終CLIを出力
+
+## Molt レジストリ統合
+
+- `wacli` からのレジストリアクセスは `molt-registry-client` に集約している。
+- OCI `/v2` は `oci-client` (oras-project/rust-oci-client) を利用。
+- Molt 拡張 `/wasm/v1` は `reqwest` を利用し、WIT取得・index取得・検索を提供。
 
 ## WIT インターフェース
 

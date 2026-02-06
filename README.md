@@ -14,6 +14,7 @@ wacli is a CLI tool for composing WebAssembly Components using the [WAC](https:/
 - Build CLI apps from modular WASM components
 - Auto-generates registry component from command plugins
 - Single binary, no external dependencies (wac, wasm-tools, jq)
+- Optional registry integration for framework components, plugins, and WIT/index queries (Molt spec)
 
 ## Installation
 
@@ -45,6 +46,8 @@ cargo install wacli --no-default-features
 
 `wacli` reads registry settings from environment variables. For local/dev usage
 you can put them in a `.env` file (loaded automatically if present).
+
+This repository includes a sample: `.env.example`.
 
 ### Initialize a new project
 
@@ -224,6 +227,8 @@ my-cli/
     show.component.wasm
   .wacli/
     registry.component.wasm   # Auto-generated build cache (do not edit)
+    framework/                # Cached host/core pulls (optional)
+    commands/                 # Cached registry plugin pulls (optional)
   wit/
     *.wit                     # Installed by `wacli init` (types/host/command/pipe, etc.)
 ```
@@ -241,9 +246,11 @@ plugins/
 
 The `wacli build` command:
 1. Scans `defaults/` for framework components (host, core)
-2. Scans `commands/` for command plugins (`*.component.wasm`)
-3. Generates a registry component into `.wacli/registry.component.wasm` (or uses `defaults/registry.component.wasm` with `--use-prebuilt-registry`)
-4. Composes all components into the final CLI
+2. If host/core is missing and `MOLT_REGISTRY` is set, pulls them into `.wacli/framework/`
+3. Scans `commands/` for command plugins (`*.component.wasm`)
+4. If `build.commands` is set, pulls those plugin components into `.wacli/commands/`
+5. Generates a registry component into `.wacli/registry.component.wasm` (or uses `defaults/registry.component.wasm` with `--use-prebuilt-registry`)
+6. Composes all components into the final CLI
 
 The `wacli run` command:
 - Runs a composed CLI component
@@ -317,7 +324,9 @@ Pre-built framework components are available as release artifacts:
 - `host.component.wasm` - WASI to wacli bridge
 - `core.component.wasm` - Command router
 
-Download from [Releases](https://github.com/RAKUDEJI/wacli/releases).
+Download from [Releases](https://github.com/RAKUDEJI/wacli/releases), or configure
+`MOLT_REGISTRY` and use `wacli init --with-components` / `wacli build` to pull
+them from an OCI registry.
 
 ## WIT Interfaces
 
