@@ -318,14 +318,13 @@ Plugins do not import WASI directly. All host interactions go through the
 
 ## Framework Components
 
-Pre-built framework components are available as release artifacts:
+Framework components are published to an OCI registry (Molt spec):
 
 - `host.component.wasm` - WASI to wacli bridge
 - `core.component.wasm` - Command router
 
-Download from [Releases](https://github.com/RAKUDEJI/wacli/releases), or configure
-`MOLT_REGISTRY` and use `wacli init --with-components` / `wacli build` to pull
-them from an OCI registry.
+Configure `MOLT_REGISTRY` and use `wacli init --with-components` / `wacli build`
+to pull them from the registry.
 
 ## WIT Interfaces
 
