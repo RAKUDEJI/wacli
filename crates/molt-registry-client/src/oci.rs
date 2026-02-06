@@ -21,10 +21,19 @@ pub struct OciWasmClient {
     client: Client,
 }
 
+#[derive(Debug, Clone)]
+pub struct PulledComponentWasm {
+    pub manifest_digest: String,
+    pub layer_digest: String,
+    pub bytes: Vec<u8>,
+}
+
 impl OciWasmClient {
     pub fn new(endpoint: RegistryEndpoint, auth: RegistryAuth) -> Result<Self> {
-        let mut cfg = ClientConfig::default();
-        cfg.user_agent = concat!("molt-registry-client/", env!("CARGO_PKG_VERSION"));
+        let cfg = ClientConfig {
+            user_agent: concat!("molt-registry-client/", env!("CARGO_PKG_VERSION")),
+            ..Default::default()
+        };
         let client = Client::try_from(cfg).context("failed to create oci-client")?;
 
         Ok(Self {
@@ -136,12 +145,81 @@ impl OciWasmClient {
         pull_blob_to_bytes(&self.client, &r, pick).await
     }
 
+    /// Pull the component wasm bytes and return the resolved manifest and layer digests.
+    ///
+    /// This is useful for producing a lock file that pins a moving tag to a digest.
+    pub async fn pull_component_wasm_with_digests(
+        &self,
+        repo: &str,
+        reference: &str,
+    ) -> Result<PulledComponentWasm> {
+        let (manifest, manifest_digest) = self.pull_image_manifest(repo, reference).await?;
+
+        if manifest.layers.is_empty() {
+            bail!("manifest has no layers");
+        }
+
+        let pick = if manifest.layers.len() == 1 {
+            &manifest.layers[0]
+        } else {
+            manifest
+                .layers
+                .iter()
+                .find(|l| {
+                    l.media_type == WASM_COMPONENT_LAYER_MEDIA_TYPE
+                        || l.media_type == oci_client::manifest::WASM_LAYER_MEDIA_TYPE
+                })
+                .context("no wasm layer found in manifest")?
+        };
+
+        let layer_digest = pick.digest.clone();
+        let r = self.reference(repo, reference)?;
+        let bytes = pull_blob_to_bytes(&self.client, &r, pick).await?;
+
+        Ok(PulledComponentWasm {
+            manifest_digest,
+            layer_digest,
+            bytes,
+        })
+    }
+
+    /// Resolve the manifest digest and selected WASM layer blob digest for the given repo+reference.
+    ///
+    /// This does not download the WASM blob.
+    pub async fn resolve_component_digests(
+        &self,
+        repo: &str,
+        reference: &str,
+    ) -> Result<(String, String)> {
+        let (manifest, manifest_digest) = self.pull_image_manifest(repo, reference).await?;
+
+        if manifest.layers.is_empty() {
+            bail!("manifest has no layers");
+        }
+
+        let pick = if manifest.layers.len() == 1 {
+            &manifest.layers[0]
+        } else {
+            manifest
+                .layers
+                .iter()
+                .find(|l| {
+                    l.media_type == WASM_COMPONENT_LAYER_MEDIA_TYPE
+                        || l.media_type == oci_client::manifest::WASM_LAYER_MEDIA_TYPE
+                })
+                .context("no wasm layer found in manifest")?
+        };
+
+        Ok((manifest_digest, pick.digest.clone()))
+    }
+
     /// Push a WIT referrer artifact (OCI Referrers) for the given component subject.
     ///
     /// `subject_reference` can be a tag or digest; the method resolves it to a
     /// subject digest and uses that in the referrer manifest's `subject` field.
     ///
     /// Note: The referrer itself is pushed under `wit_tag` in the same repository.
+    #[allow(clippy::too_many_arguments)]
     pub async fn push_wit_referrer(
         &self,
         repo: &str,

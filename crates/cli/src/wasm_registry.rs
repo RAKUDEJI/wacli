@@ -228,10 +228,10 @@ fn client_from_opts(opts: &RegistryOpts) -> Result<WasmV1Client> {
 
     // Merge headers from CLI + env MOLT_AUTH_HEADER (for parity with previous behaviour).
     let mut header_lines = opts.header.clone();
-    if let Ok(v) = std::env::var("MOLT_AUTH_HEADER") {
-        if !v.trim().is_empty() {
-            header_lines.push(v);
-        }
+    if let Ok(v) = std::env::var("MOLT_AUTH_HEADER")
+        && !v.trim().is_empty()
+    {
+        header_lines.push(v);
     }
 
     // Determine auth:

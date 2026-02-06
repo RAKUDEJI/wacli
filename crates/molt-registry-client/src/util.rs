@@ -86,7 +86,7 @@ pub fn auth_from_header_line(line: &str) -> Result<RegistryAuth> {
     let (k, v) = line.split_once(':').with_context(|| {
         format!("invalid MOLT_AUTH_HEADER (expected 'Authorization: ...'): {line}")
     })?;
-    if k.trim().to_ascii_lowercase() != "authorization" {
+    if !k.trim().eq_ignore_ascii_case("authorization") {
         bail!(
             "MOLT_AUTH_HEADER must be an Authorization header (got '{}')",
             k.trim()
