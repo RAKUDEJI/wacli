@@ -71,6 +71,7 @@ This creates the directory structure:
 ```
 my-cli/
   wacli.json
+  wacli.lock
   defaults/
   commands/
   wit/
@@ -128,6 +129,16 @@ This requires `MOLT_REGISTRY` and auth via either `MOLT_AUTH_HEADER` or
 components are cached under `.wacli/commands/`. Set `WACLI_REGISTRY_REFRESH=1`
 to force re-pull.
 
+#### Reproducible Builds (`wacli.lock`)
+
+When `wacli` pulls components from the registry, it writes/updates `wacli.lock`
+to pin the resolved **manifest digest** (`sha256:...`). This prevents tags from
+drifting and makes builds reproducible.
+
+- By default, `wacli build` prefers digests already pinned in `wacli.lock`.
+- Use `wacli build --update-lock` to resolve tags to the latest digest and update
+  `wacli.lock`.
+
 Options:
 - `--manifest`: Path to a wacli manifest (defaults to `./wacli.json` if present)
 - `--name`: Package name (default: "example:my-cli")
@@ -139,6 +150,7 @@ Options:
 - `--no-validate`: Skip validation of the composed component
 - `--print-wac`: Print generated WAC without composing
 - `--use-prebuilt-registry`: Use `defaults/registry.component.wasm` instead of generating a registry
+- `--update-lock`: Resolve registry tags to digests and update `wacli.lock`
 
 **Note:** `wacli build` scans `commands/**/*.component.wasm` recursively, and
 also resolves any registry plugins configured in `build.commands`.
@@ -217,6 +229,7 @@ wacli wasm search --export "wacli:cli/command@2.0.0" --os wasip2
 ```
 my-cli/
   wacli.json                  # Build manifest (created by `wacli init`)
+  wacli.lock                  # Registry digest lock (created/updated by `wacli`)
   defaults/
     host.component.wasm       # Required: WASI to wacli bridge
     core.component.wasm       # Required: Command router
@@ -248,8 +261,9 @@ The `wacli build` command:
 2. If host/core is missing and `MOLT_REGISTRY` is set, pulls them into `.wacli/framework/`
 3. Scans `commands/` for command plugins (`*.component.wasm`)
 4. If `build.commands` is set, pulls those plugin components into `.wacli/commands/`
-5. Generates a registry component into `.wacli/registry.component.wasm` (or uses `defaults/registry.component.wasm` with `--use-prebuilt-registry`)
-6. Composes all components into the final CLI
+5. If registry pulls occur, resolves tags to digests and updates `wacli.lock`
+6. Generates a registry component into `.wacli/registry.component.wasm` (or uses `defaults/registry.component.wasm` with `--use-prebuilt-registry`)
+7. Composes all components into the final CLI
 
 The `wacli run` command:
 - Runs a composed CLI component
