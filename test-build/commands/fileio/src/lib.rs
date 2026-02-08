@@ -1,13 +1,16 @@
-use wacli_cdk::{Command, CommandError, CommandMeta, CommandResult, meta};
+use wacli_cdk::{Command, CommandError, CommandMeta, CommandResult};
+
+wacli_cdk::declare_command_metadata!(fileio_meta, {
+    name: "fileio",
+    summary: "Read/write/list files",
+    usage: "fileio <read|write|list> ...",
+});
 
 struct FileIo;
 
 impl Command for FileIo {
     fn meta() -> CommandMeta {
-        meta("fileio")
-            .summary("Read/write/list files")
-            .usage("fileio <read|write|list> ...")
-            .build()
+        fileio_meta()
     }
 
     fn run(argv: Vec<String>) -> CommandResult {

@@ -18,6 +18,9 @@ wac-types = "0.9.0"
 # Workspace crates
 plugin-loader = { path = "crates/plugin-loader", version = "0.0.42" }
 molt-registry-client = { path = "crates/molt-registry-client", version = "0.0.42" }
+wacli-argparse = { path = "crates/wacli-argparse", version = "0.0.42" }
+wacli-metadata = { path = "crates/wacli-metadata", version = "0.0.42" }
+wacli-cdk-macros = { path = "crates/wacli-cdk-macros", version = "0.0.42" }
 
 # CLI and error handling
 clap = { version = "4.5", features = ["derive"] }

@@ -178,3 +178,66 @@ world registry-provider {
   export registry;
 }
 "#;
+
+pub const SCHEMA_WIT: &str = r#"package wacli:cli@2.0.0;
+
+/// Expressive CLI schema for clap-like behavior.
+///
+/// This is intentionally more semantic than `types.arg-def`, allowing core-side
+/// help/version/validation without executing the plugin.
+interface schema {
+  record arg-schema {
+    name: string,
+    short: option<string>,
+    long: option<string>,
+    help: string,
+    required: bool,
+    default-value: option<string>,
+    env: option<string>,
+    value-name: option<string>,
+    takes-value: bool,
+    multiple: bool,
+    value-type: option<string>,
+    possible-values: list<string>,
+    conflicts-with: list<string>,
+    requires: list<string>,
+    hidden: bool,
+  }
+
+  record command-schema {
+    name: string,
+    summary: string,
+    usage: string,
+    aliases: list<string>,
+    version: string,
+    hidden: bool,
+    description: string,
+    examples: list<string>,
+    args: list<arg-schema>,
+  }
+}
+"#;
+
+pub const REGISTRY_SCHEMA_WIT: &str = r#"package wacli:cli@2.0.0;
+
+interface registry-schema {
+  use schema.{command-schema};
+
+  /// App-level metadata, provided by the builder (wacli).
+  ///
+  /// This is used by core to render global `--help/--version` consistently.
+  record app-meta {
+    name: string,
+    version: string,
+    description: string,
+  }
+
+  /// Return app-level metadata for the composed CLI.
+  get-app-meta: func() -> app-meta;
+
+  /// Return schemas for all commands.
+  ///
+  /// The schema is pure data and must be available without executing the plugin.
+  list-schemas: func() -> list<command-schema>;
+}
+"#;

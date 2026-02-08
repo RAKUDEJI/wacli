@@ -1,0 +1,22 @@
+package wacli:cli@2.0.0;
+
+interface registry-schema {
+  use schema.{command-schema};
+
+  /// App-level metadata, provided by the builder (wacli).
+  ///
+  /// This is used by core to render global `--help/--version` consistently.
+  record app-meta {
+    name: string,
+    version: string,
+    description: string,
+  }
+
+  /// Return app-level metadata for the composed CLI.
+  get-app-meta: func() -> app-meta;
+
+  /// Return schemas for all commands.
+  ///
+  /// The schema is pure data and must be available without executing the plugin.
+  list-schemas: func() -> list<command-schema>;
+}

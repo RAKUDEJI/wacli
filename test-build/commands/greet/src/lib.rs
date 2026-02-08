@@ -1,13 +1,17 @@
-use wacli_cdk::{Command, CommandMeta, CommandResult, meta};
+use wacli_cdk::{Command, CommandMeta, CommandResult};
+
+wacli_cdk::declare_command_metadata!(greet_meta, {
+    name: "greet",
+    summary: "Greet someone",
+    usage: "greet [NAME]",
+    aliases: ["hi"],
+});
 
 struct Greet;
 
 impl Command for Greet {
     fn meta() -> CommandMeta {
-        meta("greet")
-            .summary("Greet someone")
-            .usage("greet [NAME]")
-            .build()
+        greet_meta()
     }
 
     fn run(argv: Vec<String>) -> CommandResult {

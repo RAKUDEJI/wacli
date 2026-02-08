@@ -3449,6 +3449,7 @@ dependencies = [
  "wac-parser",
  "wac-resolver",
  "wac-types",
+ "wacli-metadata",
  "wasm-encoder 0.244.0",
  "wasmparser 0.244.0",
  "wat",
@@ -3457,16 +3458,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "wacli-argparse"
+version = "0.0.42"
+
+[[package]]
 name = "wacli-cdk"
 version = "0.0.42"
 dependencies = [
+ "wacli-argparse",
+ "wacli-cdk-macros",
  "wit-bindgen 0.52.0",
+]
+
+[[package]]
+name = "wacli-cdk-macros"
+version = "0.0.42"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "serde_json",
+ "syn",
+ "wacli-metadata",
 ]
 
 [[package]]
 name = "wacli-core"
 version = "0.1.0"
 dependencies = [
+ "wacli-argparse",
  "wit-bindgen 0.52.0",
 ]
 
@@ -3475,6 +3494,14 @@ name = "wacli-host"
 version = "0.1.0"
 dependencies = [
  "wit-bindgen 0.52.0",
+]
+
+[[package]]
+name = "wacli-metadata"
+version = "0.0.42"
+dependencies = [
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

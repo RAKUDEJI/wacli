@@ -22,12 +22,91 @@
 //! ```
 
 #[doc(hidden)]
+#[allow(unused_imports)]
 pub mod bindings;
 
 pub use bindings::wacli::cli::types::{
     ArgDef, CommandError, CommandMeta, CommandResult, PipeError, PipeInfo, PipeMeta,
 };
 pub use bindings::wacli::cli::{host_env, host_fs, host_io, host_pipes, host_process};
+
+// Proc-macro helpers (compile-time only).
+pub use wacli_cdk_macros::declare_command_metadata;
+
+// Trait impls for shared argparse helpers.
+impl wacli_argparse::claplike::ArgDefLike for ArgDef {
+    fn name(&self) -> &str {
+        &self.name
+    }
+
+    fn short(&self) -> Option<&str> {
+        self.short.as_deref()
+    }
+
+    fn long(&self) -> Option<&str> {
+        self.long.as_deref()
+    }
+
+    fn help(&self) -> &str {
+        &self.help
+    }
+
+    fn required(&self) -> bool {
+        self.required
+    }
+
+    fn default_value(&self) -> Option<&str> {
+        self.default_value.as_deref()
+    }
+
+    fn value_name(&self) -> Option<&str> {
+        self.value_name.as_deref()
+    }
+
+    fn takes_value(&self) -> bool {
+        self.takes_value
+    }
+}
+
+impl wacli_argparse::claplike::CommandMetaLike for CommandMeta {
+    type ArgDef = ArgDef;
+
+    fn name(&self) -> &str {
+        &self.name
+    }
+
+    fn summary(&self) -> &str {
+        &self.summary
+    }
+
+    fn usage(&self) -> &str {
+        &self.usage
+    }
+
+    fn aliases(&self) -> &[String] {
+        self.aliases.as_slice()
+    }
+
+    fn version(&self) -> &str {
+        &self.version
+    }
+
+    fn hidden(&self) -> bool {
+        self.hidden
+    }
+
+    fn description(&self) -> &str {
+        &self.description
+    }
+
+    fn examples(&self) -> &[String] {
+        self.examples.as_slice()
+    }
+
+    fn args(&self) -> &[Self::ArgDef] {
+        self.args.as_slice()
+    }
+}
 
 impl From<String> for CommandError {
     fn from(s: String) -> Self {
@@ -338,276 +417,22 @@ pub fn parse<'a>(
 
 /// Minimal argument helpers (no extra dependencies).
 pub mod args {
-    use super::{ArgDef, CommandError, CommandMeta};
-    use std::borrow::Cow;
-    use std::collections::{HashMap, HashSet};
+    pub use wacli_argparse::args::{
+        flag, positional, positional_args, positional_args_with_schema, positional_with_schema,
+        rest, value, FlagNames, Matches, Schema,
+    };
 
-    const BUILTIN_HELP_NAME: &str = "__wacli_help";
-    const BUILTIN_VERSION_NAME: &str = "__wacli_version";
-
-    #[derive(Debug, Clone)]
-    struct ArgInfo {
-        name: String,
-        short: Option<String>,
-        long: Option<String>,
-        takes_value: bool,
-        default_value: Option<String>,
-    }
-
-    /// Parsed arguments and values.
-    ///
-    /// This is intentionally minimal (clap-like features are built on top).
-    #[derive(Debug, Clone, Default)]
-    pub struct Matches<'a> {
-        values: HashMap<String, Vec<Cow<'a, str>>>,
-        present: HashSet<String>,
-        rest: Vec<&'a str>,
-    }
-
-    impl<'a> Matches<'a> {
-        /// Get the last value for an argument (positional or value-taking flag).
-        pub fn get(&self, name: &str) -> Option<&str> {
-            self.values
-                .get(name)
-                .and_then(|v| v.last().map(|s| s.as_ref()))
-        }
-
-        /// Get all values for an argument (if it occurs multiple times).
-        pub fn get_all(&self, name: &str) -> Option<&[Cow<'a, str>]> {
-            self.values.get(name).map(|v| v.as_slice())
-        }
-
-        /// Whether an argument was present (boolean flag) or has a value.
-        pub fn is_present(&self, name: &str) -> bool {
-            self.present.contains(name) || self.values.contains_key(name)
-        }
-
-        /// Extra positional arguments not covered by declared positional arg defs.
-        pub fn rest(&self) -> &[&'a str] {
-            self.rest.as_slice()
-        }
-    }
-
-    fn normalize_short(raw: &str) -> String {
-        let trimmed = raw.trim();
-        if trimmed.starts_with('-') {
-            trimmed.to_string()
-        } else {
-            format!("-{trimmed}")
-        }
-    }
-
-    fn normalize_long(raw: &str) -> String {
-        let trimmed = raw.trim();
-        if trimmed.starts_with("--") {
-            trimmed.to_string()
-        } else if trimmed.starts_with('-') {
-            trimmed.to_string()
-        } else {
-            format!("--{trimmed}")
-        }
-    }
-
-    fn build_arg_info(def: &ArgDef) -> ArgInfo {
-        let short = def.short.as_deref().map(normalize_short);
-        let long = def.long.as_deref().map(normalize_long);
-        ArgInfo {
-            name: def.name.clone(),
-            short,
-            long,
-            takes_value: def.takes_value,
-            default_value: def.default_value.clone(),
-        }
-    }
-
-    fn has_flag(defs: &[ArgDef], short: &str, long: &str) -> bool {
-        let short = normalize_short(short);
-        let long = normalize_long(long);
-        defs.iter().any(|d| {
-            d.short
-                .as_deref()
-                .map(normalize_short)
-                .is_some_and(|s| s == short)
-                || d.long
-                    .as_deref()
-                    .map(normalize_long)
-                    .is_some_and(|l| l == long)
-        })
-    }
-
-    fn builtin_help_def() -> ArgDef {
-        ArgDef {
-            name: BUILTIN_HELP_NAME.to_string(),
-            short: Some("-h".to_string()),
-            long: Some("--help".to_string()),
-            help: "Show help information".to_string(),
-            required: false,
-            default_value: None,
-            value_name: None,
-            takes_value: false,
-        }
-    }
-
-    fn builtin_version_def() -> ArgDef {
-        ArgDef {
-            name: BUILTIN_VERSION_NAME.to_string(),
-            short: Some("-V".to_string()),
-            long: Some("--version".to_string()),
-            help: "Show version information".to_string(),
-            required: false,
-            default_value: None,
-            value_name: None,
-            takes_value: false,
-        }
-    }
-
-    fn schema_defs(meta: &CommandMeta) -> Vec<ArgDef> {
-        let mut defs = meta.args.clone();
-        if !has_flag(&defs, "-h", "--help") {
-            defs.push(builtin_help_def());
-        }
-        if !has_flag(&defs, "-V", "--version") {
-            defs.push(builtin_version_def());
-        }
-        defs
-    }
-
-    fn format_value_name(def: &ArgDef) -> String {
-        def.value_name
-            .clone()
-            .unwrap_or_else(|| def.name.to_ascii_uppercase())
-    }
-
-    fn format_arg_left(def: &ArgDef) -> String {
-        if def.short.is_none() && def.long.is_none() {
-            let n = format_value_name(def);
-            if def.required {
-                format!("<{n}>")
-            } else {
-                format!("[{n}]")
-            }
-        } else {
-            let mut names: Vec<String> = Vec::new();
-            if let Some(s) = def.short.as_deref() {
-                names.push(normalize_short(s));
-            }
-            if let Some(l) = def.long.as_deref() {
-                names.push(normalize_long(l));
-            }
-            let mut out = names.join(", ");
-            if def.takes_value {
-                let n = format_value_name(def);
-                out.push_str(&format!(" <{n}>"));
-            }
-            out
-        }
-    }
-
-    fn format_arg_help(def: &ArgDef) -> String {
-        let mut out = def.help.trim().to_string();
-        if def.required && !(def.short.is_none() && def.long.is_none()) {
-            if out.is_empty() {
-                out.push_str("required");
-            } else {
-                out.push_str(" (required)");
-            }
-        }
-        if let Some(default_value) = def.default_value.as_deref() {
-            if out.is_empty() {
-                out.push_str(&format!("[default: {default_value}]"));
-            } else {
-                out.push_str(&format!(" [default: {default_value}]"));
-            }
-        }
-        out
-    }
+    use super::{CommandError, CommandMeta};
+    use wacli_argparse::claplike::{self, ParseOutcome};
 
     /// Render a help message based on `CommandMeta`.
     pub fn help(meta: &CommandMeta) -> String {
-        let defs = schema_defs(meta);
-
-        let mut out = String::new();
-        if meta.summary.trim().is_empty() {
-            out.push_str(&meta.name);
-            out.push('\n');
-        } else {
-            out.push_str(&format!("{} - {}\n", meta.name, meta.summary.trim()));
-        }
-
-        if meta.usage.trim().is_empty() {
-            out.push_str(&format!("\nUsage: {}\n", meta.name));
-        } else {
-            out.push_str(&format!("\nUsage: {}\n", meta.usage.trim()));
-        }
-
-        if !meta.description.trim().is_empty() {
-            out.push('\n');
-            out.push_str(meta.description.trim_end());
-            out.push('\n');
-        }
-
-        let mut options: Vec<&ArgDef> = Vec::new();
-        let mut positionals: Vec<&ArgDef> = Vec::new();
-        for def in &defs {
-            if def.short.is_none() && def.long.is_none() {
-                positionals.push(def);
-            } else {
-                options.push(def);
-            }
-        }
-
-        if !positionals.is_empty() {
-            out.push_str("\nArguments:\n");
-            let rows: Vec<(String, String)> = positionals
-                .iter()
-                .map(|d| (format_arg_left(d), format_arg_help(d)))
-                .collect();
-            let width = rows.iter().map(|(l, _)| l.len()).max().unwrap_or(0);
-            for (left, help) in rows {
-                if help.is_empty() {
-                    out.push_str(&format!("  {}\n", left));
-                } else {
-                    out.push_str(&format!("  {:width$}  {}\n", left, help, width = width));
-                }
-            }
-        }
-
-        if !options.is_empty() {
-            out.push_str("\nOptions:\n");
-            let rows: Vec<(String, String)> = options
-                .iter()
-                .map(|d| (format_arg_left(d), format_arg_help(d)))
-                .collect();
-            let width = rows.iter().map(|(l, _)| l.len()).max().unwrap_or(0);
-            for (left, help) in rows {
-                if help.is_empty() {
-                    out.push_str(&format!("  {}\n", left));
-                } else {
-                    out.push_str(&format!("  {:width$}  {}\n", left, help, width = width));
-                }
-            }
-        }
-
-        if !meta.examples.is_empty() {
-            out.push_str("\nExamples:\n");
-            for ex in &meta.examples {
-                if ex.trim().is_empty() {
-                    continue;
-                }
-                out.push_str(&format!("  {}\n", ex.trim_end()));
-            }
-        }
-
-        out
+        claplike::help(meta)
     }
 
     /// Render a version message based on `CommandMeta`.
     pub fn version(meta: &CommandMeta) -> String {
-        if meta.version.trim().is_empty() {
-            format!("{}\n", meta.name)
-        } else {
-            format!("{} {}\n", meta.name, meta.version.trim())
-        }
+        claplike::version(meta)
     }
 
     /// Parse `argv` based on the `meta.args` schema.
@@ -618,506 +443,25 @@ pub mod args {
     /// - required argument checks
     /// - unknown flag detection
     pub fn parse<'a>(meta: &CommandMeta, argv: &'a [String]) -> Result<Matches<'a>, CommandError> {
-        let defs = schema_defs(meta);
-        let infos: Vec<ArgInfo> = defs.iter().map(build_arg_info).collect();
-        let mut long_map: HashMap<String, usize> = HashMap::new();
-        let mut short_map: HashMap<String, usize> = HashMap::new();
-        let mut positional_defs: Vec<usize> = Vec::new();
-
-        for (idx, info) in infos.iter().enumerate() {
-            if info.short.is_none() && info.long.is_none() {
-                positional_defs.push(idx);
-                continue;
-            }
-
-            if let Some(short) = &info.short {
-                if let Some(prev) = short_map.insert(short.clone(), idx) {
-                    if infos[prev].name != info.name {
-                        return Err(CommandError::Failed(format!(
-                            "arg definition conflict: {short} maps to both '{}' and '{}'",
-                            infos[prev].name, info.name
-                        )));
-                    }
+        match claplike::parse(meta, argv) {
+            Ok(ParseOutcome::Matches(m)) => Ok(m),
+            Ok(ParseOutcome::Help(msg)) | Ok(ParseOutcome::Version(msg)) => {
+                #[cfg(target_arch = "wasm32")]
+                {
+                    super::io::print(&msg);
+                    super::io::flush();
+                    super::host::exit(0);
+                    return Err(CommandError::Failed(
+                        "unexpected return from host_process::exit".into(),
+                    ));
+                }
+                #[cfg(not(target_arch = "wasm32"))]
+                {
+                    Err(CommandError::InvalidArgs(msg))
                 }
             }
-            if let Some(long) = &info.long {
-                if let Some(prev) = long_map.insert(long.clone(), idx) {
-                    if infos[prev].name != info.name {
-                        return Err(CommandError::Failed(format!(
-                            "arg definition conflict: {long} maps to both '{}' and '{}'",
-                            infos[prev].name, info.name
-                        )));
-                    }
-                }
-            }
-        }
-
-        let mut m = Matches::default();
-        let mut positionals: Vec<&'a str> = Vec::new();
-        let mut parse_error: Option<CommandError> = None;
-
-        let mut i = 0usize;
-        let mut after_separator = false;
-        while i < argv.len() {
-            let arg = argv[i].as_str();
-
-            if !after_separator && arg == "--" {
-                after_separator = true;
-                i += 1;
-                continue;
-            }
-
-            if !after_separator && arg.starts_with("--") && arg != "--" {
-                // --key=value
-                if let Some((flag, value)) = arg.split_once('=') {
-                    if let Some(&idx) = long_map.get(flag) {
-                        let info = &infos[idx];
-                        if !info.takes_value {
-                            if parse_error.is_none() {
-                                parse_error = Some(CommandError::InvalidArgs(format!(
-                                    "flag does not take a value: {flag}"
-                                )));
-                            }
-                            i += 1;
-                            continue;
-                        }
-                        m.values
-                            .entry(info.name.clone())
-                            .or_default()
-                            .push(Cow::Borrowed(value));
-                        i += 1;
-                        continue;
-                    }
-                    if parse_error.is_none() {
-                        parse_error =
-                            Some(CommandError::InvalidArgs(format!("unknown flag: {flag}")));
-                    }
-                    i += 1;
-                    continue;
-                }
-
-                // --key value? (only if declared)
-                if let Some(&idx) = long_map.get(arg) {
-                    let info = &infos[idx];
-                    if info.takes_value {
-                        let Some(value) = argv.get(i + 1) else {
-                            if parse_error.is_none() {
-                                parse_error = Some(CommandError::InvalidArgs(format!(
-                                    "missing value for {arg}"
-                                )));
-                            }
-                            break;
-                        };
-                        m.values
-                            .entry(info.name.clone())
-                            .or_default()
-                            .push(Cow::Borrowed(value.as_str()));
-                        i += 2;
-                    } else {
-                        m.present.insert(info.name.clone());
-                        i += 1;
-                    }
-                    continue;
-                }
-
-                if parse_error.is_none() {
-                    parse_error = Some(CommandError::InvalidArgs(format!("unknown flag: {arg}")));
-                }
-                i += 1;
-                continue;
-            }
-
-            if !after_separator && arg.starts_with('-') && arg != "-" {
-                // Short flags: -v, -o value, -abc, -ofile
-                if arg.len() == 2 {
-                    if let Some(&idx) = short_map.get(arg) {
-                        let info = &infos[idx];
-                        if info.takes_value {
-                            let Some(value) = argv.get(i + 1) else {
-                                if parse_error.is_none() {
-                                    parse_error = Some(CommandError::InvalidArgs(format!(
-                                        "missing value for {arg}"
-                                    )));
-                                }
-                                break;
-                            };
-                            m.values
-                                .entry(info.name.clone())
-                                .or_default()
-                                .push(Cow::Borrowed(value.as_str()));
-                            i += 2;
-                        } else {
-                            m.present.insert(info.name.clone());
-                            i += 1;
-                        }
-                        continue;
-                    }
-                    if parse_error.is_none() {
-                        parse_error =
-                            Some(CommandError::InvalidArgs(format!("unknown flag: {arg}")));
-                    }
-                    i += 1;
-                    continue;
-                }
-
-                // Combined short flags.
-                let bytes = arg.as_bytes();
-                if !bytes.is_ascii() {
-                    if parse_error.is_none() {
-                        parse_error = Some(CommandError::InvalidArgs(format!(
-                            "invalid short flags: {arg}"
-                        )));
-                    }
-                    i += 1;
-                    continue;
-                }
-
-                let mut k = 1usize;
-                let mut consumed_next = false;
-                while k < bytes.len() {
-                    let c = bytes[k] as char;
-                    let flag = format!("-{c}");
-                    let Some(&idx) = short_map.get(&flag) else {
-                        if parse_error.is_none() {
-                            parse_error =
-                                Some(CommandError::InvalidArgs(format!("unknown flag: {flag}")));
-                        }
-                        k += 1;
-                        continue;
-                    };
-                    let info = &infos[idx];
-                    if info.takes_value {
-                        let rest = &arg[k + 1..];
-                        if !rest.is_empty() {
-                            m.values
-                                .entry(info.name.clone())
-                                .or_default()
-                                .push(Cow::Borrowed(rest));
-                        } else {
-                            let Some(value) = argv.get(i + 1) else {
-                                if parse_error.is_none() {
-                                    parse_error = Some(CommandError::InvalidArgs(format!(
-                                        "missing value for {flag}"
-                                    )));
-                                }
-                                break;
-                            };
-                            m.values
-                                .entry(info.name.clone())
-                                .or_default()
-                                .push(Cow::Borrowed(value.as_str()));
-                            consumed_next = true;
-                        }
-                        break;
-                    } else {
-                        m.present.insert(info.name.clone());
-                    }
-                    k += 1;
-                }
-
-                i += if consumed_next { 2 } else { 1 };
-                continue;
-            }
-
-            positionals.push(arg);
-            i += 1;
-        }
-
-        // Assign positional args by declaration order.
-        let mut pos_iter = positionals.into_iter();
-        for &idx in &positional_defs {
-            let info = &infos[idx];
-            if let Some(v) = pos_iter.next() {
-                m.values
-                    .entry(info.name.clone())
-                    .or_default()
-                    .push(Cow::Borrowed(v));
-            }
-        }
-        m.rest.extend(pos_iter);
-
-        // Apply defaults for missing value-taking args.
-        for info in &infos {
-            if info.takes_value
-                && info.default_value.is_some()
-                && !m.values.contains_key(&info.name)
-            {
-                if let Some(default_value) = info.default_value.clone() {
-                    m.values
-                        .entry(info.name.clone())
-                        .or_default()
-                        .push(Cow::Owned(default_value));
-                }
-            }
-        }
-
-        // Built-in flags.
-        if m.is_present(BUILTIN_HELP_NAME) {
-            let msg = help(meta);
-            #[cfg(target_arch = "wasm32")]
-            {
-                super::io::print(&msg);
-                super::io::flush();
-                super::host::exit(0);
-                return Err(CommandError::Failed(
-                    "unexpected return from host_process::exit".into(),
-                ));
-            }
-            #[cfg(not(target_arch = "wasm32"))]
-            {
-                return Err(CommandError::InvalidArgs(msg));
-            }
-        }
-        if m.is_present(BUILTIN_VERSION_NAME) {
-            let msg = version(meta);
-            #[cfg(target_arch = "wasm32")]
-            {
-                super::io::print(&msg);
-                super::io::flush();
-                super::host::exit(0);
-                return Err(CommandError::Failed(
-                    "unexpected return from host_process::exit".into(),
-                ));
-            }
-            #[cfg(not(target_arch = "wasm32"))]
-            {
-                return Err(CommandError::InvalidArgs(msg));
-            }
-        }
-
-        if let Some(err) = parse_error {
-            return Err(err);
-        }
-
-        // Required checks.
-        let mut missing: Vec<String> = Vec::new();
-        for def in &defs {
-            if !def.required {
-                continue;
-            }
-            if m.is_present(&def.name) {
-                continue;
-            }
-
-            if def.short.is_none() && def.long.is_none() {
-                missing.push(format!("<{}>", format_value_name(def)));
-                continue;
-            }
-
-            let mut s = def
-                .long
-                .as_deref()
-                .map(normalize_long)
-                .or_else(|| def.short.as_deref().map(normalize_short))
-                .unwrap_or_else(|| def.name.clone());
-            if def.takes_value {
-                s.push(' ');
-                s.push('<');
-                s.push_str(&format_value_name(def));
-                s.push('>');
-            }
-            missing.push(s);
-        }
-
-        if !missing.is_empty() {
-            if missing.len() == 1 {
-                return Err(CommandError::InvalidArgs(format!(
-                    "missing required argument: {}",
-                    missing[0]
-                )));
-            }
-            return Err(CommandError::InvalidArgs(format!(
-                "missing required arguments: {}",
-                missing.join(", ")
-            )));
-        }
-
-        Ok(m)
-    }
-
-    /// Declare which flags take a value in the *next* argument (e.g. `--output out.txt`).
-    ///
-    /// Without a schema, parsing cannot reliably distinguish between:
-    /// - a boolean flag followed by a positional (`--verbose file.txt`)
-    /// - a value flag followed by its value (`--output out.txt`)
-    ///
-    /// `Schema` lets you declare value-taking flags so helpers like
-    /// `positional_args_with_schema` can skip those values correctly.
-    #[derive(Debug, Clone, Default)]
-    pub struct Schema {
-        value_flags: Vec<String>,
-    }
-
-    impl Schema {
-        /// Create an empty schema.
-        pub fn new() -> Self {
-            Self::default()
-        }
-
-        /// Declare a flag that takes a value (e.g. `--output`, `-o`).
-        pub fn value_flag(mut self, name: impl Into<String>) -> Self {
-            let name = name.into();
-            if !self.value_flags.iter().any(|s| s == &name) {
-                self.value_flags.push(name);
-            }
-            self
-        }
-
-        fn takes_value(&self, flag: &str) -> bool {
-            self.value_flags.iter().any(|s| s == flag)
-        }
-    }
-
-    /// Argument name collection for flag matching.
-    pub trait FlagNames<'a> {
-        type Iter: Iterator<Item = &'a str>;
-        fn iter(self) -> Self::Iter;
-    }
-
-    impl<'a> FlagNames<'a> for &'a str {
-        type Iter = std::iter::Once<&'a str>;
-
-        fn iter(self) -> Self::Iter {
-            std::iter::once(self)
-        }
-    }
-
-    impl<'a> FlagNames<'a> for &'a [&'a str] {
-        type Iter = std::iter::Copied<std::slice::Iter<'a, &'a str>>;
-
-        fn iter(self) -> Self::Iter {
-            self.iter().copied()
-        }
-    }
-
-    impl<'a, const N: usize> FlagNames<'a> for [&'a str; N] {
-        type Iter = std::array::IntoIter<&'a str, N>;
-
-        fn iter(self) -> Self::Iter {
-            self.into_iter()
-        }
-    }
-
-    /// Check if a flag like `--help` exists.
-    ///
-    /// Accepts a single name or multiple names via array/slice.
-    /// Parsing stops at `--`.
-    pub fn flag<'a, N>(argv: &[String], names: N) -> bool
-    where
-        N: FlagNames<'a>,
-    {
-        let names: Vec<&str> = names.iter().collect();
-        for arg in argv {
-            if arg == "--" {
-                break;
-            }
-            if names.iter().any(|name| arg == name) {
-                return true;
-            }
-        }
-        false
-    }
-
-    /// Get a flag value like `--name=value` or `--name value`.
-    ///
-    /// Parsing stops at `--`.
-    pub fn value<'a>(argv: &'a [String], name: &str) -> Option<&'a str> {
-        let needle = format!("{name}=");
-        for (idx, arg) in argv.iter().enumerate() {
-            if arg == "--" {
-                break;
-            }
-            if let Some(rest) = arg.strip_prefix(&needle) {
-                return Some(rest);
-            }
-            if arg == name {
-                return argv.get(idx + 1).map(|s| s.as_str());
-            }
-        }
-        None
-    }
-
-    /// Get all positional arguments.
-    ///
-    /// Flags (arguments starting with `-`) are skipped. `--key=value` is treated
-    /// as a single flag token and skipped.
-    ///
-    /// This function does *not* guess whether `--key value` is a value-taking
-    /// flag or a boolean flag followed by a positional argument.
-    ///
-    /// If you want `--key value` to skip the value, use
-    /// `positional_args_with_schema` and declare value-taking flags.
-    ///
-    /// Use `--` to stop flag parsing and treat everything after as positional.
-    pub fn positional_args<'a>(argv: &'a [String]) -> Vec<&'a str> {
-        positional_args_with_schema(argv, &Schema::default())
-    }
-
-    /// Get all positional arguments using a schema to skip values of declared flags.
-    ///
-    /// Any flag listed in `schema` is treated as taking a value in the next
-    /// argument (e.g. `--output out.txt`), and that value is skipped.
-    pub fn positional_args_with_schema<'a>(argv: &'a [String], schema: &Schema) -> Vec<&'a str> {
-        let mut positionals = Vec::new();
-        let mut i = 0;
-        let mut after_separator = false;
-
-        while i < argv.len() {
-            let arg = &argv[i];
-            if !after_separator {
-                if arg == "--" {
-                    after_separator = true;
-                    i += 1;
-                    continue;
-                }
-                if arg != "-" && arg.starts_with('-') {
-                    if arg.contains('=') {
-                        i += 1;
-                        continue;
-                    }
-                    if schema.takes_value(arg) {
-                        // Skip the flag itself.
-                        i += 1;
-                        // Skip the value if present. `--` remains a separator.
-                        if i < argv.len() && argv[i] != "--" {
-                            i += 1;
-                        }
-                        continue;
-                    }
-                    i += 1;
-                    continue;
-                }
-            }
-
-            positionals.push(arg.as_str());
-            i += 1;
-        }
-
-        positionals
-    }
-
-    /// Get a positional argument by index.
-    pub fn positional<'a>(argv: &'a [String], index: usize) -> Option<&'a str> {
-        positional_args(argv).get(index).copied()
-    }
-
-    /// Get a positional argument by index using a schema.
-    pub fn positional_with_schema<'a>(
-        argv: &'a [String],
-        index: usize,
-        schema: &Schema,
-    ) -> Option<&'a str> {
-        positional_args_with_schema(argv, schema)
-            .get(index)
-            .copied()
-    }
-
-    /// Get the remaining arguments from a start index.
-    pub fn rest<'a>(argv: &'a [String], start: usize) -> &'a [String] {
-        if start >= argv.len() {
-            &argv[argv.len()..]
-        } else {
-            &argv[start..]
+            Err(claplike::ParseError::InvalidArgs(msg)) => Err(CommandError::InvalidArgs(msg)),
+            Err(claplike::ParseError::Failed(msg)) => Err(CommandError::Failed(msg)),
         }
     }
 }

@@ -5,6 +5,7 @@ world host-provider {
   import pipe-runtime;
 
   export types;
+  export schema;
   export host-env;
   export host-io;
   export host-fs;
@@ -17,6 +18,7 @@ world core {
   import host-io;
   import host-process;
   import registry;
+  import registry-schema;
 
   export wasi:cli/run@0.2.9;
 }
