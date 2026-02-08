@@ -1,19 +1,17 @@
 [package]
-name = "wacli-cdk"
+name = "wacli-argparse"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
-description = "Command development kit for wacli plugins"
+description = "Minimal clap-like argument parsing and help rendering for wacli"
 repository = "https://github.com/RAKUDEJI/wacli"
 keywords = ["wasm", "webassembly", "component", "cli"]
 categories = ["command-line-utilities", "wasm"]
 
 [lib]
-name = "wacli_cdk"
+name = "wacli_argparse"
 path = "src/lib.rs"
 
 [dependencies]
-wit-bindgen.workspace = true
-wacli-argparse.workspace = true
-wacli-cdk-macros.workspace = true
+

@@ -4,7 +4,10 @@ use anyhow::{Context, Result, bail};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+use wacli_metadata::CommandMetadataV1;
 use wasmparser::{Parser, Payload};
+
+use crate::command_metadata::extract_command_metadata;
 
 /// Information about a discovered command component.
 #[derive(Debug, Clone)]
@@ -15,6 +18,8 @@ pub struct CommandInfo {
     pub path: PathBuf,
     /// Top-level component import names.
     pub imports: Vec<String>,
+    /// Embedded command metadata (extracted from a custom section).
+    pub metadata: CommandMetadataV1,
 }
 
 impl CommandInfo {
@@ -129,10 +134,56 @@ pub fn inspect_command_component(path: &Path) -> Result<CommandInfo> {
         );
     }
 
+    let Some(metadata) = extract_command_metadata(&wasm_bytes)
+        .with_context(|| format!("failed to extract command metadata from {}", path.display()))?
+    else {
+        bail!(
+            "missing embedded command metadata in {}\n\
+\n\
+Expected a WASM custom section named '{}'.\n\
+\n\
+Fix:\n\
+- Update your plugin to use `wacli_cdk::declare_command_metadata!(...)` (and rebuild the component).",
+            path.display(),
+            wacli_metadata::COMMAND_METADATA_SECTION
+        );
+    };
+
+    if metadata.command_meta.name != name {
+        bail!(
+            "command metadata name mismatch for {}\n\
+\n\
+file name: {}\n\
+meta.name:  {}\n\
+\n\
+The command name is derived from the `.component.wasm` file name and must match `meta.name`.",
+            path.display(),
+            name,
+            metadata.command_meta.name
+        );
+    }
+
+    if let Some(schema) = metadata.command_schema.as_ref()
+        && schema.name != name
+    {
+        bail!(
+            "command schema name mismatch for {}\n\
+\n\
+file name:   {}\n\
+schema.name: {}\n\
+\n\
+The command name is derived from the `.component.wasm` file name and must match `schema.name`.",
+            path.display(),
+            name,
+            schema.name
+        );
+    }
+
     Ok(CommandInfo {
         name,
         path: path.to_path_buf(),
         imports,
+        metadata,
     })
 }
 
@@ -330,10 +381,57 @@ fn collect_commands(
             );
         }
 
+        let Some(metadata) = extract_command_metadata(&wasm_bytes).with_context(|| {
+            format!("failed to extract command metadata from {}", path.display())
+        })?
+        else {
+            bail!(
+                "missing embedded command metadata in {}\n\
+\n\
+Expected a WASM custom section named '{}'.\n\
+\n\
+Fix:\n\
+- Update your plugin to use `wacli_cdk::declare_command_metadata!(...)` (and rebuild the component).",
+                path.display(),
+                wacli_metadata::COMMAND_METADATA_SECTION
+            );
+        };
+
+        if metadata.command_meta.name != name {
+            bail!(
+                "command metadata name mismatch for {}\n\
+\n\
+file name: {}\n\
+meta.name:  {}\n\
+\n\
+The command name is derived from the `.component.wasm` file name and must match `meta.name`.",
+                path.display(),
+                name,
+                metadata.command_meta.name
+            );
+        }
+
+        if let Some(schema) = metadata.command_schema.as_ref()
+            && schema.name != name
+        {
+            bail!(
+                "command schema name mismatch for {}\n\
+\n\
+file name:   {}\n\
+schema.name: {}\n\
+\n\
+The command name is derived from the `.component.wasm` file name and must match `schema.name`.",
+                path.display(),
+                name,
+                schema.name
+            );
+        }
+
         out.push(CommandInfo {
             name,
             path,
             imports,
+            metadata,
         });
     }
 
@@ -389,6 +487,14 @@ mod tests {
             name: "my-command".to_string(),
             path: PathBuf::from("test.wasm"),
             imports: Vec::new(),
+            metadata: CommandMetadataV1 {
+                format_version: 1,
+                command_meta: wacli_metadata::CommandMeta {
+                    name: "my-command".to_string(),
+                    ..Default::default()
+                },
+                command_schema: None,
+            },
         };
         assert_eq!(cmd.var_name(), "my_command");
     }
@@ -399,6 +505,14 @@ mod tests {
             name: "greet".to_string(),
             path: PathBuf::from("test.wasm"),
             imports: Vec::new(),
+            metadata: CommandMetadataV1 {
+                format_version: 1,
+                command_meta: wacli_metadata::CommandMeta {
+                    name: "greet".to_string(),
+                    ..Default::default()
+                },
+                command_schema: None,
+            },
         };
         assert_eq!(cmd.package_name(), "wacli:cmd-greet");
     }

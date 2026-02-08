@@ -1,0 +1,13 @@
+[package]
+name = "wacli-metadata"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Metadata data model and encoding for wacli components"
+repository = "https://github.com/RAKUDEJI/wacli"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+

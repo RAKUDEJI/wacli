@@ -130,6 +130,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9a8e94ea7f378bd32cbbd37198a4a91436180c5bb472411e48b5ec2e2124ae9e"
 dependencies = [
  "serde_core",
+ "serde_derive",
 ]
 
 [[package]]
@@ -196,10 +197,35 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 
 [[package]]
+name = "wacli-argparse"
+version = "0.0.42"
+
+[[package]]
 name = "wacli-cdk"
-version = "0.0.39"
+version = "0.0.42"
 dependencies = [
+ "wacli-argparse",
+ "wacli-cdk-macros",
  "wit-bindgen",
+]
+
+[[package]]
+name = "wacli-cdk-macros"
+version = "0.0.42"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "serde_json",
+ "syn",
+ "wacli-metadata",
+]
+
+[[package]]
+name = "wacli-metadata"
+version = "0.0.42"
+dependencies = [
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

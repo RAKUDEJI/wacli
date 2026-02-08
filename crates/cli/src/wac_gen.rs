@@ -16,7 +16,9 @@ pub fn generate_wac(package_name: &str, commands: &[CommandInfo]) -> String {
     let host_io_import = "\"wacli:cli/host-io@2.0.0\"";
     let host_process_import = "\"wacli:cli/host-process@2.0.0\"";
     let registry_import = "\"wacli:cli/registry@2.0.0\"";
+    let registry_schema_import = "\"wacli:cli/registry-schema@2.0.0\"";
     let types_import = "\"wacli:cli/types@2.0.0\"";
+    let schema_import = "\"wacli:cli/schema@2.0.0\"";
 
     // Package declaration
     wac.push_str(&format!("package {};\n\n", package_name));
@@ -46,7 +48,8 @@ pub fn generate_wac(package_name: &str, commands: &[CommandInfo]) -> String {
     // Instantiate registry with all command exports
     wac.push_str("// Registry (command dispatch)\n");
     wac.push_str("let registry = new wacli:registry {\n");
-    wac.push_str(&format!("  {types_import}: host.types"));
+    wac.push_str(&format!("  {types_import}: host.types,\n"));
+    wac.push_str(&format!("  {schema_import}: host.schema"));
     for cmd in commands {
         let var_name = cmd.var_name();
         wac.push_str(&format!(",\n  {}-command: {}.command", cmd.name, var_name));
@@ -57,10 +60,14 @@ pub fn generate_wac(package_name: &str, commands: &[CommandInfo]) -> String {
     wac.push_str("// Core (CLI router)\n");
     wac.push_str("let core = new wacli:core {\n");
     wac.push_str(&format!("  {types_import}: host.types,\n"));
+    wac.push_str(&format!("  {schema_import}: host.schema,\n"));
     wac.push_str(&format!("  {host_env_import}: host.host-env,\n"));
     wac.push_str(&format!("  {host_io_import}: host.host-io,\n"));
     wac.push_str(&format!("  {host_process_import}: host.host-process,\n"));
-    wac.push_str(&format!("  {registry_import}: registry.registry\n"));
+    wac.push_str(&format!("  {registry_import}: registry.registry,\n"));
+    wac.push_str(&format!(
+        "  {registry_schema_import}: registry.registry-schema\n"
+    ));
     wac.push_str("};\n\n");
 
     // Export run
@@ -75,13 +82,26 @@ mod tests {
     use super::*;
     use std::path::PathBuf;
 
+    fn dummy_meta(name: &str) -> wacli_metadata::CommandMetadataV1 {
+        wacli_metadata::CommandMetadataV1 {
+            format_version: 1,
+            command_meta: wacli_metadata::CommandMeta {
+                name: name.to_string(),
+                ..Default::default()
+            },
+            command_schema: None,
+        }
+    }
+
     #[test]
     fn test_generate_wac_empty_commands() {
         let wac = generate_wac("example:my-cli", &[]);
         assert!(wac.contains("package example:my-cli;"));
         assert!(wac.contains("let host = new wacli:host"));
         assert!(wac.contains("let registry = new wacli:registry"));
+        assert!(wac.contains("\"wacli:cli/schema@2.0.0\": host.schema"));
         assert!(wac.contains("let core = new wacli:core"));
+        assert!(wac.contains("\"wacli:cli/registry-schema@2.0.0\": registry.registry-schema"));
         assert!(wac.contains("export core.run;"));
     }
 
@@ -92,11 +112,13 @@ mod tests {
                 name: "greet".to_string(),
                 path: PathBuf::from("commands/greet.component.wasm"),
                 imports: Vec::new(),
+                metadata: dummy_meta("greet"),
             },
             CommandInfo {
                 name: "hello-world".to_string(),
                 path: PathBuf::from("commands/hello-world.component.wasm"),
                 imports: Vec::new(),
+                metadata: dummy_meta("hello-world"),
             },
         ];
 
@@ -116,6 +138,7 @@ mod tests {
             name: "my-command".to_string(),
             path: PathBuf::from("test.wasm"),
             imports: Vec::new(),
+            metadata: dummy_meta("my-command"),
         };
         assert_eq!(cmd.var_name(), "my_command");
     }

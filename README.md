@@ -13,6 +13,9 @@ wacli is a CLI tool for composing WebAssembly Components using the [WAC](https:/
 **Key Features:**
 - Build CLI apps from modular WASM components
 - Auto-generates registry component from command plugins
+- Core provides a consistent CLI experience (`--help/--version` + validation) from command schemas
+- Aliases and hidden commands/args are respected (dispatch + help output)
+- Command metadata is extracted as data (WASM custom section), no plugin execution required
 - Single binary, no external dependencies (wac, wasm-tools, jq)
 - Optional registry integration for framework components, plugins, and WIT/index queries (Molt spec)
 
@@ -71,12 +74,18 @@ This creates the directory structure:
 ```
 my-cli/
   wacli.json
-  wacli.lock
   defaults/
   commands/
   wit/
+    types.wit
+    schema.wit
+    registry-schema.wit
+    host-*.wit
     command.wit
+    pipe*.wit
 ```
+
+**Note:** `wacli.lock` is created/updated by `wacli build` when resolving registry pulls.
 
 ### Build from defaults/ and commands/
 
@@ -98,6 +107,7 @@ Example `wacli.json`:
   "build": {
     "name": "example:my-cli",
     "version": "0.1.0",
+    "description": "Example CLI built with wacli",
     "output": "my-cli.component.wasm",
     "defaultsDir": "defaults",
     "commandsDir": "commands"
@@ -143,6 +153,7 @@ Options:
 - `--manifest`: Path to a wacli manifest (defaults to `./wacli.json` if present)
 - `--name`: Package name (default: "example:my-cli")
 - `--version`: Package version (default: "0.1.0")
+- `--description`: Package description (used for global help output)
 - Package name and version are combined as `name@version` unless `name` already contains `@`.
 - `-o, --output`: Output file path (default: "my-cli.component.wasm")
 - `--defaults-dir`: Defaults directory (default: "defaults")
@@ -164,10 +175,26 @@ wacli run --dir /path/to/data::/data my-cli.component.wasm <command> [args...]
 ```
 
 **Tip:** `--dir` can appear before or after the component path. Use `--` if you
-need to pass `--dir` through to the command itself.
+need to pass flags like `--dir`, `--help`, or `--version` through to the composed CLI.
 
 **Note:** Direct `wasmtime run` is not supported because the composed CLI imports
 `wacli:cli/pipe-runtime@2.0.0`, which is provided by `wacli run`.
+
+#### Core-provided help/version/validation ("clap-like")
+
+These are handled by the **core** component, so they work even if plugins don't call any parsing helper:
+
+```bash
+wacli run my-cli.component.wasm -- --help
+wacli run my-cli.component.wasm -- --version
+wacli run my-cli.component.wasm -- help greet
+wacli run my-cli.component.wasm -- greet --help
+wacli run my-cli.component.wasm -- greet --version
+```
+
+Semantics are documented in `docs/cli-semantics.md`.
+
+Global `--help/--version` use app metadata embedded at build time (from `wacli.json` `build.name` / `build.version` / `build.description`).
 
 ### Compose components directly
 
@@ -262,7 +289,7 @@ The `wacli build` command:
 3. Scans `commands/` for command plugins (`*.component.wasm`)
 4. If `build.commands` is set, pulls those plugin components into `.wacli/commands/`
 5. If registry pulls occur, resolves tags to digests and updates `wacli.lock`
-6. Generates a registry component into `.wacli/registry.component.wasm` (or uses `defaults/registry.component.wasm` with `--use-prebuilt-registry`)
+6. Extracts command metadata from plugins and generates a registry component into `.wacli/registry.component.wasm` (or uses `defaults/registry.component.wasm` with `--use-prebuilt-registry`)
 7. Composes all components into the final CLI
 
 The `wacli run` command:
@@ -275,10 +302,10 @@ The `wacli run` command:
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    Final CLI (my-cli.component.wasm)        │
-│  ┌─────────┐   ┌─────────┐   ┌──────────┐   ┌─────────┐    │
-│  │  host   │──▶│ plugin  │──▶│ registry │──▶│  core   │    │
-│  └─────────┘   └─────────┘   └──────────┘   └─────────┘    │
-│   WASI bridge   Plugins      Command mgmt   Router         │
+│  ┌─────────┐   ┌─────────┐   ┌──────────┐                 │
+│  │  host   │   │  core   │──▶│ registry  │──▶ plugins      │
+│  └─────────┘   └─────────┘   └──────────┘                 │
+│   Host APIs      Router        Dispatch + schemas          │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -294,16 +321,26 @@ The `wacli run` command:
 Plugins are built using [wacli-cdk](https://crates.io/crates/wacli-cdk):
 
 ```rust
-use wacli_cdk::{Command, CommandMeta, CommandResult, meta};
+use wacli_cdk::{Command, CommandMeta, CommandResult};
+
+// Embed command metadata (including a richer per-command schema) into a WASM custom section.
+// `wacli build` extracts this data without executing the plugin.
+wacli_cdk::declare_command_metadata!(greet_meta, {
+    name: "greet",
+    summary: "Greet someone",
+    usage: "greet [NAME]",
+    version: "0.1.0",
+    hidden: false,
+    args: [
+        { name: "name", value_name: "NAME", help: "Person to greet" },
+    ],
+});
 
 struct Greet;
 
 impl Command for Greet {
     fn meta() -> CommandMeta {
-        meta("greet")
-            .summary("Greet someone")
-            .usage("greet [NAME]")
-            .build()
+        greet_meta()
     }
 
     fn run(argv: Vec<String>) -> CommandResult {
@@ -317,10 +354,14 @@ wacli_cdk::export!(Greet);
 ```
 
 **Tip:** The command name is derived from the component filename (e.g. `greet.component.wasm`
-becomes `greet`). Keep it in sync with `meta("greet")` to avoid confusion.
+becomes `greet`). Keep it in sync with `name: "greet"` in the embedded metadata to avoid confusion.
 
-**Note:** `wacli` calls `meta()` when building the command registry and when listing commands.
-Keep `meta()` side‑effect‑free and fast.
+**Note:** `wacli build` extracts metadata from the `wacli:cli/command-metadata@1` WASM custom
+section. Plugins without embedded metadata are rejected. For consistency, implement `meta()`
+by returning the same metadata function used for the custom section.
+
+For the clap-like semantics that core provides (help/version/validation, aliases/hidden, env/default
+precedence, etc.), see `docs/cli-semantics.md`.
 
 For pipe plugins (the `pipe-plugin` world), see the “Building a Pipe Plugin” section in
 `crates/wacli-cdk/README.md`.
@@ -345,6 +386,7 @@ to pull them from the registry.
 | Interface | Description |
 |-----------|-------------|
 | `wacli:cli/types` | Shared types (`exit-code`, `command-meta`, `command-error`) |
+| `wacli:cli/schema` | Command/arg schema used for help/version/validation |
 | `wacli:cli/host-env` | Host environment (`args`, `env`) |
 | `wacli:cli/host-io` | Host I/O (`stdout-write`, `stderr-write`, flush) |
 | `wacli:cli/host-fs` | Host filesystem (`read-file`, `write-file`, `create-dir`, `list-dir`) |
@@ -352,6 +394,7 @@ to pull them from the registry.
 | `wacli:cli/host-pipes` | Pipe loader (`list-pipes`, `load-pipe`) |
 | `wacli:cli/command` | Plugin export interface (`meta`, `run`) |
 | `wacli:cli/registry` | Command management (`list-commands`, `run`) |
+| `wacli:cli/registry-schema` | Registry schema access (`list-schemas`) |
 | `wacli:cli/pipe` | Pipe export interface (`meta`, `process`) |
 
 ### Plugin World

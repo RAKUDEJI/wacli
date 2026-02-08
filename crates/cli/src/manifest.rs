@@ -25,6 +25,9 @@ pub struct BuildManifest {
     pub version: Option<String>,
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub output: Option<PathBuf>,
 
     #[serde(
@@ -104,6 +107,7 @@ pub fn write_default_manifest(project_dir: &Path, overwrite: bool) -> Result<Pat
         build: Some(BuildManifest {
             name: Some(format!("example:{project_name}")),
             version: Some("0.1.0".to_string()),
+            description: None,
             output: Some(PathBuf::from(format!("{project_name}.component.wasm"))),
             defaults_dir: Some(PathBuf::from("defaults")),
             commands_dir: Some(PathBuf::from("commands")),

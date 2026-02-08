@@ -1,0 +1,38 @@
+package wacli:cli@2.0.0;
+
+/// Expressive CLI schema for clap-like behavior.
+///
+/// This is intentionally more semantic than `types.arg-def`, allowing core-side
+/// help/version/validation without executing the plugin.
+interface schema {
+  record arg-schema {
+    name: string,
+    short: option<string>,
+    long: option<string>,
+    help: string,
+    required: bool,
+    default-value: option<string>,
+    env: option<string>,
+    value-name: option<string>,
+    takes-value: bool,
+    multiple: bool,
+    value-type: option<string>,
+    possible-values: list<string>,
+    conflicts-with: list<string>,
+    requires: list<string>,
+    hidden: bool,
+  }
+
+  record command-schema {
+    name: string,
+    summary: string,
+    usage: string,
+    aliases: list<string>,
+    version: string,
+    hidden: bool,
+    description: string,
+    examples: list<string>,
+    args: list<arg-schema>,
+  }
+}
+

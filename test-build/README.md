@@ -13,3 +13,7 @@ Build artifacts:
 Example:
   cd test-build
   wacli build
+
+Run (note: pass-through args use `--`):
+  wacli run my-cli.component.wasm -- --help
+  wacli run my-cli.component.wasm -- --version

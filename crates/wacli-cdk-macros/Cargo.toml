@@ -1,0 +1,19 @@
+[package]
+name = "wacli-cdk-macros"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Procedural macros for wacli-cdk"
+repository = "https://github.com/RAKUDEJI/wacli"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = { version = "2.0", features = ["full"] }
+wacli-metadata = { workspace = true }
+serde_json.workspace = true
+

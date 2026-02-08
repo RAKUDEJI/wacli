@@ -1824,7 +1824,7 @@ dependencies = [
 
 [[package]]
 name = "molt-registry-client"
-version = "0.0.42"
+version = "0.0.43"
 dependencies = [
  "anyhow",
  "base64",
@@ -1997,7 +1997,7 @@ checksum = "7edddbd0b52d732b21ad9a5fab5c704c14cd949e5e9a1ec5929a24fded1b904c"
 
 [[package]]
 name = "plugin-loader"
-version = "0.0.42"
+version = "0.0.43"
 dependencies = [
  "anyhow",
  "wasmtime",
@@ -3429,7 +3429,7 @@ dependencies = [
 
 [[package]]
 name = "wacli"
-version = "0.0.42"
+version = "0.0.43"
 dependencies = [
  "anyhow",
  "clap",
@@ -3449,6 +3449,7 @@ dependencies = [
  "wac-parser",
  "wac-resolver",
  "wac-types",
+ "wacli-metadata",
  "wasm-encoder 0.244.0",
  "wasmparser 0.244.0",
  "wat",
@@ -3457,16 +3458,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "wacli-argparse"
+version = "0.0.43"
+
+[[package]]
 name = "wacli-cdk"
-version = "0.0.42"
+version = "0.0.43"
 dependencies = [
+ "wacli-argparse",
+ "wacli-cdk-macros",
  "wit-bindgen 0.52.0",
+]
+
+[[package]]
+name = "wacli-cdk-macros"
+version = "0.0.43"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "serde_json",
+ "syn",
+ "wacli-metadata",
 ]
 
 [[package]]
 name = "wacli-core"
 version = "0.1.0"
 dependencies = [
+ "wacli-argparse",
  "wit-bindgen 0.52.0",
 ]
 
@@ -3475,6 +3494,14 @@ name = "wacli-host"
 version = "0.1.0"
 dependencies = [
  "wit-bindgen 0.52.0",
+]
+
+[[package]]
+name = "wacli-metadata"
+version = "0.0.43"
+dependencies = [
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

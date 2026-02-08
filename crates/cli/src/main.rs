@@ -1,3 +1,4 @@
+mod command_metadata;
 mod component_scan;
 mod lock;
 mod manifest;
@@ -24,7 +25,7 @@ use wac_resolver::{FileSystemPackageResolver, packages};
 use wac_types::{BorrowedPackageKey, Package};
 
 use crate::component_scan::{scan_commands, scan_commands_optional};
-use crate::registry_gen_wat::{generate_registry_wat, get_prebuilt_registry};
+use crate::registry_gen_wat::{AppMeta, generate_registry_wat, get_prebuilt_registry};
 use crate::wac_gen::generate_wac;
 
 #[derive(Parser)]
@@ -73,6 +74,10 @@ struct BuildArgs {
     /// Package version [default: 0.1.0]
     #[arg(long)]
     version: Option<String>,
+
+    /// Package description used for global help output
+    #[arg(long)]
+    description: Option<String>,
 
     /// Output file path [default: my-cli.component.wasm]
     #[arg(short, long, value_name = "FILE")]
@@ -296,6 +301,8 @@ const HOST_PROCESS_WIT: &str = wit::HOST_PROCESS_WIT;
 const HOST_PIPES_WIT: &str = wit::HOST_PIPES_WIT;
 const PIPE_RUNTIME_WIT: &str = wit::PIPE_RUNTIME_WIT;
 const PIPE_WIT: &str = wit::PIPE_WIT;
+const SCHEMA_WIT: &str = wit::SCHEMA_WIT;
+const REGISTRY_SCHEMA_WIT: &str = wit::REGISTRY_SCHEMA_WIT;
 
 fn write_plugin_wit(project_dir: &Path, overwrite: bool) -> Result<()> {
     let wit_dir = project_dir.join("wit");
@@ -310,6 +317,8 @@ fn write_plugin_wit(project_dir: &Path, overwrite: bool) -> Result<()> {
         ("host-process.wit", HOST_PROCESS_WIT),
         ("host-pipes.wit", HOST_PIPES_WIT),
         ("pipe-runtime.wit", PIPE_RUNTIME_WIT),
+        ("schema.wit", SCHEMA_WIT),
+        ("registry-schema.wit", REGISTRY_SCHEMA_WIT),
         ("command.wit", PLUGIN_WIT),
         ("pipe.wit", PIPE_WIT),
     ];
@@ -449,11 +458,26 @@ fn build(args: BuildArgs) -> Result<()> {
         .or_else(|| m_build.and_then(|m| m.version.clone()))
         .unwrap_or_else(|| "0.1.0".to_string());
 
+    let description = args
+        .description
+        .or_else(|| m_build.and_then(|m| m.description.clone()))
+        .unwrap_or_default();
+
     // If the user already provided a version in `--name`, don't append another one.
     let package_name = if name.contains('@') {
         name.clone()
     } else {
         format!("{name}@{version}")
+    };
+
+    let (app_name, app_version) = package_name
+        .split_once('@')
+        .map(|(n, v)| (n.to_string(), v.to_string()))
+        .unwrap_or((package_name.clone(), String::new()));
+    let app_meta = AppMeta {
+        name: app_name,
+        version: app_version,
+        description,
     };
 
     #[derive(Clone, Copy)]
@@ -570,8 +594,8 @@ fn build(args: BuildArgs) -> Result<()> {
         // Generate registry component on every build. Keep build artifacts out of defaults/.
         tracing::info!("generating registry component...");
         tracing::info!("using WAT template registry generator");
-        let registry_bytes =
-            generate_registry_wat(&commands).context("failed to generate registry (WAT)")?;
+        let registry_bytes = generate_registry_wat(&commands, &app_meta)
+            .context("failed to generate registry (WAT)")?;
 
         // Write to a local build cache directory.
         let cache_dir = base_dir.join(".wacli");

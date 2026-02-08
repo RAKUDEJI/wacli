@@ -1,20 +1,25 @@
-use wacli_cdk::{arg, meta, parse, pipes, Command, CommandError, CommandMeta, CommandResult, Context};
+use wacli_cdk::{parse, pipes, Command, CommandError, CommandMeta, CommandResult, Context};
+
+wacli_cdk::declare_command_metadata!(show_meta, {
+    name: "show",
+    summary: "Show text with optional pipe formatting",
+    usage: "show [--format <PIPE>] [TEXT]",
+    args: [
+        {
+            name: "format",
+            long: "--format",
+            value_name: "PIPE",
+            help: "Pipe to apply to the input"
+        },
+        { name: "text", value_name: "TEXT", help: "Text to show" }
+    ],
+});
 
 struct Show;
 
 impl Command for Show {
     fn meta() -> CommandMeta {
-        meta("show")
-            .summary("Show text with optional pipe formatting")
-            .usage("show [--format <PIPE>] [TEXT]")
-            .arg(
-                arg("format")
-                    .long("--format")
-                    .value_name("PIPE")
-                    .help("Pipe to apply to the input"),
-            )
-            .arg(arg("text").value_name("TEXT").help("Text to show"))
-            .build()
+        show_meta()
     }
 
     fn run(argv: Vec<String>) -> CommandResult {
