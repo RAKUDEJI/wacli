@@ -1,20 +1,14 @@
 use anyhow::{Context, Result};
 use std::fs;
 use std::path::{Path, PathBuf};
-use wasmtime::{Engine, Store};
 use wasmtime::component::{Component, Linker, ResourceTable};
-use wasmtime_wasi::{DirPerms, FilePerms, I32Exit, WasiCtx, WasiCtxBuilder, WasiCtxView, WasiView};
+use wasmtime::{Engine, Store};
 use wasmtime_wasi::p2;
 use wasmtime_wasi::p2::bindings::sync::Command;
+use wasmtime_wasi::{DirPerms, FilePerms, I32Exit, WasiCtx, WasiCtxBuilder, WasiCtxView, WasiView};
 
 mod pipe_plugin_bindings {
-    #![allow(
-        clippy::all,
-        dead_code,
-        unused_imports,
-        unused_mut,
-        unused_variables
-    )]
+    #![allow(clippy::all, dead_code, unused_imports, unused_mut, unused_variables)]
     include!("bindings/pipe_plugin.rs");
 }
 
@@ -43,13 +37,7 @@ impl PreopenDir {
 }
 
 mod pipe_runtime_bindings {
-    #![allow(
-        clippy::all,
-        dead_code,
-        unused_imports,
-        unused_mut,
-        unused_variables
-    )]
+    #![allow(clippy::all, dead_code, unused_imports, unused_mut, unused_variables)]
     include!("bindings/pipe_runtime_host.rs");
 }
 
@@ -57,34 +45,16 @@ use pipe_runtime_bindings::wacli::cli::{pipe_runtime, types as pipe_types};
 
 #[cfg(feature = "regen-bindings")]
 mod regen_bindings {
-    #![allow(
-        clippy::all,
-        dead_code,
-        unused_imports,
-        unused_mut,
-        unused_variables
-    )]
+    #![allow(clippy::all, dead_code, unused_imports, unused_mut, unused_variables)]
     mod pipe_plugin {
-        #![allow(
-            clippy::all,
-            dead_code,
-            unused_imports,
-            unused_mut,
-            unused_variables
-        )]
+        #![allow(clippy::all, dead_code, unused_imports, unused_mut, unused_variables)]
         wasmtime::component::bindgen!({
             path: "../../wit/cli",
             world: "pipe-plugin",
         });
     }
     mod pipe_runtime_host {
-        #![allow(
-            clippy::all,
-            dead_code,
-            unused_imports,
-            unused_mut,
-            unused_variables
-        )]
+        #![allow(clippy::all, dead_code, unused_imports, unused_mut, unused_variables)]
         wasmtime::component::bindgen!({
             path: "../../wit/cli",
             world: "pipe-runtime-host",
@@ -130,10 +100,7 @@ impl Runner {
         pipe_runtime_bindings::PipeRuntimeHost::add_to_linker::<
             HostState,
             wasmtime::component::HasSelf<HostState>,
-        >(
-            &mut linker,
-            |state: &mut HostState| state,
-        )
+        >(&mut linker, |state: &mut HostState| state)
         .context("failed to add pipe-runtime to linker")?;
 
         let program_name = component_path
@@ -291,10 +258,7 @@ impl pipe_runtime::HostPipe for HostState {
         }
     }
 
-    fn drop(
-        &mut self,
-        pipe: wasmtime::component::Resource<LoadedPipe>,
-    ) -> wasmtime::Result<()> {
+    fn drop(&mut self, pipe: wasmtime::component::Resource<LoadedPipe>) -> wasmtime::Result<()> {
         self.table
             .delete(pipe)
             .map(|_| ())
@@ -351,14 +315,15 @@ impl HostState {
     }
 
     fn instantiate_pipe(&self, path: &Path) -> Result<LoadedPipe, String> {
-        let bytes = fs::read(path)
-            .map_err(|e| format!("failed to read pipe {}: {e}", path.display()))?;
+        let bytes =
+            fs::read(path).map_err(|e| format!("failed to read pipe {}: {e}", path.display()))?;
         let component = Component::from_binary(&self.engine, &bytes)
             .map_err(|e| format!("failed to parse pipe {}: {e}", path.display()))?;
         let linker = Linker::new(&self.engine);
-        let mut store = Store::new(&self.engine, PipeState::default());
-        let instance = pipe_plugin_bindings::PipePlugin::instantiate(&mut store, &component, &linker)
-            .map_err(|e| format!("failed to instantiate pipe {}: {e}", path.display()))?;
+        let mut store = Store::new(&self.engine, PipeState);
+        let instance =
+            pipe_plugin_bindings::PipePlugin::instantiate(&mut store, &component, &linker)
+                .map_err(|e| format!("failed to instantiate pipe {}: {e}", path.display()))?;
         let meta = instance
             .wacli_cli_pipe()
             .call_meta(&mut store)
@@ -401,7 +366,9 @@ fn collect_pipe_infos(
             Ok(rel) => rel,
             Err(_) => continue,
         };
-        let mut rel_str = rel.to_string_lossy().replace(std::path::MAIN_SEPARATOR, "/");
+        let mut rel_str = rel
+            .to_string_lossy()
+            .replace(std::path::MAIN_SEPARATOR, "/");
         if let Some(stripped) = rel_str.strip_suffix(".component.wasm") {
             rel_str = stripped.to_string();
         } else {
@@ -419,7 +386,9 @@ fn collect_pipe_infos(
     Ok(())
 }
 
-fn convert_pipe_meta(meta: &pipe_plugin_bindings::wacli::cli::types::PipeMeta) -> pipe_runtime::PipeMeta {
+fn convert_pipe_meta(
+    meta: &pipe_plugin_bindings::wacli::cli::types::PipeMeta,
+) -> pipe_runtime::PipeMeta {
     pipe_runtime::PipeMeta {
         name: meta.name.clone(),
         summary: meta.summary.clone(),
@@ -429,7 +398,9 @@ fn convert_pipe_meta(meta: &pipe_plugin_bindings::wacli::cli::types::PipeMeta) -
     }
 }
 
-fn convert_pipe_error(err: pipe_plugin_bindings::wacli::cli::types::PipeError) -> pipe_runtime::PipeError {
+fn convert_pipe_error(
+    err: pipe_plugin_bindings::wacli::cli::types::PipeError,
+) -> pipe_runtime::PipeError {
     match err {
         pipe_plugin_bindings::wacli::cli::types::PipeError::ParseError(msg) => {
             pipe_runtime::PipeError::ParseError(msg)

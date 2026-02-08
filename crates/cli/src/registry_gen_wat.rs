@@ -110,11 +110,11 @@ fn append_wit_base(dst: &mut String) {
 }
 
 fn append_without_package(dst: &mut String, wit: &str) {
-    let mut lines = wit.lines();
+    let lines = wit.lines();
     let mut saw_package = false;
     let mut started = false;
 
-    while let Some(line) = lines.next() {
+    for line in lines {
         if !started {
             if !saw_package && line.trim_start().starts_with("package ") {
                 saw_package = true;
@@ -228,8 +228,7 @@ fn parse_package_name(name: &str) -> Result<PackageName> {
 fn build_list_commands_body(commands: &[CommandInfo], name_offsets: &[(u32, u32)]) -> String {
     const RECORD_SIZE: i32 = 68;
     const ZERO_FIELDS: [i32; 14] = [8, 12, 16, 20, 24, 28, 32, 36, 44, 48, 52, 56, 60, 64];
-    const META_COPY_FIELDS: [i32; 14] =
-        [8, 12, 16, 20, 24, 28, 32, 36, 44, 48, 52, 56, 60, 64];
+    const META_COPY_FIELDS: [i32; 14] = [8, 12, 16, 20, 24, 28, 32, 36, 44, 48, 52, 56, 60, 64];
 
     let count = commands.len() as i32;
     let list_bytes = count * RECORD_SIZE;

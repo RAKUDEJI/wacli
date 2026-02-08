@@ -6,6 +6,7 @@ target/
 # WASM binaries (except framework components)
 *.wasm
 !components/*.component.wasm
+!testdata/**/*.component.wasm
 
 # wkg lock files
 wkg.lock

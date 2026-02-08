@@ -110,6 +110,8 @@ static __WACLI_FORCE_HOST_IMPORTS: ForceHostImports = ForceHostImports {
     pipe_process: host_pipes::Pipe::process,
 };
 
+type PipeProcessFn = fn(&host_pipes::Pipe, &[u8], &[String]) -> Result<Vec<u8>, PipeError>;
+
 #[doc(hidden)]
 #[allow(dead_code)]
 struct ForceHostImports {
@@ -127,7 +129,7 @@ struct ForceHostImports {
     pipes_list: fn() -> Vec<PipeInfo>,
     pipes_load: fn(&str) -> Result<host_pipes::Pipe, String>,
     pipe_meta: fn(&host_pipes::Pipe) -> PipeMeta,
-    pipe_process: fn(&host_pipes::Pipe, &[u8], &[String]) -> Result<Vec<u8>, PipeError>,
+    pipe_process: PipeProcessFn,
 }
 
 /// Convenience facade over the split host interfaces.
@@ -329,7 +331,10 @@ pub fn arg(name: impl Into<String>) -> ArgBuilder {
 }
 
 /// Parse `argv` according to the declarative argument definitions in `meta`.
-pub fn parse<'a>(meta: &CommandMeta, argv: &'a [String]) -> Result<args::Matches<'a>, CommandError> {
+pub fn parse<'a>(
+    meta: &CommandMeta,
+    argv: &'a [String],
+) -> Result<args::Matches<'a>, CommandError> {
     args::parse(meta, argv)
 }
 
@@ -396,9 +401,7 @@ pub mod args {
 
     fn normalize_long(raw: &str) -> String {
         let trimmed = raw.trim();
-        if trimmed.starts_with("--") {
-            trimmed.to_string()
-        } else if trimmed.starts_with('-') {
+        if trimmed.starts_with('-') {
             trimmed.to_string()
         } else {
             format!("--{trimmed}")
@@ -627,25 +630,23 @@ pub mod args {
                 continue;
             }
 
-            if let Some(short) = &info.short {
-                if let Some(prev) = short_map.insert(short.clone(), idx) {
-                    if infos[prev].name != info.name {
-                        return Err(CommandError::Failed(format!(
-                            "arg definition conflict: {short} maps to both '{}' and '{}'",
-                            infos[prev].name, info.name
-                        )));
-                    }
-                }
+            if let Some(short) = &info.short
+                && let Some(prev) = short_map.insert(short.clone(), idx)
+                && infos[prev].name != info.name
+            {
+                return Err(CommandError::Failed(format!(
+                    "arg definition conflict: {short} maps to both '{}' and '{}'",
+                    infos[prev].name, info.name
+                )));
             }
-            if let Some(long) = &info.long {
-                if let Some(prev) = long_map.insert(long.clone(), idx) {
-                    if infos[prev].name != info.name {
-                        return Err(CommandError::Failed(format!(
-                            "arg definition conflict: {long} maps to both '{}' and '{}'",
-                            infos[prev].name, info.name
-                        )));
-                    }
-                }
+            if let Some(long) = &info.long
+                && let Some(prev) = long_map.insert(long.clone(), idx)
+                && infos[prev].name != info.name
+            {
+                return Err(CommandError::Failed(format!(
+                    "arg definition conflict: {long} maps to both '{}' and '{}'",
+                    infos[prev].name, info.name
+                )));
             }
         }
 
@@ -686,9 +687,8 @@ pub mod args {
                         continue;
                     }
                     if parse_error.is_none() {
-                        parse_error = Some(CommandError::InvalidArgs(format!(
-                            "unknown flag: {flag}"
-                        )));
+                        parse_error =
+                            Some(CommandError::InvalidArgs(format!("unknown flag: {flag}")));
                     }
                     i += 1;
                     continue;
@@ -719,9 +719,7 @@ pub mod args {
                 }
 
                 if parse_error.is_none() {
-                    parse_error = Some(CommandError::InvalidArgs(format!(
-                        "unknown flag: {arg}"
-                    )));
+                    parse_error = Some(CommandError::InvalidArgs(format!("unknown flag: {arg}")));
                 }
                 i += 1;
                 continue;
@@ -753,9 +751,8 @@ pub mod args {
                         continue;
                     }
                     if parse_error.is_none() {
-                        parse_error = Some(CommandError::InvalidArgs(format!(
-                            "unknown flag: {arg}"
-                        )));
+                        parse_error =
+                            Some(CommandError::InvalidArgs(format!("unknown flag: {arg}")));
                     }
                     i += 1;
                     continue;
@@ -840,15 +837,13 @@ pub mod args {
         // Apply defaults for missing value-taking args.
         for info in &infos {
             if info.takes_value
-                && info.default_value.is_some()
                 && !m.values.contains_key(&info.name)
+                && let Some(default_value) = info.default_value.clone()
             {
-                if let Some(default_value) = info.default_value.clone() {
-                    m.values
-                        .entry(info.name.clone())
-                        .or_default()
-                        .push(Cow::Owned(default_value));
-                }
+                m.values
+                    .entry(info.name.clone())
+                    .or_default()
+                    .push(Cow::Owned(default_value));
             }
         }
 
@@ -1050,7 +1045,7 @@ pub mod args {
     /// `positional_args_with_schema` and declare value-taking flags.
     ///
     /// Use `--` to stop flag parsing and treat everything after as positional.
-    pub fn positional_args<'a>(argv: &'a [String]) -> Vec<&'a str> {
+    pub fn positional_args(argv: &[String]) -> Vec<&str> {
         positional_args_with_schema(argv, &Schema::default())
     }
 
@@ -1098,7 +1093,7 @@ pub mod args {
     }
 
     /// Get a positional argument by index.
-    pub fn positional<'a>(argv: &'a [String], index: usize) -> Option<&'a str> {
+    pub fn positional(argv: &[String], index: usize) -> Option<&str> {
         positional_args(argv).get(index).copied()
     }
 
@@ -1114,7 +1109,7 @@ pub mod args {
     }
 
     /// Get the remaining arguments from a start index.
-    pub fn rest<'a>(argv: &'a [String], start: usize) -> &'a [String] {
+    pub fn rest(argv: &[String], start: usize) -> &[String] {
         if start >= argv.len() {
             &argv[argv.len()..]
         } else {
@@ -1209,7 +1204,12 @@ mod tests {
     fn parse_does_not_consume_positional_for_boolean_flag() {
         let meta = meta("show")
             .arg(arg("verbose").long("--verbose").help("Verbose output"))
-            .arg(arg("file").required(true).value_name("FILE").help("File to show"))
+            .arg(
+                arg("file")
+                    .required(true)
+                    .value_name("FILE")
+                    .help("File to show"),
+            )
             .build();
         let argv = vec!["--verbose".to_string(), "hello.txt".to_string()];
         let m = parse(&meta, &argv).unwrap();
@@ -1226,7 +1226,12 @@ mod tests {
                     .value_name("FILE")
                     .help("Output file"),
             )
-            .arg(arg("file").required(true).value_name("FILE").help("Input file"))
+            .arg(
+                arg("file")
+                    .required(true)
+                    .value_name("FILE")
+                    .help("Input file"),
+            )
             .build();
         let argv = vec![
             "--output".to_string(),
@@ -1242,8 +1247,18 @@ mod tests {
     fn parse_supports_combined_short_flags_and_attached_value() {
         let meta = meta("show")
             .arg(arg("verbose").short("-v").help("Verbose output"))
-            .arg(arg("output").short("-o").value_name("FILE").help("Output file"))
-            .arg(arg("file").required(true).value_name("FILE").help("Input file"))
+            .arg(
+                arg("output")
+                    .short("-o")
+                    .value_name("FILE")
+                    .help("Output file"),
+            )
+            .arg(
+                arg("file")
+                    .required(true)
+                    .value_name("FILE")
+                    .help("Input file"),
+            )
             .build();
         let argv = vec!["-voout.txt".to_string(), "in.txt".to_string()];
         let m = parse(&meta, &argv).unwrap();
@@ -1271,7 +1286,12 @@ mod tests {
     #[test]
     fn parse_errors_on_missing_required_positional() {
         let meta = meta("show")
-            .arg(arg("file").required(true).value_name("FILE").help("File to show"))
+            .arg(
+                arg("file")
+                    .required(true)
+                    .value_name("FILE")
+                    .help("File to show"),
+            )
             .build();
         let argv: Vec<String> = Vec::new();
         let err = parse(&meta, &argv).unwrap_err();
@@ -1311,8 +1331,18 @@ mod tests {
             .usage("show [OPTIONS] <FILE>")
             .description("Display a file to stdout.")
             .example("show hello.txt")
-            .arg(arg("file").required(true).value_name("FILE").help("File to show"))
-            .arg(arg("verbose").short("-v").long("--verbose").help("Verbose output"))
+            .arg(
+                arg("file")
+                    .required(true)
+                    .value_name("FILE")
+                    .help("File to show"),
+            )
+            .arg(
+                arg("verbose")
+                    .short("-v")
+                    .long("--verbose")
+                    .help("Verbose output"),
+            )
             .build();
         let text = args::help(&meta);
         assert!(text.contains("Usage: show [OPTIONS] <FILE>"));
@@ -1471,9 +1501,7 @@ impl ArgBuilder {
         });
         let long = self.long.map(|s| {
             let s = s.trim().to_string();
-            if s.starts_with("--") {
-                s
-            } else if s.starts_with('-') {
+            if s.starts_with('-') {
                 s
             } else {
                 format!("--{s}")

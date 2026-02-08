@@ -2076,6 +2076,7 @@ macro_rules! __export_plugin_impl {
     };
 }
 #[doc(inline)]
+#[allow(unused_imports)]
 pub(crate) use __export_plugin_impl as export;
 #[rustfmt::skip]
 #[cfg(target_arch = "wasm32")]
