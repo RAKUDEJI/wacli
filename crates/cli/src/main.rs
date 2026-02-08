@@ -594,8 +594,8 @@ fn build(args: BuildArgs) -> Result<()> {
         // Generate registry component on every build. Keep build artifacts out of defaults/.
         tracing::info!("generating registry component...");
         tracing::info!("using WAT template registry generator");
-        let registry_bytes =
-            generate_registry_wat(&commands, &app_meta).context("failed to generate registry (WAT)")?;
+        let registry_bytes = generate_registry_wat(&commands, &app_meta)
+            .context("failed to generate registry (WAT)")?;
 
         // Write to a local build cache directory.
         let cache_dir = base_dir.join(".wacli");

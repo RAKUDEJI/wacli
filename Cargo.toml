@@ -3,7 +3,7 @@ resolver = "3"
 members = ["crates/*", "components/host", "components/core"]
 
 [workspace.package]
-version = "0.0.42"
+version = "0.0.43"
 edition = "2024"
 rust-version = "1.92"
 license = "Apache-2.0"
@@ -16,11 +16,11 @@ wac-graph = "0.9.0"
 wac-types = "0.9.0"
 
 # Workspace crates
-plugin-loader = { path = "crates/plugin-loader", version = "0.0.42" }
-molt-registry-client = { path = "crates/molt-registry-client", version = "0.0.42" }
-wacli-argparse = { path = "crates/wacli-argparse", version = "0.0.42" }
-wacli-metadata = { path = "crates/wacli-metadata", version = "0.0.42" }
-wacli-cdk-macros = { path = "crates/wacli-cdk-macros", version = "0.0.42" }
+plugin-loader = { path = "crates/plugin-loader", version = "0.0.43" }
+molt-registry-client = { path = "crates/molt-registry-client", version = "0.0.43" }
+wacli-argparse = { path = "crates/wacli-argparse", version = "0.0.43" }
+wacli-metadata = { path = "crates/wacli-metadata", version = "0.0.43" }
+wacli-cdk-macros = { path = "crates/wacli-cdk-macros", version = "0.0.43" }
 
 # CLI and error handling
 clap = { version = "4.5", features = ["derive"] }

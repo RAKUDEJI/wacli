@@ -178,4 +178,3 @@ impl CommandMetadataV1 {
         serde_json::to_vec(self).unwrap_or_default()
     }
 }
-

@@ -189,6 +189,8 @@ static __WACLI_FORCE_HOST_IMPORTS: ForceHostImports = ForceHostImports {
     pipe_process: host_pipes::Pipe::process,
 };
 
+type PipeProcessFn = fn(&host_pipes::Pipe, &[u8], &[String]) -> Result<Vec<u8>, PipeError>;
+
 #[doc(hidden)]
 #[allow(dead_code)]
 struct ForceHostImports {
@@ -206,7 +208,7 @@ struct ForceHostImports {
     pipes_list: fn() -> Vec<PipeInfo>,
     pipes_load: fn(&str) -> Result<host_pipes::Pipe, String>,
     pipe_meta: fn(&host_pipes::Pipe) -> PipeMeta,
-    pipe_process: fn(&host_pipes::Pipe, &[u8], &[String]) -> Result<Vec<u8>, PipeError>,
+    pipe_process: PipeProcessFn,
 }
 
 /// Convenience facade over the split host interfaces.
@@ -418,8 +420,8 @@ pub fn parse<'a>(
 /// Minimal argument helpers (no extra dependencies).
 pub mod args {
     pub use wacli_argparse::args::{
-        flag, positional, positional_args, positional_args_with_schema, positional_with_schema,
-        rest, value, FlagNames, Matches, Schema,
+        FlagNames, Matches, Schema, flag, positional, positional_args, positional_args_with_schema,
+        positional_with_schema, rest, value,
     };
 
     use super::{CommandError, CommandMeta};
@@ -849,9 +851,7 @@ impl ArgBuilder {
         });
         let long = self.long.map(|s| {
             let s = s.trim().to_string();
-            if s.starts_with("--") {
-                s
-            } else if s.starts_with('-') {
+            if s.starts_with('-') {
                 s
             } else {
                 format!("--{s}")

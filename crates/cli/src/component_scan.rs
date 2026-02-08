@@ -4,8 +4,8 @@ use anyhow::{Context, Result, bail};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use wasmparser::{Parser, Payload};
 use wacli_metadata::CommandMetadataV1;
+use wasmparser::{Parser, Payload};
 
 use crate::command_metadata::extract_command_metadata;
 
@@ -381,8 +381,9 @@ fn collect_commands(
             );
         }
 
-        let Some(metadata) = extract_command_metadata(&wasm_bytes)
-            .with_context(|| format!("failed to extract command metadata from {}", path.display()))?
+        let Some(metadata) = extract_command_metadata(&wasm_bytes).with_context(|| {
+            format!("failed to extract command metadata from {}", path.display())
+        })?
         else {
             bail!(
                 "missing embedded command metadata in {}\n\

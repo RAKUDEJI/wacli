@@ -264,7 +264,11 @@ fn build_string_table(commands: &[CommandInfo], app: &AppMeta) -> StringTable {
     t
 }
 
-fn build_wat_module(commands: &[CommandInfo], app: &AppMeta, strings: &StringTable) -> Result<String> {
+fn build_wat_module(
+    commands: &[CommandInfo],
+    app: &AppMeta,
+    strings: &StringTable,
+) -> Result<String> {
     let imports = build_imports(commands)?;
     let list_body = build_list_commands_body(commands, strings);
     let list_schemas_body = build_list_schemas_body(commands, strings);
@@ -443,7 +447,11 @@ fn build_list_commands_body(commands: &[CommandInfo], strings: &StringTable) -> 
 
         // hidden (bool)
         push_line(&mut body, 4, "local.get $record_ptr");
-        push_line(&mut body, 4, &format!("i32.const {}", if meta.hidden { 1 } else { 0 }));
+        push_line(
+            &mut body,
+            4,
+            &format!("i32.const {}", if meta.hidden { 1 } else { 0 }),
+        );
         push_line(&mut body, 4, "i32.store8 offset=40");
 
         // description
@@ -506,8 +514,24 @@ fn build_list_commands_body(commands: &[CommandInfo], strings: &StringTable) -> 
                 emit_store_i32_const(&mut body, "$arg_ptr", 0, anp);
                 emit_store_i32_const(&mut body, "$arg_ptr", 4, anl);
 
-                emit_store_opt_str(&mut body, "$arg_ptr", 8, 12, 16, arg.short.as_deref(), strings);
-                emit_store_opt_str(&mut body, "$arg_ptr", 20, 24, 28, arg.long.as_deref(), strings);
+                emit_store_opt_str(
+                    &mut body,
+                    "$arg_ptr",
+                    8,
+                    12,
+                    16,
+                    arg.short.as_deref(),
+                    strings,
+                );
+                emit_store_opt_str(
+                    &mut body,
+                    "$arg_ptr",
+                    20,
+                    24,
+                    28,
+                    arg.long.as_deref(),
+                    strings,
+                );
 
                 let (hp, hl) = strings.get(&arg.help);
                 emit_store_i32_const(&mut body, "$arg_ptr", 32, hp);
@@ -515,7 +539,11 @@ fn build_list_commands_body(commands: &[CommandInfo], strings: &StringTable) -> 
 
                 // required bool @40
                 push_line(&mut body, 4, "local.get $arg_ptr");
-                push_line(&mut body, 4, &format!("i32.const {}", if arg.required { 1 } else { 0 }));
+                push_line(
+                    &mut body,
+                    4,
+                    &format!("i32.const {}", if arg.required { 1 } else { 0 }),
+                );
                 push_line(&mut body, 4, "i32.store8 offset=40");
 
                 emit_store_opt_str(
@@ -539,7 +567,11 @@ fn build_list_commands_body(commands: &[CommandInfo], strings: &StringTable) -> 
 
                 // takes_value bool @68
                 push_line(&mut body, 4, "local.get $arg_ptr");
-                push_line(&mut body, 4, &format!("i32.const {}", if arg.takes_value { 1 } else { 0 }));
+                push_line(
+                    &mut body,
+                    4,
+                    &format!("i32.const {}", if arg.takes_value { 1 } else { 0 }),
+                );
                 push_line(&mut body, 4, "i32.store8 offset=68");
             }
         }
@@ -585,12 +617,13 @@ fn build_list_schemas_body(commands: &[CommandInfo], strings: &StringTable) -> S
     for (i, cmd) in commands.iter().enumerate() {
         // If schema is absent, synthesize it from `command_meta` for backwards-compat.
         let schema_owned;
-        let schema: &wacli_metadata::CommandSchema = if let Some(s) = cmd.metadata.command_schema.as_ref() {
-            s
-        } else {
-            schema_owned = wacli_metadata::CommandSchema::from_meta(&cmd.metadata.command_meta);
-            &schema_owned
-        };
+        let schema: &wacli_metadata::CommandSchema =
+            if let Some(s) = cmd.metadata.command_schema.as_ref() {
+                s
+            } else {
+                schema_owned = wacli_metadata::CommandSchema::from_meta(&cmd.metadata.command_meta);
+                &schema_owned
+            };
 
         let record_offset = (i as i32) * CMD_RECORD_SIZE;
 

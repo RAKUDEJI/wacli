@@ -186,7 +186,7 @@ pub mod args {
     /// `positional_args_with_schema` and declare value-taking flags.
     ///
     /// Use `--` to stop flag parsing and treat everything after as positional.
-    pub fn positional_args<'a>(argv: &'a [String]) -> Vec<&'a str> {
+    pub fn positional_args(argv: &[String]) -> Vec<&str> {
         positional_args_with_schema(argv, &Schema::default())
     }
 
@@ -234,7 +234,7 @@ pub mod args {
     }
 
     /// Get a positional argument by index.
-    pub fn positional<'a>(argv: &'a [String], index: usize) -> Option<&'a str> {
+    pub fn positional(argv: &[String], index: usize) -> Option<&str> {
         positional_args(argv).get(index).copied()
     }
 
@@ -250,7 +250,7 @@ pub mod args {
     }
 
     /// Get the remaining arguments from a start index.
-    pub fn rest<'a>(argv: &'a [String], start: usize) -> &'a [String] {
+    pub fn rest(argv: &[String], start: usize) -> &[String] {
         if start >= argv.len() {
             &argv[argv.len()..]
         } else {
@@ -548,9 +548,7 @@ pub mod claplike {
 
     fn normalize_long(raw: &str) -> String {
         let trimmed = raw.trim();
-        if trimmed.starts_with("--") {
-            trimmed.to_string()
-        } else if trimmed.starts_with('-') {
+        if trimmed.starts_with('-') {
             trimmed.to_string()
         } else {
             format!("--{trimmed}")
@@ -573,12 +571,8 @@ pub mod claplike {
         let short = normalize_short(short);
         let long = normalize_long(long);
         defs.iter().any(|d| {
-            d.short()
-                .map(normalize_short)
-                .is_some_and(|s| s == short)
-                || d.long()
-                    .map(normalize_long)
-                    .is_some_and(|l| l == long)
+            d.short().map(normalize_short).is_some_and(|s| s == short)
+                || d.long().map(normalize_long).is_some_and(|l| l == long)
         })
     }
 
@@ -600,9 +594,7 @@ pub mod claplike {
         }
     }
 
-    fn schema_defs<'a, M: CommandMetaLike>(
-        meta: &'a M,
-    ) -> Vec<ArgDefRef<'a, M::ArgDef>> {
+    fn schema_defs<'a, M: CommandMetaLike>(meta: &'a M) -> Vec<ArgDefRef<'a, M::ArgDef>> {
         let defs = meta.args();
         let mut out: Vec<ArgDefRef<'a, M::ArgDef>> = defs.iter().map(ArgDefRef::User).collect();
 
@@ -759,9 +751,7 @@ pub mod claplike {
     }
 
     fn env_lookup<'e>(env: &'e [(String, String)], key: &str) -> Option<&'e str> {
-        env.iter()
-            .find(|(k, _)| k == key)
-            .map(|(_, v)| v.as_str())
+        env.iter().find(|(k, _)| k == key).map(|(_, v)| v.as_str())
     }
 
     fn arg_display_name(def: &dyn ArgDefLike) -> String {
@@ -802,39 +792,35 @@ pub mod claplike {
         Ok(())
     }
 
-    fn validate_matches(
-        defs: &[&dyn ArgDefLike],
-        m: &Matches<'_>,
-    ) -> ParseResult<()> {
+    fn validate_matches(defs: &[&dyn ArgDefLike], m: &Matches<'_>) -> ParseResult<()> {
         let by_name: HashMap<&str, &dyn ArgDefLike> =
             defs.iter().copied().map(|d| (d.name(), d)).collect();
 
         for &def in defs {
             let name = def.name();
 
-            if !def.multiple() {
-                if let Some(values) = m.get_all(name) {
-                    if values.len() > 1 {
-                        return Err(ParseError::InvalidArgs(format!(
-                            "argument '{}' cannot be used multiple times",
-                            arg_display_name(def)
-                        )));
-                    }
-                }
+            if !def.multiple()
+                && let Some(values) = m.get_all(name)
+                && values.len() > 1
+            {
+                return Err(ParseError::InvalidArgs(format!(
+                    "argument '{}' cannot be used multiple times",
+                    arg_display_name(def)
+                )));
             }
 
-            if !def.possible_values().is_empty() {
-                if let Some(values) = m.get_all(name) {
-                    for v in values {
-                        let v = v.as_ref();
-                        if !def.possible_values().iter().any(|p| p == v) {
-                            return Err(ParseError::InvalidArgs(format!(
-                                "invalid value '{}' for '{}'. possible values: {}",
-                                v,
-                                arg_display_name(def),
-                                def.possible_values().join(", ")
-                            )));
-                        }
+            if !def.possible_values().is_empty()
+                && let Some(values) = m.get_all(name)
+            {
+                for v in values {
+                    let v = v.as_ref();
+                    if !def.possible_values().iter().any(|p| p == v) {
+                        return Err(ParseError::InvalidArgs(format!(
+                            "invalid value '{}' for '{}'. possible values: {}",
+                            v,
+                            arg_display_name(def),
+                            def.possible_values().join(", ")
+                        )));
                     }
                 }
             }
@@ -917,25 +903,23 @@ pub mod claplike {
                 continue;
             }
 
-            if let Some(short) = &info.short {
-                if let Some(prev) = short_map.insert(short.clone(), idx) {
-                    if infos[prev].name != info.name {
-                        return Err(ParseError::Failed(format!(
-                            "arg definition conflict: {short} maps to both '{}' and '{}'",
-                            infos[prev].name, info.name
-                        )));
-                    }
-                }
+            if let Some(short) = &info.short
+                && let Some(prev) = short_map.insert(short.clone(), idx)
+                && infos[prev].name != info.name
+            {
+                return Err(ParseError::Failed(format!(
+                    "arg definition conflict: {short} maps to both '{}' and '{}'",
+                    infos[prev].name, info.name
+                )));
             }
-            if let Some(long) = &info.long {
-                if let Some(prev) = long_map.insert(long.clone(), idx) {
-                    if infos[prev].name != info.name {
-                        return Err(ParseError::Failed(format!(
-                            "arg definition conflict: {long} maps to both '{}' and '{}'",
-                            infos[prev].name, info.name
-                        )));
-                    }
-                }
+            if let Some(long) = &info.long
+                && let Some(prev) = long_map.insert(long.clone(), idx)
+                && infos[prev].name != info.name
+            {
+                return Err(ParseError::Failed(format!(
+                    "arg definition conflict: {long} maps to both '{}' and '{}'",
+                    infos[prev].name, info.name
+                )));
             }
         }
 
@@ -1005,8 +989,7 @@ pub mod claplike {
                 }
 
                 if parse_error.is_none() {
-                    parse_error =
-                        Some(ParseError::InvalidArgs(format!("unknown flag: {arg}")));
+                    parse_error = Some(ParseError::InvalidArgs(format!("unknown flag: {arg}")));
                 }
                 i += 1;
                 continue;
@@ -1037,8 +1020,7 @@ pub mod claplike {
                         continue;
                     }
                     if parse_error.is_none() {
-                        parse_error =
-                            Some(ParseError::InvalidArgs(format!("unknown flag: {arg}")));
+                        parse_error = Some(ParseError::InvalidArgs(format!("unknown flag: {arg}")));
                     }
                     i += 1;
                     continue;
@@ -1063,9 +1045,8 @@ pub mod claplike {
                     let flag = format!("-{c}");
                     let Some(&idx) = short_map.get(&flag) else {
                         if parse_error.is_none() {
-                            parse_error = Some(ParseError::InvalidArgs(format!(
-                                "unknown flag: {flag}"
-                            )));
+                            parse_error =
+                                Some(ParseError::InvalidArgs(format!("unknown flag: {flag}")));
                         }
                         k += 1;
                         continue;
@@ -1125,11 +1106,11 @@ pub mod claplike {
             }
 
             let def = defs_dyn[idx];
-            if let Some(key) = def.env() {
-                if let Some(v) = env_lookup(env, key) {
-                    m.push_value(info.name.clone(), Cow::Owned(v.to_string()));
-                    continue;
-                }
+            if let Some(key) = def.env()
+                && let Some(v) = env_lookup(env, key)
+            {
+                m.push_value(info.name.clone(), Cow::Owned(v.to_string()));
+                continue;
             }
 
             if let Some(default_value) = info.default_value.clone() {
@@ -1226,7 +1207,8 @@ pub mod claplike {
         if let Some(m) = metas.iter().find(|m| m.name() == raw) {
             return Some(m.name());
         }
-        metas.iter()
+        metas
+            .iter()
             .find(|m| m.aliases().iter().any(|a| a == raw))
             .map(|m| m.name())
     }
@@ -1254,13 +1236,13 @@ pub mod claplike {
                         m.name()
                     )));
                 }
-                if let Some(prev) = alias_map.insert(alias, m.name()) {
-                    if prev != m.name() {
-                        return Err(ParseError::Failed(format!(
-                            "alias conflict: '{alias}' refers to both '{prev}' and '{}'",
-                            m.name()
-                        )));
-                    }
+                if let Some(prev) = alias_map.insert(alias, m.name())
+                    && prev != m.name()
+                {
+                    return Err(ParseError::Failed(format!(
+                        "alias conflict: '{alias}' refers to both '{prev}' and '{}'",
+                        m.name()
+                    )));
                 }
             }
         }
@@ -1519,14 +1501,18 @@ mod tests {
         // env beats default
         let argv: Vec<String> = vec![];
         let env = vec![("FORMAT".to_string(), "json".to_string())];
-        let claplike::ParseOutcome::Matches(m) = claplike::parse_with_env(&meta, &argv, &env).unwrap() else {
+        let claplike::ParseOutcome::Matches(m) =
+            claplike::parse_with_env(&meta, &argv, &env).unwrap()
+        else {
             panic!("expected Matches");
         };
         assert_eq!(m.get("format"), Some("json"));
 
         // default used when env absent
         let env: Vec<(String, String)> = vec![];
-        let claplike::ParseOutcome::Matches(m) = claplike::parse_with_env(&meta, &argv, &env).unwrap() else {
+        let claplike::ParseOutcome::Matches(m) =
+            claplike::parse_with_env(&meta, &argv, &env).unwrap()
+        else {
             panic!("expected Matches");
         };
         assert_eq!(m.get("format"), Some("plain"));
@@ -1534,7 +1520,9 @@ mod tests {
         // argv beats env
         let argv = vec!["--format".to_string(), "xml".to_string()];
         let env = vec![("FORMAT".to_string(), "json".to_string())];
-        let claplike::ParseOutcome::Matches(m) = claplike::parse_with_env(&meta, &argv, &env).unwrap() else {
+        let claplike::ParseOutcome::Matches(m) =
+            claplike::parse_with_env(&meta, &argv, &env).unwrap()
+        else {
             panic!("expected Matches");
         };
         assert_eq!(m.get("format"), Some("xml"));

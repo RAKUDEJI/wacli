@@ -173,7 +173,90 @@ jobs:
 
           rm -f "$core_config_file"
 
+  publish-argparse:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-publish-argparse-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Publish wacli-argparse to crates.io
+        env:
+          TAG: ${{ github.ref_name }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          ./scripts/publish_if_tag.sh wacli-argparse crates/wacli-argparse/Cargo.toml
+
+  publish-metadata:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-publish-metadata-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Publish wacli-metadata to crates.io
+        env:
+          TAG: ${{ github.ref_name }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          ./scripts/publish_if_tag.sh wacli-metadata crates/wacli-metadata/Cargo.toml
+
+  publish-cdk-macros:
+    needs: [publish-metadata]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-publish-cdk-macros-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Publish wacli-cdk-macros to crates.io
+        env:
+          TAG: ${{ github.ref_name }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          ./scripts/publish_if_tag.sh wacli-cdk-macros crates/wacli-cdk-macros/Cargo.toml
+
   publish-cdk:
+    needs: [publish-argparse, publish-cdk-macros]
     runs-on: ubuntu-latest
 
     steps:
@@ -255,7 +338,7 @@ jobs:
           ./scripts/publish_if_tag.sh plugin-loader crates/plugin-loader/Cargo.toml
 
   publish:
-    needs: [publish-molt-registry-client, publish-plugin-loader]
+    needs: [publish-molt-registry-client, publish-plugin-loader, publish-metadata]
     runs-on: ubuntu-latest
 
     steps:

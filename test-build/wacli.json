@@ -3,9 +3,9 @@
   "build": {
     "name": "example:my-cli",
     "version": "0.1.0",
+    "description": "Playground for trying wacli as a user.",
     "output": "my-cli.component.wasm",
     "defaultsDir": "defaults",
     "commandsDir": "commands"
   }
 }
-

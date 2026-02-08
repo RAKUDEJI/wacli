@@ -1,12 +1,11 @@
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
-    bracketed, braced,
+    Ident, LitBool, LitByteStr, LitStr, Result, Token, braced, bracketed,
     parse::{Parse, ParseStream},
     parse_macro_input,
     punctuated::Punctuated,
-    token::{Bracket, Brace},
-    Ident, LitBool, LitByteStr, LitStr, Result, Token,
+    token::{Brace, Bracket},
 };
 
 /// Declare command metadata and embed it into a WASM custom section.
@@ -124,10 +123,8 @@ impl Parse for Value {
             }
 
             // Otherwise expect `[ "a", "b" ]`.
-            let elems: Punctuated<LitStr, Token![,]> = content.parse_terminated(
-                |p: ParseStream<'_>| p.parse::<LitStr>(),
-                Token![,],
-            )?;
+            let elems: Punctuated<LitStr, Token![,]> =
+                content.parse_terminated(|p: ParseStream<'_>| p.parse::<LitStr>(), Token![,])?;
             return Ok(Self::StrArray(elems.into_iter().collect()));
         }
 
@@ -221,7 +218,7 @@ fn expand_decl(decl: Decl) -> Result<proc_macro2::TokenStream> {
                 return Err(syn::Error::new(
                     field.key.span(),
                     format!("unknown field: {other}"),
-                ))
+                ));
             }
         }
     }
@@ -384,7 +381,10 @@ fn meta_args_expr(args: &[ArgSpec]) -> proc_macro2::TokenStream {
     let entries: Vec<proc_macro2::TokenStream> = args
         .iter()
         .map(|a| {
-            let name = LitStr::new(a.name.as_deref().unwrap_or_default(), proc_macro2::Span::call_site());
+            let name = LitStr::new(
+                a.name.as_deref().unwrap_or_default(),
+                proc_macro2::Span::call_site(),
+            );
             let help = LitStr::new(&a.help, proc_macro2::Span::call_site());
             let short = opt_string_expr(a.short.as_deref());
             let long = opt_string_expr(a.long.as_deref());
@@ -486,7 +486,7 @@ fn arg_from_object(obj: &ArgObject) -> Result<ArgSpec> {
                 return Err(syn::Error::new(
                     field.key.span(),
                     format!("unknown arg field: {other}"),
-                ))
+                ));
             }
         }
     }
@@ -509,9 +509,7 @@ fn arg_from_object(obj: &ArgObject) -> Result<ArgSpec> {
     }
     if let Some(s) = a.long.clone() {
         let trimmed = s.trim().to_string();
-        a.long = Some(if trimmed.starts_with("--") {
-            trimmed
-        } else if trimmed.starts_with('-') {
+        a.long = Some(if trimmed.starts_with('-') {
             trimmed
         } else {
             format!("--{trimmed}")
