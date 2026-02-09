@@ -394,7 +394,7 @@ to pull them from the registry.
 | `wacli:cli/host-pipes` | Pipe loader (`list-pipes`, `load-pipe`) |
 | `wacli:cli/command` | Plugin export interface (`meta`, `run`) |
 | `wacli:cli/registry` | Command management (`list-commands`, `run`) |
-| `wacli:cli/registry-schema` | Registry schema access (`list-schemas`) |
+| `wacli:cli/registry-schema` | Registry/app schema access (`get-app-meta`, `list-schemas`) |
 | `wacli:cli/pipe` | Pipe export interface (`meta`, `process`) |
 
 ### Plugin World
