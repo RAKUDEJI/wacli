@@ -33,7 +33,12 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Install wasm-tools
-        run: cargo install wasm-tools --locked
+        run: |
+          if command -v wasm-tools >/dev/null 2>&1; then
+            echo "wasm-tools already installed"
+          else
+            cargo install wasm-tools --locked
+          fi
 
       - name: Build components
         run: bash scripts/build_components.sh
